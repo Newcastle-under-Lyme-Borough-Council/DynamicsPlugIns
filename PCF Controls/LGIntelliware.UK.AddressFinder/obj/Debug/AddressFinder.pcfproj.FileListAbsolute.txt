@@ -1,2 +1,0 @@
-D:\2024_05_22-LGIntelliware\LGIntelliware.UK.AddressFinder\obj\Debug\AddressFinder.pcfproj.AssemblyReference.cache
-D:\2024_05_22-LGIntelliware\LGIntelliware.UK.AddressFinder\obj\Debug\AddressFinder.pcfproj.CoreCompileInputs.cache
