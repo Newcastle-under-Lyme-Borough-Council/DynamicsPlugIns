@@ -96,6 +96,7 @@
     <Compile Include="PluginBase.cs" />
     <Compile Include="PostMissedBin.cs" />
     <Compile Include="PostPlanningPermission.cs" />
+    <Compile Include="PostTaxiLicence.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

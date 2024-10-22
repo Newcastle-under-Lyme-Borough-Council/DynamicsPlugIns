@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
-    public class PostPlanningPermission:PluginBase
+    public class PostTaxiLicence : PluginBase
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public PostPlanningPermission() : base(typeof(PostPlanningPermission))
+        public PostTaxiLicence() : base(typeof(PostTaxiLicence))
         {
-            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ServiceRequestTableColumnNames.PlanningPermissionTableName, Execute));
+            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ServiceRequestTableColumnNames.TaxiLicenceTableName, Execute));
         }
 
         /// <summary>
@@ -50,9 +50,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             if (entity != null)
                             {
                                 tracingService.Trace("{0}", "'Target' entity from context input parameter Guid: " + entity.Id + ".");
-                                // Check if entity reference is of type planning permission...
+                                // Check if entity reference is of type taxi licence...
                                 tracingService.Trace("{0}", "Going to check entity reference logical name.");
-                                if (entity.LogicalName.Equals(ServiceRequestTableColumnNames.PlanningPermissionTableName))
+                                if (entity.LogicalName.Equals(ServiceRequestTableColumnNames.TaxiLicenceTableName))
                                 {
                                     tracingService.Trace("{0}", "'Target' entity logical name: " + entity.LogicalName + ".");
                                     if (entity.Attributes.ContainsKey(ServiceRequestTableColumnNames.ServiceConfiguration) && entity.Attributes[ServiceRequestTableColumnNames.ServiceConfiguration] != null)
@@ -74,10 +74,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                                 if (subjects != null && subjects.Entities != null && subjects.Entities.Count > 0)
                                                 {
                                                     var subject = subjects.Entities[0];
-                                                    tracingService.Trace("{0}", "Start creating new 'PlanningPermission' incident.");
+                                                    tracingService.Trace("{0}", "Start creating new 'TaxiLicence' incident.");
                                                     var incidentId = DataverseHelper.CreateIncident(service, tracingService, entity, serviceConfiguration, subject);
-                                                    tracingService.Trace("{0}", "Newly created planning permission incident 'ID' is: " + incidentId);
-                                                    tracingService.Trace("{0}", "Going to update 'PlanningPermission' serice request for incident attribute.");
+                                                    tracingService.Trace("{0}", "Newly created taxi licence incident 'ID' is: " + incidentId);
+                                                    tracingService.Trace("{0}", "Going to update 'TaxiLicence' serice request for incident attribute.");
 
                                                     Entity entityToUpdate = new Entity(entity.LogicalName)
                                                     {
@@ -85,31 +85,31 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                                     };
                                                     entityToUpdate.Attributes.Add(ServiceRequestTableColumnNames.Case, new EntityReference(IncidentTableColumnNames.TableName, incidentId));
                                                     DataverseHelper.Update(service, tracingService, entityToUpdate);
-                                                    tracingService.Trace("{0}", "Exiting from 'PostPlanningPermission' execute method after.");
+                                                    tracingService.Trace("{0}", "Exiting from 'PostTaxiLicence' execute method after.");
                                                 }
                                                 else
                                                 {
                                                     tracingService.Trace("{0}", "'Subject' does not have any record.");
-                                                    throw new InvalidPluginExecutionException("There are no active subject found for the selected planning permission. Please contact system administrator for more details");
+                                                    throw new InvalidPluginExecutionException("There are no active subject found for the selected taxi licence. Please contact system administrator for more details");
                                                 }
                                             }
                                             else
                                             {
                                                 tracingService.Trace("{0}", "'ServiceConfigurations' does not have subject attribute.");
-                                                throw new InvalidPluginExecutionException("Selected planning permission does not have subject configuration. Please contact system administrator for more details");
+                                                throw new InvalidPluginExecutionException("Selected taxi licence does not have subject configuration. Please contact system administrator for more details");
                                             }
                                         }
                                         else
                                         {
                                             tracingService.Trace("{0}", "'ServiceConfigurations' does not have any record.");
-                                            throw new InvalidPluginExecutionException("There are no active service configuration found for the selected planning permission. Please contact system administrator for more details");
+                                            throw new InvalidPluginExecutionException("There are no active service configuration found for the selected taxi licence. Please contact system administrator for more details");
                                         }
                                     }
                                     else
                                         tracingService.Trace("{0}", "'Target' entity does not have service configuration attribute. Leaving plug-in without applying business rules.");
                                 }
                                 else
-                                    tracingService.Trace("{0}", "'Target' entity logical name is not " + ServiceRequestTableColumnNames.PlanningPermissionTableName + ". Leaving plug-in without applying business rules.");
+                                    tracingService.Trace("{0}", "'Target' entity logical name is not " + ServiceRequestTableColumnNames.TaxiLicenceTableName + ". Leaving plug-in without applying business rules.");
                             }
                             else
                                 tracingService.Trace("{0}", "'Target' entity is null. Leaving plug-in without applying business rules.");
@@ -125,13 +125,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (FaultException<OrganizationServiceFault> ex)
             {
-                tracingService.Trace("Fault exception occured executing PostPlanningPermission: {0}.", ex.ToString());
-                throw new InvalidPluginExecutionException("Fault exception occured executing PostPlanningPermission: " + ex.Message + ".");
+                tracingService.Trace("Fault exception occured executing PostTaxiLicence: {0}.", ex.ToString());
+                throw new InvalidPluginExecutionException("Fault exception occured executing PostTaxiLicence: " + ex.Message + ".");
             }
             catch (Exception ex)
             {
-                tracingService.Trace("An exception occured executing PostPlanningPermission: {0}.", ex.ToString());
-                throw new InvalidPluginExecutionException("An exception occured executing PostPlanningPermission: " + ex.Message + ".");
+                tracingService.Trace("An exception occured executing PostTaxiLicence: {0}.", ex.ToString());
+                throw new InvalidPluginExecutionException("An exception occured executing PostTaxiLicence: " + ex.Message + ".");
             }
 
         }
