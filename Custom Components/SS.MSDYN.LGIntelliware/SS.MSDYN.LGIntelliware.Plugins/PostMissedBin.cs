@@ -53,7 +53,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             if (entity != null)
                             {
                                 tracingService.Trace("{0}", "'Target' entity from context input parameter Guid: " + entity.Id + ".");
-                                // Check if entity reference is of type checklist...
+                                // Check if entity reference is of type missed bin...
                                 tracingService.Trace("{0}", "Going to check entity reference logical name.");
                                 if (entity.LogicalName.Equals(ServiceRequestTableColumnNames.MissedBinTableName))
                                 {
