@@ -129,6 +129,15 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     entityToCreate.Attributes.Add(IncidentTableColumnNames.CaseNumber, entity.GetAttributeValue<string>(ServiceRequestTableColumnNames.ReferenceNumber));
                 }
 
+                if (serviceConfiguration.Attributes.ContainsKey(ServiceConfigurationTableColumnNames.Subject) && serviceConfiguration.Attributes[ServiceConfigurationTableColumnNames.Subject] != null)
+                {
+                    if (serviceConfiguration.GetAttributeValue<string>(ServiceConfigurationTableColumnNames.Subject).ToUpper().Equals(ServiceConfigurationSubjects.TAXILICENCE.ToUpper()))
+                    {
+                        tracingService.Trace("Adding 'ServiceRequestStatus' attribute in incident creation.");
+                        entityToCreate.Attributes.Add(IncidentTableColumnNames.ServiceRequestStatus, ServiceRequestStatuses.OPEN);
+                    }
+                }
+
                 if (entity.Attributes.ContainsKey(ServiceRequestTableColumnNames.SourceType) && entity.Attributes[ServiceRequestTableColumnNames.SourceType] != null)
                 {
                     tracingService.Trace("Adding 'SourceType' attribute in incident creation.");
