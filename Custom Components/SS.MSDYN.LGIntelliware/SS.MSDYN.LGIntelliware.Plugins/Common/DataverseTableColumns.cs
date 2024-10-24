@@ -82,6 +82,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Subject = "subjectid";
         public const string CaseNumber = "ticketnumber";
         public const string Origin = "caseorigincode";
+        public const string ServiceRequestStatus = "ss_externalsystemservicerequeststatus";
     }
     #endregion
 
