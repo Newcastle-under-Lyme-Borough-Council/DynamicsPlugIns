@@ -148,7 +148,6 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
 
     showHideTabBasedOnFieldValue: function (executionContext) {
         try {
-            debugger
             let formContext = executionContext.getFormContext();
 
             // Check for the service configuration control
@@ -268,14 +267,12 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
     },
     hideEmptyFieldsOnReviewTab: function (executionContext) {
         try {
-            debugger
-            alert("Hide Show tab");
-            var formContext = executionContext.getFormContext(); // Get the form context
-            var attributes = formContext.data.entity.attributes.get(); // Get all attributes (fields)
+            let formContext = executionContext.getFormContext(); // Get the form context
+            let attributes = formContext.data.entity.attributes.get(); // Get all attributes (fields)
 
             attributes.forEach(function (attribute) {
-                var fieldName = attribute.getName();
-                var control = formContext.getControl(fieldName);
+                let fieldName = attribute.getName();
+                let control = formContext.getControl(fieldName);
 
                 if (control && !attribute.getValue()) { // Check if the field is empty
                     if (control.getControlType() === 'standard' || control.getControlType() === 'boolean') { // Standard input or checkbox
@@ -290,8 +287,8 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
     },
 
     hideEmptyFieldsInTabHCV: function (executionContext, tabName) {
-        var formContext = executionContext.getFormContext();
-        var tab = formContext.ui.tabs.get(tabName);
+        let formContext = executionContext.getFormContext();
+        let tab = formContext.ui.tabs.get(tabName);
 
         if (!tab) return;
 
@@ -302,7 +299,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
 
         // Generic function to update section visibility based on subgrid record count
         const updateSectionVisibility = function (gridControlName, section) {
-            var gridControl = formContext.getControl(gridControlName);
+            let gridControl = formContext.getControl(gridControlName);
             if (gridControl) {
                 gridControl.addOnLoad(function () {
                     const totalRecordCount = gridControl.getGrid().getTotalRecordCount();
@@ -342,11 +339,11 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         const hideEmptyFields = function () {
             tab.sections.forEach(function (section) {
                 section.controls.forEach(function (control) {
-                    var attribute = control.getAttribute();
+                    let attribute = control.getAttribute();
                     if (!attribute) return;
 
-                    var value = attribute.getValue();
-                    var attributeType = attribute.getAttributeType();
+                    let value = attribute.getValue();
+                    let attributeType = attribute.getAttributeType();
 
                     if (["lookup", "boolean"].includes(attributeType)) return;
 
@@ -368,10 +365,9 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
     },
     hideEmptyFieldsInTabDHC: function (executionContext, tabName) {
         try {
-            var formContext = executionContext.getFormContext();
-            var tab = formContext.ui.tabs.get(tabName);
+            let formContext = executionContext.getFormContext();
+            let tab = formContext.ui.tabs.get(tabName);
             if (!tab) return;
-
 
             const hideEmptyFields = function () {
                 tab.sections.forEach(function (section) {
@@ -382,11 +378,11 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
 
                     // Apply the hide logic to other sections
                     section.controls.forEach(function (control) {
-                        var attribute = control.getAttribute();
+                        let attribute = control.getAttribute();
                         if (!attribute) return;
 
-                        var value = attribute.getValue();
-                        var attributeType = attribute.getAttributeType();
+                        let value = attribute.getValue();
+                        let attributeType = attribute.getAttributeType();
 
                         // Exclude 'lookup' and 'boolean' types from the logic
                         if (["lookup", "boolean"].includes(attributeType)) return;
@@ -399,15 +395,14 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
                 });
             };
 
-
             // Function to update visibility of subgrids based on record count
             const hideshowSubgrid = function () {
                 tab.sections.forEach(function (section) {
                     section.controls.forEach(function (control) {
                         if (control.getControlType() === "subgrid") {
-                            var subgridControl = control;
+                            let subgridControl = control;
                             subgridControl.addOnLoad(function () {
-                                var recordCount = subgridControl.getGrid().getTotalRecordCount();
+                                let recordCount = subgridControl.getGrid().getTotalRecordCount();
                                 // Hide subgrid if there are no records, show otherwise
                                 subgridControl.setVisible(recordCount > 0);
                                 console.log(`Subgrid visibility updated for ${subgridControl.getName()}: ${recordCount} records found.`);
@@ -430,14 +425,9 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
                     hideshowSubgrid();
                 }
             });
-
-
         }
         catch (e) {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
     }
-
-
-
 }
