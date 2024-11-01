@@ -560,7 +560,31 @@ input {
   box-shadow: unset !important;
 }
 .btn-loader {
-  width: 25px;
-  height: 25px;
+  width: 25px !important;
+  height: 25px !important;
   margin: 0 6px 0 0;
+}
+.generic-modal .modal-title {
+  font-size: 20px;
+  font-weight: 500;
+}
+.generic-modal .modal-header {
+  padding: 10px 10px;
+  border: none;
+}
+.generic-modal .btn-close {
+  background-size: 13px;
+}
+.generic-modal .modal-footer {
+  border: none;
+}
+.generic-modal .modal-body {
+  padding-top: 0;
+  font-size: 16px;
+}
+.generic-modal .btn-primary {
+  min-width: 100px !important;
+}
+.generic-modal .modal-title span {
+  margin-top: -1px;
 }

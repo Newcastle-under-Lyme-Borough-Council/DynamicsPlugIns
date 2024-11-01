@@ -56,6 +56,10 @@ const Step3 = (props: any) => {
       customerAddress1_postalcode: customer.address1_postalcode,
       customerEmailaddress1: customer.emailaddress1,
       customerMobilephone: customer.mobilephone,
+      ss_notificationid: "",
+      ss_notification_title: "",
+      incidentid: "",
+      title: "",
     });
   };
 

@@ -7,6 +7,8 @@ import { FaHome, FaChevronRight } from "react-icons/fa";
 import { v4 as uuidv3 } from "uuid";
 import { useServiceStore } from "../store";
 import { toast } from "react-toastify";
+import { GenericModal } from "./GenericModal";
+import { MdCancel } from "react-icons/md";
 
 //Find Reporting Customer
 const Step4 = (props: any) => {
@@ -14,6 +16,9 @@ const Step4 = (props: any) => {
   // const [toastId, setToastId]: any = useState(null);
   const customId = "1";
   const [customers, setCustomers]: any = useState([]);
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [submitErrorText, setSubmitErrorText]: any = useState("");
+
   // const [searchValue, setSearchValue]: any = useState("");
   const [searchValue, setSearchValue] = useState<string>("");
   const [selectedCustomer, setSelectedCustomer]: any = useState({
@@ -48,37 +53,10 @@ const Step4 = (props: any) => {
           }
         );
     } else {
-      toast.error(
-        "Please select resident is reporting on behalf of someone option.",
-        {
-          toastId: customId,
-          autoClose: 3000,
-        }
+      setSubmitErrorText(
+        "Please select resident is reporting on behalf of someone option."
       );
-      // if (toastId !== null) {
-      //   toast.update(toastId, {
-      //     render:
-      //       "Please select resident is reporting on behalf of someone option.",
-      //     type: toast.TYPE.ERROR,
-      //     autoClose: 3000,
-      //     onClose: () => setToastId(null), // Reset the toastId when the toast closes
-      //   });
-      // } else {
-      //   const id = uuidv3();
-      //   toast.error(
-      //     "Please select resident is reporting on behalf of someone option.",
-      //     {
-      //       position: "top-right",
-      //       autoClose: 3000,
-      //       hideProgressBar: false,
-      //       closeOnClick: true,
-      //       onClose: () => setToastId(null), // Reset the toastId when the toast closes
-      //       progress: undefined,
-      //       theme: "light",
-      //     }
-      //   );
-      //   setToastId(id); // Cast the ID to string
-      // }
+      setShowModal(true);
     }
   };
 
@@ -154,6 +132,13 @@ const Step4 = (props: any) => {
 
   return (
     <div>
+      <GenericModal
+        Icon={<MdCancel fill="#e21b1c" size={25} />}
+        heading="Error"
+        error={submitErrorText}
+        showModal={showModal}
+        setShowModal={setShowModal}
+      />
       <div className="breadcrumb mb-4">
         <span className="breadcrumb-text">
           {serviceDetails.customerFullName}

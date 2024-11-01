@@ -88,7 +88,11 @@ const Step6 = (props: any) => {
           </>
         )}
       </div>
-      <h2 className="h5">Submit Enquiry / Service Request</h2>
+      <h2 className="h5">
+        {serviceDetails.ss_allowservicerequest
+          ? "Submit Enquiry / Service Request"
+          : "Submit Enquiry"}
+      </h2>
       <div className="row mt-4">
         <div className="col-md-12">
           <div className="bg-white p-5 box-shadow rounded-2">

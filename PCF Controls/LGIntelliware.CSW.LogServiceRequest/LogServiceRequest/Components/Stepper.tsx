@@ -6,12 +6,13 @@ import Step3 from "./Step3";
 import Step4 from "./Step4";
 import Step5 from "./Step5";
 import Step6 from "./Step6";
-
+import { MdCancel } from "react-icons/md";
 import { useServiceStore } from "../store";
 import { FaCircleCheck } from "react-icons/fa6";
 
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { GenericModal } from "./GenericModal";
 
 const steps = [
   "Find a Resident",
@@ -30,17 +31,18 @@ function CustomStepper(props: any) {
   const [loading, setLoading]: any = useState(false);
   const [btnLoading, setBtnLoading]: any = useState(false);
   const [recall, setRecall]: any = useState(false);
+  const [showModal, setShowModal] = useState<boolean>(false);
   // const [conditionSuccess, setConditionSuccess]: any = useState(false);
   const [newRecord, setNewRecord]: any = useState("");
   const [createServiceId, setCreateServiceId]: any = useState("");
   const [navigateUrl, setNavigateUrl]: any = useState("");
   const [UpdatedNavigateUrl, setUpdatedNavigateUrl]: any = useState("");
   const [showMessage, setShowMessage]: any = useState("");
+  const [submitErrorText, setSubmitErrorText]: any = useState("");
   const [show, setShow]: any = useState(false);
   const customId = "1";
 
   const { set, serviceDetails } = useServiceStore();
-
   useEffect(() => {
     if (createServiceId && navigateUrl) {
       const UpdatedUrl = navigateUrl
@@ -75,6 +77,7 @@ function CustomStepper(props: any) {
       customerEmailaddress1: "",
       customerMobilephone: "",
       ss_reportingonbehalfofsomeone: false,
+      ss_allowservicerequest: true,
       knowledgeBase: false,
       reportedByUserFirstName: "",
       reportedByUserLastName: "",
@@ -216,6 +219,7 @@ function CustomStepper(props: any) {
 
   const handleNext = () => {
     let errorText = "";
+    console.log(errorText, "errorText");
 
     if (activeStep === 2) {
       if (serviceDetails.ss_serviceconfigurationid === "") {
@@ -239,6 +243,13 @@ function CustomStepper(props: any) {
         serviceDetails.ss_notificationid
       ) {
         setShowMessage("An enquiry");
+      } else if (
+        !serviceDetails.incidentid &&
+        !serviceDetails.knowledgeBase &&
+        !serviceDetails.ss_notificationid &&
+        !serviceDetails.ss_allowservicerequest
+      ) {
+        errorText = `Service request creation is not allowed for ${serviceDetails.ss_service_name}, only enquiries can be created.`;
       } else {
         setShowMessage("A service request");
       }
@@ -267,10 +278,8 @@ function CustomStepper(props: any) {
     }
 
     if (errorText !== "") {
-      toast.error(errorText, {
-        toastId: customId,
-        autoClose: 3000,
-      });
+      setSubmitErrorText(errorText);
+      setShowModal(true);
     } else {
       setActiveStep(activeStep + 1);
     }
@@ -281,8 +290,9 @@ function CustomStepper(props: any) {
   };
 
   const submitService = () => {
+    let submitError;
     setBtnLoading(true);
-    let submitErrorText = "";
+
     let selectFields = ["ss_referencenumber"];
     let filters = [
       `_ss_customer_value eq '${serviceDetails?.customerId}'`,
@@ -330,11 +340,11 @@ function CustomStepper(props: any) {
             serviceDetails.incidentid === "" &&
             !serviceDetails.knowledgeBase
           ) {
-            submitErrorText = "Please provide application reference number.";
-            showSubmitError(submitErrorText);
+            submitError = "Please provide application reference number.";
+            submitErrorFunc(submitError);
           } else if (activeStep === 5 && serviceDetails.ss_description === "") {
-            submitErrorText = "Please provide description.";
-            showSubmitError(submitErrorText);
+            submitError = "Please provide description.";
+            submitErrorFunc(submitError);
           }
 
           // if (activeStep === 5) {
@@ -342,13 +352,13 @@ function CustomStepper(props: any) {
           //     serviceDetails.ss_servicelogicalname === "ss_planningpermission"
           //   ) {
           //     if (serviceDetails.ss_applicationreferencenumber === "") {
-          //       submitErrorText = "Please provide application reference number";
-          //       showSubmitError(submitErrorText);
+          //       submitError = "Please provide application reference number";
+          //       showSubmitError(submitError);
           //     }
           //   }
           //   if (serviceDetails.ss_description === "") {
-          //     submitErrorText = "Please provide description.";
-          //     showSubmitError(submitErrorText);
+          //     submitError = "Please provide description.";
+          //     showSubmitError(submitError);
           //   }
           // }
           else if (
@@ -359,14 +369,14 @@ function CustomStepper(props: any) {
             !serviceDetails.knowledgeBase &&
             serviceDetails.ss_description !== ""
           ) {
-            submitErrorText = `A service request for ${
+            submitError = `A service request for ${
               serviceDetails.ss_applicationreferencenumber
                 ? `Application Reference Number: ${results?.entities[0]?.ss_applicationreferencenumber}`
                 : `${serviceDetails.ss_service_name}`
             } has already been reported. Reference Number is ${
               results?.entities[0]?.ss_referencenumber
             }`;
-            showSubmitError(submitErrorText);
+            submitErrorFunc(submitError);
           } else {
             var record: any = {};
             record[
@@ -446,20 +456,25 @@ function CustomStepper(props: any) {
       );
   };
 
-  const showSubmitError = (submitErrorText: string) => {
+  const submitErrorFunc = (submitError: string) => {
     setBtnLoading(false);
-    if (submitErrorText !== "") {
-      toast.error(submitErrorText, {
-        toastId: customId,
-        autoClose: 3000,
-      });
+    if (submitError !== "") {
+      setSubmitErrorText(submitError);
+      setShowModal(true);
     }
   };
 
   return (
     <>
       <div className="px-3 border-0 h-100">
-        <ToastContainer />
+        {/* <ToastContainer /> */}
+        <GenericModal
+          Icon={<MdCancel fill="#e21b1c" size={25} />}
+          heading="Error"
+          error={submitErrorText}
+          showModal={showModal}
+          setShowModal={setShowModal}
+        />
         <div className="main-stepper-box">
           <div className="custom-stepper pt-5 position-relative z-0">
             <div className="row w-100 mx-auto circle-stepper box-shadow pt-3 pb-5 justify-content-center rounded-2 bg-white">
