@@ -3,6 +3,7 @@ import create from "zustand";
 const emptyService: any = {
   ss_service_name: "",
   ss_serviceconfigurationid: "",
+  ss_allowservicerequest: true,
   ss_servicelogicalname: "",
   ss_serviceprimarykeycolumnname: "",
   ss_description: "",

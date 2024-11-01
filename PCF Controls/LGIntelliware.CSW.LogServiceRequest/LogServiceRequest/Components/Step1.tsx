@@ -16,11 +16,12 @@ const Step1 = (props: any) => {
     ss_serviceprimarykeycolumnname:
       serviceDetails.ss_serviceprimarykeycolumnname,
     ss_serviceconfigurationid: serviceDetails.ss_serviceconfigurationid,
+    ss_allowservicerequest: serviceDetails.ss_allowservicerequest,
   });
 
   useEffect(() => {
     // let query = `?$select=ss_serviceconfigurationid,ss_name,ss_totalassociatedcases,ss_servicelogicalname&$filter=(statecode eq 0 and statuscode eq 1)&$orderby=ss_name asc`;
-    let query = `?$select=ss_serviceconfigurationid,ss_name,ss_servicelogicalname,ss_serviceprimarykeycolumnname,ss_totalassociatedcases&$filter=(statecode eq 0 and statuscode eq 1)&$orderby=ss_name asc`;
+    let query = `?$select=ss_serviceconfigurationid,ss_name,ss_servicelogicalname,ss_serviceprimarykeycolumnname,ss_allowservicerequest,ss_totalassociatedcases&$filter=(statecode eq 0 and statuscode eq 1)&$orderby=ss_name asc`;
     props.props.EContext.webAPI
       .retrieveMultipleRecords("ss_serviceconfiguration", query)
       .then(
@@ -37,7 +38,7 @@ const Step1 = (props: any) => {
 
   const getService = (e: any) => {
     let serviceName = e.target.value;
-    let query = `?$select=ss_serviceconfigurationid,ss_name,ss_totalassociatedcases,ss_servicelogicalname,ss_serviceprimarykeycolumnname&$filter=(contains(ss_name,'${serviceName}') and statecode eq 0 and statuscode eq 1)&$orderby=ss_name asc`;
+    let query = `?$select=ss_serviceconfigurationid,ss_allowservicerequest,ss_name,ss_totalassociatedcases,ss_servicelogicalname,ss_serviceprimarykeycolumnname&$filter=(contains(ss_name,'${serviceName}') and statecode eq 0 and statuscode eq 1)&$orderby=ss_name asc`;
     props.props.EContext.webAPI
       .retrieveMultipleRecords("ss_serviceconfiguration", query)
       .then(
@@ -58,6 +59,11 @@ const Step1 = (props: any) => {
       ss_serviceprimarykeycolumnname:
         serviceConfiguration.ss_serviceprimarykeycolumnname,
       ss_serviceconfigurationid: serviceConfiguration.ss_serviceconfigurationid,
+      ss_allowservicerequest: serviceConfiguration.ss_allowservicerequest,
+      ss_notificationid: "",
+      ss_notification_title: "",
+      incidentid: "",
+      title: "",
     });
   };
 
