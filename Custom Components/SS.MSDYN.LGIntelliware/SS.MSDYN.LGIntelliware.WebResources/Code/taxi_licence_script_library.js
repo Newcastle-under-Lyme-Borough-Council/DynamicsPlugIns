@@ -101,6 +101,50 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
     },
+    dvlaGetDriverDataButtonForm: function (primaryControl) {
+        try {
+            let formContext = primaryControl;
+            let confirmStrings = { text: "Do you want to Get Driver Data from DVLA? You can't undo this action.", title: "Confirm Get Driver Data from DVLA" };
+            let confirmOptions = { height: 200, width: 450 };
+            Xrm.Navigation.openConfirmDialog(confirmStrings, confirmOptions).then(
+                function (success) {
+                    if (success.confirmed) {
+                        SS.MSDYN.LGIntelliware.WR.Common.showProgressIndicator();
+
+                        let entityId = formContext.data.entity.getId().replace("{", "").replace("}", "");
+                        let execute_ss_DVLAGetDriverData_Request = {
+                            // Parameters
+                            entity: { entityType: "ss_taxilicence", id: entityId }, // entity
+
+                            getMetadata: function () {
+                                return {
+                                    boundParameter: "entity",
+                                    parameterTypes: {
+                                        entity: { typeName: "mscrm.ss_taxilicence", structuralProperty: 5 }
+                                    },
+                                    operationType: 0, operationName: "ss_DVLAGetDriverData"
+                                };
+                            }
+                        };
+
+                        Xrm.WebApi.execute(execute_ss_DVLAGetDriverData_Request).then(
+                            function success(response) {
+                                if (response.ok) {
+                                    SS.MSDYN.LGIntelliware.WR.Common.hideProgressIndicator();
+                                }
+                            }
+                        ).catch(function (e) {
+                            SS.MSDYN.LGIntelliware.WR.Common.hideProgressIndicator();
+                            SS.MSDYN.LGIntelliware.WR.Common.showError(e.message, false);
+                        });
+                    }
+                }
+            );
+        }
+        catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
     dbsCheckStatusButtonForm: function (primaryControl) {
         try {
             let formContext = primaryControl;
@@ -308,7 +352,6 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
                     } else if (section === companyDetailsSection) {
                         gridControl.setVisible(totalRecordCount > 0)
                     }
-                    console.log(`Section visibility for ${section.getName()} updated: ${totalRecordCount} records found.`);
                 });
             }
         };
@@ -357,7 +400,6 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
         tab.addTabStateChange(function () {
             if (tab.getDisplayState() === "expanded") {
-                console.log(`Tab ${tabName} is expanded, applying visibility logic.`);
                 handleSectionVisibility();
                 hideEmptyFields();
             }
@@ -405,8 +447,6 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
                                 let recordCount = subgridControl.getGrid().getTotalRecordCount();
                                 // Hide subgrid if there are no records, show otherwise
                                 subgridControl.setVisible(recordCount > 0);
-                                console.log(`Subgrid visibility updated for ${subgridControl.getName()}: ${recordCount} records found.`);
-
                                 subgridControl.setDisabled(true)
 
                             });
@@ -418,8 +458,6 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
             // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
             tab.addTabStateChange(function () {
                 if (tab.getDisplayState() === "expanded") {
-                    console.log(`Tab ${tabName} is expanded, applying visibility logic.`);
-
                     // Call hideEmptyFields when tab is expanded
                     hideEmptyFields();
                     hideshowSubgrid();
@@ -431,3 +469,4 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         }
     }
 }
+
