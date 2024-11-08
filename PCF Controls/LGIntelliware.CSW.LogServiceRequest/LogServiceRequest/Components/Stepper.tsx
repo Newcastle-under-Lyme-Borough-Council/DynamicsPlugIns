@@ -249,7 +249,12 @@ function CustomStepper(props: any) {
         !serviceDetails.ss_notificationid &&
         !serviceDetails.ss_allowservicerequest
       ) {
-        errorText = `Service request creation is not allowed for ${serviceDetails.ss_service_name}, only enquiries can be created.`;
+        setShowMessage("An enquiry");
+        set({
+          ...serviceDetails,
+          knowledgeBase: true,
+        });
+        // errorText = `Service request creation is not allowed for ${serviceDetails.ss_service_name}, only enquiries can be created.`;
       } else {
         setShowMessage("A service request");
       }
