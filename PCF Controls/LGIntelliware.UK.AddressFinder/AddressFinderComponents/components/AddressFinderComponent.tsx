@@ -26,7 +26,10 @@ const AddressFinderComponent: React.FC<IMyReactComponentProps> = (
   const [addressList, setAddressList] = React.useState<Address[]>([]);
   const ApiKey = props?.componentContext?.parameters?.apiKey?.raw || "";
   const ApiUrl = props?.componentContext?.parameters?.apiUrl?.raw || "";
-  console.log(addressList, "addressList");
+  // const PostCodeArray =
+  //   props?.componentContext?.parameters?.postCodeArray?.raw !== "val"
+  //     ? props?.componentContext?.parameters?.postCodeArray?.raw
+  //     : "";
   proj4.defs(
     "EPSG:27700",
     "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +datum=OSGB36 +units=m +no_defs"
@@ -37,13 +40,50 @@ const AddressFinderComponent: React.FC<IMyReactComponentProps> = (
 
   const { address, set, clear } = useAddressStore();
   const [isOpen, setIsOpen] = React.useState(false);
+  const [postCode, setPostCode] = React.useState<string[]>([]);
 
   const inputRef = React.useRef(null);
 
   React.useEffect(() => {
+    fetchLookUpAddressPostCode();
     document.addEventListener("click", toggle);
     return () => document.removeEventListener("click", toggle);
   }, []);
+
+  // const fetchLookUpAddressPostCode = async () => {
+  //   const query =
+  //     "?$select=ss_value&$filter=(ss_name eq 'ADDRESS_LOOKUP_ALLOWED_POST_CODES')";
+  //   try {
+  //     const response = await fetch(
+  //       `/_api/ss_applicationconfigurations${query}`,
+  //       {
+  //         method: "GET",
+  //         mode: "cors",
+  //       }
+  //     );
+  //     if (!response.ok) throw new Error("Network response was not ok");
+  //     const data = await response.json();
+  //   } catch (error) {
+  //     console.error("Error fetching Lookup Url:", error);
+  //   }
+  // };
+
+  const fetchLookUpAddressPostCode = async () => {
+    try {
+      const result = await axios.get(
+        `/api/data/v9.2/ss_applicationconfigurations?$select=ss_value&$filter=(ss_name eq 'ADDRESS_LOOKUP_ALLOWED_POST_CODES')`
+      );
+
+      const postCodeString = result?.data?.value[0].ss_value;
+      const postCodeArray = postCodeString
+        .split(",")
+        .map((prefix: any) => prefix.trim());
+      setPostCode(postCodeArray);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
   const setProperties = (option: any) => {
     let pao_start_number =
       option.LPI.PAO_START_NUMBER == undefined
@@ -113,7 +153,6 @@ const AddressFinderComponent: React.FC<IMyReactComponentProps> = (
         option.LPI.X_COORDINATE,
         option.LPI.Y_COORDINATE,
       ]);
-      console.log(convertedCoordinates, "convertedCoordinates");
 
       set({
         organization:
@@ -168,30 +207,73 @@ const AddressFinderComponent: React.FC<IMyReactComponentProps> = (
     );
   };
 
+  // const handleChange = async (value: string, page: number) => {
+  //   setLoading(true);
+  //   const SpecificPostCode = ["TF9 2AH", "NW"]
+  //   const allowedPostcodePrefixes = JSON.parse(SpecificPostCode);
+  //   try {
+  //     if (value == "") {
+  //       setSelectedVal("");
+  //       setAddressList([]);
+  //       return;
+  //     }
+
+  //     const result = await axios.get(
+  //       `https://api.os.uk/search/places/v1/postcode?postcode=${value}&key=4ZqAIx6MIR0VWVu7eDXv9Gz2OxsA084v&dataset=LPI&offset=${page}`
+  //       // `${ApiUrl}?postcode=${value}&key=${ApiKey}&dataset=LPI&offset=${page}`
+  //     );
+
+  //     const filteredResults = (result?.data?.results || []).filter((address) =>
+  //       allowedPostcodePrefixes.some((prefix) =>
+  //           address?.LPI?.POSTCODE_LOCATOR?.toUpperCase().startsWith(prefix.toUpperCase())
+  //       )
+
+  //     // setAddressList(addressList.concat(result?.data?.results || []));
+  //     setAddressList((prevState) => [
+  //       ...prevState,
+  //       ...(result?.data?.results || []),
+  //     ]);
+  //     console.log(result?.data.header?.totalresults, "result?.data?");
+  //     setTotalRecord(result?.data.header?.totalresults);
+  //     setLoading(false);
+  //   } catch (error) {
+  //     /* empty */
+  //     setLoading(false);
+  //   }
+  // };
   const handleChange = async (value: string, page: number) => {
     setLoading(true);
-    try {
-      if (value == "") {
-        setSelectedVal("");
-        setAddressList([]);
-        return;
-      }
 
+    if (value === "") {
+      setSelectedVal("");
+      setAddressList([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
       const result = await axios.get(
         `https://api.os.uk/search/places/v1/postcode?postcode=${value}&key=4ZqAIx6MIR0VWVu7eDXv9Gz2OxsA084v&dataset=LPI&offset=${page}`
-        // `${ApiUrl}?postcode=${value}&key=${ApiKey}&dataset=LPI&offset=${page}`
       );
 
-      // setAddressList(addressList.concat(result?.data?.results || []));
-      setAddressList((prevState) => [
-        ...prevState,
-        ...(result?.data?.results || []),
-      ]);
-      console.log(result?.data.header?.totalresults, "result?.data?");
-      setTotalRecord(result?.data.header?.totalresults);
-      setLoading(false);
+      const filteredResults = (result?.data?.results || []).filter(
+        (address: any) =>
+          postCode.length === 0 || // If no specific prefixes, allow all results
+          postCode.some((prefix) =>
+            address?.LPI?.POSTCODE_LOCATOR?.toUpperCase().startsWith(
+              prefix.toUpperCase()
+            )
+          )
+      );
+
+      setAddressList((prevState) =>
+        page === 0 ? filteredResults : [...prevState, ...filteredResults]
+      );
+
+      setTotalRecord(result?.data?.header?.totalresults || 0);
     } catch (error) {
-      /* empty */
+      console.error("Error fetching data:", error);
+    } finally {
       setLoading(false);
     }
   };
@@ -234,7 +316,7 @@ const AddressFinderComponent: React.FC<IMyReactComponentProps> = (
         onScroll={handleScroll}
         className={`options ${isOpen ? "open" : ""}`}
       >
-        {addressList.length > 0 && (
+        {addressList.length > 0 ? (
           <div className="dropdown-content">
             {addressList.map((option: any, ind: any) => (
               <a
@@ -247,6 +329,14 @@ const AddressFinderComponent: React.FC<IMyReactComponentProps> = (
             ))}
             {loading && <>Loading....</>}
           </div>
+        ) : (
+          <a
+            style={{ display: "block", padding: "10px" }}
+            // key={ind}
+            // onClick={() => selectOption(option)}
+          >
+            I cannot find my property
+          </a>
         )}
       </div>
     </div>
