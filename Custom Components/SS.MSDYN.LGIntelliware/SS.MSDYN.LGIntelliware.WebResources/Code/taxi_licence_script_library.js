@@ -101,6 +101,50 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
     },
+    dvlaGetDriverDataButtonForm: function (primaryControl) {
+        try {
+            let formContext = primaryControl;
+            let confirmStrings = { text: "Do you want to Get Driver Data from DVLA? You can't undo this action.", title: "Confirm Get Driver Data from DVLA" };
+            let confirmOptions = { height: 200, width: 450 };
+            Xrm.Navigation.openConfirmDialog(confirmStrings, confirmOptions).then(
+                function (success) {
+                    if (success.confirmed) {
+                        SS.MSDYN.LGIntelliware.WR.Common.showProgressIndicator();
+
+                        let entityId = formContext.data.entity.getId().replace("{", "").replace("}", "");
+                        let execute_ss_DVLAGetDriverData_Request = {
+                            // Parameters
+                            entity: { entityType: "ss_taxilicence", id: entityId }, // entity
+
+                            getMetadata: function () {
+                                return {
+                                    boundParameter: "entity",
+                                    parameterTypes: {
+                                        entity: { typeName: "mscrm.ss_taxilicence", structuralProperty: 5 }
+                                    },
+                                    operationType: 0, operationName: "ss_DVLAGetDriverData"
+                                };
+                            }
+                        };
+
+                        Xrm.WebApi.execute(execute_ss_DVLAGetDriverData_Request).then(
+                            function success(response) {
+                                if (response.ok) {
+                                    SS.MSDYN.LGIntelliware.WR.Common.hideProgressIndicator();
+                                }
+                            }
+                        ).catch(function (e) {
+                            SS.MSDYN.LGIntelliware.WR.Common.hideProgressIndicator();
+                            SS.MSDYN.LGIntelliware.WR.Common.showError(e.message, false);
+                        });
+                    }
+                }
+            );
+        }
+        catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
     dbsCheckStatusButtonForm: function (primaryControl) {
         try {
             let formContext = primaryControl;
@@ -164,7 +208,12 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
                     } else if (serviceConfigurationName === "taxi licence - hackney carriage vehicle" || serviceConfigurationName === "taxi licence - private hire vehicle") {
                         SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, "tab_detail_sec_hackney_carriage_and_private_hire", true);
                         SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsInTabHCV(executionContext, "tab_detail_sec_hackney_carriage_and_private_hire");
-                    } else if (serviceConfigurationName === "taxi licence - notification of convictions and offences") {
+                    }else if (serviceConfigurationName === "taxi licence - private hire operator") {
+                        SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, "tab_detail_sec_private_hire_operator", true);
+                        SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsInTabPHO(executionContext, "tab_detail_sec_private_hire_operator");
+                    }
+                    
+                    else if (serviceConfigurationName === "taxi licence - notification of convictions and offences") {
                         SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, "Notification_of_convictions_details", true);
 
                         // Get radio button field
@@ -308,7 +357,6 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
                     } else if (section === companyDetailsSection) {
                         gridControl.setVisible(totalRecordCount > 0)
                     }
-                    console.log(`Section visibility for ${section.getName()} updated: ${totalRecordCount} records found.`);
                 });
             }
         };
@@ -357,7 +405,6 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
         tab.addTabStateChange(function () {
             if (tab.getDisplayState() === "expanded") {
-                console.log(`Tab ${tabName} is expanded, applying visibility logic.`);
                 handleSectionVisibility();
                 hideEmptyFields();
             }
@@ -405,8 +452,6 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
                                 let recordCount = subgridControl.getGrid().getTotalRecordCount();
                                 // Hide subgrid if there are no records, show otherwise
                                 subgridControl.setVisible(recordCount > 0);
-                                console.log(`Subgrid visibility updated for ${subgridControl.getName()}: ${recordCount} records found.`);
-
                                 subgridControl.setDisabled(true)
 
                             });
@@ -418,8 +463,6 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
             // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
             tab.addTabStateChange(function () {
                 if (tab.getDisplayState() === "expanded") {
-                    console.log(`Tab ${tabName} is expanded, applying visibility logic.`);
-
                     // Call hideEmptyFields when tab is expanded
                     hideEmptyFields();
                     hideshowSubgrid();
@@ -429,5 +472,85 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         catch (e) {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
+    },
+    hideEmptyFieldsInTabPHO: function (executionContext, tabName) {
+        let formContext = executionContext.getFormContext();
+        let tab = formContext.ui.tabs.get(tabName);
+    
+        if (!tab) return;
+    
+        const areYouApplyingAs = formContext.getAttribute("ss_additionalquestionsareyouapplyingas").getValue();
+        const companyDetails = tab.sections.get("tab_details_sec_company_details");
+        const detailsJointApplicants = tab.sections.get("tab_detail_sec_details_of_join_applicants");
+        const individualApplicants = tab.sections.get("tab_detail_section_individual_applicant_details");
+        const evidenceRightToWork = tab.sections.get("tab_detail_sec_evidence_of_right_to_Work_in_the_uk");
+        const evidenceRightToWorkJointOwner = tab.sections.get("tab_detail_sec_evidence_of_right_to_work_in_the_uk_joint");
+    
+         // Function to update visibility of subgrids based on record count
+         const hideshowSubgrid = function () {
+            tab.sections.forEach(function (section) {
+                section.controls.forEach(function (control) {
+                    if (control.getControlType() === "subgrid") {
+                        let subgridControl = control;
+                        subgridControl.addOnLoad(function () {
+                            let recordCount = subgridControl.getGrid().getTotalRecordCount();
+                            // Hide subgrid if there are no records, show otherwise
+                            subgridControl.setVisible(recordCount > 0);
+                            subgridControl.setDisabled(true)
+
+                        });
+                    }
+                });
+            });
+        };
+
+        const handleShowSectionVisibility = function () {
+            switch (areYouApplyingAs) {
+                case 1:
+                    if (companyDetails) companyDetails.setVisible(false);
+                    if (detailsJointApplicants) detailsJointApplicants.setVisible(false);
+                    if (evidenceRightToWorkJointOwner) evidenceRightToWorkJointOwner.setVisible(false);
+                    break;
+                case 2:
+                    if (companyDetails) companyDetails.setVisible(false);
+                    if (individualApplicants) individualApplicants.setVisible(false);
+                    if (evidenceRightToWork) evidenceRightToWork.setVisible(false);
+                    break;
+                case 3:
+                    if (detailsJointApplicants) detailsJointApplicants.setVisible(false);
+                    if (evidenceRightToWorkJointOwner) evidenceRightToWorkJointOwner  .setVisible(false);
+                    if (evidenceRightToWork) evidenceRightToWork.setVisible(false);
+                    break;
+               
+            }
+        };
+    
+        const hideEmptyFields = function () {
+            tab.sections.forEach(function (section) {
+                section.controls.forEach(function (control) {
+                    let attribute = control.getAttribute();
+                    if (!attribute) return;
+    
+                    let value = attribute.getValue();
+                    let attributeType = attribute.getAttributeType();
+    
+                    if (["lookup", "boolean"].includes(attributeType)) return;
+    
+                    control.setVisible(
+                        attributeType === "optionset" ? value !== null : value !== null && value !== undefined && value !== ""
+                    );
+                });
+            });
+        };
+    
+        // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
+        tab.addTabStateChange(function () {
+            if (tab.getDisplayState() === "expanded") {
+                hideshowSubgrid();
+                hideEmptyFields();
+                handleShowSectionVisibility();
+            }
+        });
     }
+    
 }
