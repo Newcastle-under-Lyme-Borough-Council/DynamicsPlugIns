@@ -162,8 +162,8 @@ namespace SS.MSDYN.LGIntelliware.Actions
     <scpbase:requestType>payOnly</scpbase:requestType>
     <scpbase:requestId>" + requestID + @"</scpbase:requestId>
     <scpbase:routing>
-        <scpbase:returnUrl><![CDATA[" + portalURL + @"/PaymentSuccess?id=" + PaymentTransactionID + @"]]></scpbase:returnUrl>
-        <scpbase:backUrl><![CDATA[" + portalURL + @"/PaymentFailure?id=" + PaymentTransactionID + @"]]></scpbase:backUrl>
+        <scpbase:returnUrl><![CDATA[" + portalURL + @"/PaymentSuccess?Id=" + PaymentTransactionID + @"]]></scpbase:returnUrl>
+        <scpbase:backUrl><![CDATA[" + portalURL + @"/PaymentFailure?Id=" + PaymentTransactionID + @"]]></scpbase:backUrl>
         <scpbase:siteId>" + pay360SiteID + @"</scpbase:siteId>
         <scpbase:scpId>" + pay360SCPID + @"</scpbase:scpId>
     </scpbase:routing>
