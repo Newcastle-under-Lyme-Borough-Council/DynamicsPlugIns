@@ -881,4 +881,60 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       }
     });
   },
+
+   getBPFIdByName: function(bpfName, callback) {
+    try {
+        let query = `?$select=workflowid&$filter=uniquename eq '${bpfName}'  and statecode eq 1`;
+        Xrm.WebApi.retrieveMultipleRecords("workflow", query).then(
+            function success(results) {
+                if (results.entities.length > 0) {
+                    let workflowId = results.entities[0].workflowid;
+                    callback(workflowId);
+                } else {
+                    callback(null);
+                }
+            },
+            function (error) {
+                callback(null);
+            }
+        );
+    }
+    catch (e) {
+        SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+},
+ serviceBasedBPF: function(executionContext) {
+    try {
+        let formContext = executionContext.getFormContext();
+        if (formContext.getControl("header_ss_serviceconfiguration")) {
+            let serviceConfigurationLookup = formContext.getControl("header_ss_serviceconfiguration").getAttribute();
+            let lookupValue = serviceConfigurationLookup.getValue();
+            if (lookupValue && lookupValue.length > 0 && lookupValue[0].name) {
+                let serviceConfigurationName = lookupValue[0].name.toLowerCase();
+
+                const bpfMapping = {
+                    "taxi licence - dual hackney carriage and private hire": "ss_bpf_dualhackneycarriagevehicle",
+                    "taxi licence - private hire operator": "ss_bpf_privatehireoperatorvehicle",
+                    "taxi licence - notification of convictions and offences": "ss_bpf_notificationofconvictionsandoffencesvehicle",
+                    "taxi licence - hackney carriage vehicle": "ss_bpf_hackneycarriagevehicle",
+                    "taxi licence - private hire vehicle": "ss_bpf_privatehirevehicle"
+                };
+
+                let bpfName = bpfMapping[serviceConfigurationName] || "ss_bpf_hackneycarriagevehicle";
+
+                SS.MSDYN.LGIntelliware.WR.TaxiLicence.getBPFIdByName(bpfName, function (bpfId) {
+                    if (bpfId) {
+                        formContext.data.process.setActiveProcess(bpfId, function (status) {
+                        });
+                    }
+                });
+            }
+        }
+    }
+    catch (e) {
+        SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+}
+
+  
 };
