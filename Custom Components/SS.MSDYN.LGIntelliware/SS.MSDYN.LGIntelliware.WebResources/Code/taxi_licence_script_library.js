@@ -18,6 +18,9 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideTabBasedOnFieldValue(
         executionContext
       );
+      SS.MSDYN.LGIntelliware.WR.TaxiLicence.serviceBasedBPF(executionContext);
+      SS.MSDYN.LGIntelliware.WR.TaxiLicence.registerAddOnStageChangeEvent(executionContext);
+      SS.MSDYN.LGIntelliware.WR.TaxiLicence.disableBpfFields(executionContext);
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
@@ -289,7 +292,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
 
         if (
           serviceConfigurationName ===
-            "taxi licence - hackney carriage vehicle" ||
+          "taxi licence - hackney carriage vehicle" ||
           serviceConfigurationName === "taxi licence - private hire vehicle"
         ) {
           return false;
@@ -326,7 +329,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
 
         if (
           serviceConfigurationName ===
-            "taxi licence - notification of convictions and offences" &&
+          "taxi licence - notification of convictions and offences" &&
           selectedValue === 1
         ) {
           return false;
@@ -387,7 +390,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
             //SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsOnReviewTab(executionContext);
           } else if (
             serviceConfigurationName ===
-              "taxi licence - hackney carriage vehicle" ||
+            "taxi licence - hackney carriage vehicle" ||
             serviceConfigurationName === "taxi licence - private hire vehicle"
           ) {
             SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
@@ -881,60 +884,185 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       }
     });
   },
-
-   getBPFIdByName: function(bpfName, callback) {
+  getBPFIdByName: function (bpfName, callback) {
     try {
-        let query = `?$select=workflowid&$filter=uniquename eq '${bpfName}'  and statecode eq 1`;
-        Xrm.WebApi.retrieveMultipleRecords("workflow", query).then(
-            function success(results) {
-                if (results.entities.length > 0) {
-                    let workflowId = results.entities[0].workflowid;
-                    callback(workflowId);
-                } else {
-                    callback(null);
-                }
-            },
-            function (error) {
-                callback(null);
-            }
-        );
-    }
-    catch (e) {
-        SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
-    }
-},
- serviceBasedBPF: function(executionContext) {
-    try {
-        let formContext = executionContext.getFormContext();
-        if (formContext.getControl("header_ss_serviceconfiguration")) {
-            let serviceConfigurationLookup = formContext.getControl("header_ss_serviceconfiguration").getAttribute();
-            let lookupValue = serviceConfigurationLookup.getValue();
-            if (lookupValue && lookupValue.length > 0 && lookupValue[0].name) {
-                let serviceConfigurationName = lookupValue[0].name.toLowerCase();
-
-                const bpfMapping = {
-                    "taxi licence - dual hackney carriage and private hire": "ss_bpf_dualhackneycarriagevehicle",
-                    "taxi licence - private hire operator": "ss_bpf_privatehireoperatorvehicle",
-                    "taxi licence - notification of convictions and offences": "ss_bpf_notificationofconvictionsandoffencesvehicle",
-                    "taxi licence - hackney carriage vehicle": "ss_bpf_hackneycarriagevehicle",
-                    "taxi licence - private hire vehicle": "ss_bpf_privatehirevehicle"
-                };
-
-                let bpfName = bpfMapping[serviceConfigurationName] || "ss_bpf_hackneycarriagevehicle";
-
-                SS.MSDYN.LGIntelliware.WR.TaxiLicence.getBPFIdByName(bpfName, function (bpfId) {
-                    if (bpfId) {
-                        formContext.data.process.setActiveProcess(bpfId, function (status) {
-                        });
-                    }
-                });
-            }
+      let query = `?$select=workflowid&$filter=uniquename eq '${bpfName}'  and statecode eq 1`;
+      Xrm.WebApi.retrieveMultipleRecords("workflow", query).then(
+        function success(results) {
+          if (results.entities.length > 0) {
+            let workflowId = results.entities[0].workflowid;
+            callback(workflowId);
+          } else {
+            callback(null);
+          }
+        },
+        function (error) {
+          callback(null);
+          SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
+      );
     }
     catch (e) {
-        SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
-}
+  },
+  serviceBasedBPF: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      if (formContext.getControl("header_ss_serviceconfiguration")) {
+        let serviceConfigurationLookup = formContext.getControl("header_ss_serviceconfiguration").getAttribute();
+        let lookupValue = serviceConfigurationLookup.getValue();
+        if (lookupValue && lookupValue.length > 0 && lookupValue[0].name) {
+          let serviceConfigurationName = lookupValue[0].name.toLowerCase();
+          const bpfMapping = {
+            "taxi licence - dual hackney carriage and private hire": "ss_bpf_dualhackneycarriagevehicle",
+            "taxi licence - private hire operator": "ss_bpf_privatehireoperatorvehicle",
+            "taxi licence - notification of convictions and offences": "ss_bpf_notificationofconvictionsandoffencesvehicle",
+            "taxi licence - hackney carriage vehicle": "ss_bpf_hackneycarriagevehicle",
+            "taxi licence - private hire vehicle": "ss_bpf_privatehirevehicle"
+          };
+          let bpfName = bpfMapping[serviceConfigurationName] || "ss_bpf_hackneycarriagevehicle";
+          SS.MSDYN.LGIntelliware.WR.TaxiLicence.getBPFIdByName(bpfName, function (bpfId) {
+            if (bpfId) {
+              formContext.data.process.setActiveProcess(bpfId, function (status) {
+                if (status === "success") {
+                  SS.MSDYN.LGIntelliware.WR.TaxiLicence.tabFocusOnBPFStageChange(executionContext);
+                }
+              });
+            }
+          });
+        }
+      }
+    }
+    catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+  setExpiryAndGrantDate: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      if (formContext.getControl("ss_newlicenceissuedate")) {
+        let issueDate = formContext.getAttribute("ss_newlicenceissuedate").getValue();
+        if (issueDate !== null) {
+          if (!(issueDate instanceof Date)) {
+            issueDate = new Date(issueDate);
+          }
+          let expiryDate = new Date(issueDate);
+          expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+          expiryDate.setDate(expiryDate.getDate() - 1);
+          let today = new Date();
+          formContext.getAttribute("ss_newlicencegrantdate").setValue(today);
+          formContext.getAttribute("ss_newlicenceexpirydate").setValue(expiryDate);
+        }
+      }
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+  registerAddOnStageChangeEvent: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      formContext.data.process.addOnStageChange(function (stageContext) {
+        SS.MSDYN.LGIntelliware.WR.TaxiLicence.tabFocusOnBPFStageChange(stageContext);
+      });
+    }
+    catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+  tabFocusOnBPFStageChange: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      let activeProcess = formContext.data.process.getActiveProcess();
+      let activeStage = formContext.data.process.getActiveStage();
+      if (activeProcess && activeStage) {
+        let processStageName = activeStage.getName();
+        let applicationReview = '';
+        if (formContext.getControl("header_ss_serviceconfiguration")) {
+          let serviceConfigurationLookup = formContext
+            .getControl("header_ss_serviceconfiguration")
+            .getAttribute();
+          if (
+            serviceConfigurationLookup.getValue() &&
+            serviceConfigurationLookup.getValue().length > 0 &&
+            serviceConfigurationLookup.getValue()[0].name
+          ) {
+            let serviceConfigurationName = serviceConfigurationLookup
+              .getValue()[0]
+              .name.toLowerCase();
+            const serviceConfigurationMap = {
+              "taxi licence - dual hackney carriage and private hire":
+                "Dual_hackney_carriage_and_private_hire_details",
+              "taxi licence - hackney carriage vehicle":
+                "tab_detail_sec_hackney_carriage_and_private_hire",
+              "taxi licence - private hire vehicle":
+                "tab_detail_sec_hackney_carriage_and_private_hire",
+              "taxi licence - private hire operator":
+                "tab_detail_sec_private_hire_operator",
+              "taxi licence - notification of convictions and offences":
+                "Notification_of_convictions_details"
+            };
+            applicationReview = serviceConfigurationMap[serviceConfigurationName] || '';
+          }
+        }
+        let stageToTabMap = {
+          "Review Application": applicationReview,
+          "DVLA (Driver Data) Review": "tab_dvla_driver_data",
+          "DVLA (Vehicle Details) Review": "tab_dvla_vehicle_details",
+          "DBS Review": "tab_dbs",
+          "Payment Review": "tab_pay360",
+          "Review MOT History": "tab_mot",
+          "Grant": "tab_summary",
+          "Reject": "tab_summary"
+        };
+        if (activeStage.getName() == "Get MOT History") {
+          formContext.getAttribute("statecode").setValue(0);
+          formContext.getAttribute("statuscode").setValue(717800005);
+        }
+        else if (activeStage.getName() == "Payment Review") {
+          formContext.getAttribute("statecode").setValue(0);
+          formContext.getAttribute("statuscode").setValue(717800006);
+        }
+        else if (activeStage.getName() == "Grant/Reject") {
+          formContext.getAttribute("statecode").setValue(0);
+          formContext.getAttribute("statuscode").setValue(717800007);
+        }
+        let tabName = stageToTabMap[processStageName.trim()];
+        if (tabName !== undefined) {
+          let tab = formContext.ui.tabs.get(tabName);
+          if (tab) {
+            tab.setFocus();
+          }
+        }
+      }
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+  disableBpfFields: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      let bpfFieldNames = ['header_process_ss_paid', 'header_process_ss_whatareyounotifyingusoff'];
+      bpfFieldNames.forEach(function (fieldName) {
+        let bpfControl = formContext.getControl(fieldName);
+        if (bpfControl) {
+          bpfControl.setDisabled(true);
+        }
+      });
+      let badgeNumber = formContext.getControl("header_process_ss_newbadgenumber");
+      if (badgeNumber) {
+        badgeNumber.getAttribute().addOnChange(function () {
+          let value = badgeNumber.getAttribute().getValue();
+          if (value && !/^\d*$/.test(value)) {
+            badgeNumber.setNotification("Only numeric values are allowed.");
+          } else {
+            badgeNumber.clearNotification();
+          }
+        });
+      }
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  }
 
-  
 };
