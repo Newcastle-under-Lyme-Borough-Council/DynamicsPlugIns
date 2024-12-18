@@ -257,12 +257,12 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         if (
           serviceConfigurationName === "taxi licence - private hire operator"
         ) {
-          return false;
+          return true;
         } else if (
           serviceConfigurationName ===
           "taxi licence - dual hackney carriage and private hire"
         ) {
-          return false;
+          return true;
         } else {
           return true;
         }
@@ -295,7 +295,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
           "taxi licence - hackney carriage vehicle" ||
           serviceConfigurationName === "taxi licence - private hire vehicle"
         ) {
-          return false;
+          return true;
         } else {
           return true;
         }
@@ -332,12 +332,12 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
           "taxi licence - notification of convictions and offences" &&
           selectedValue === 1
         ) {
-          return false;
+          return true;
         } else if (
           serviceConfigurationName ===
           "taxi licence - dual hackney carriage and private hire"
         ) {
-          return false;
+          return true;
         } else {
           return true;
         }
@@ -1027,6 +1027,12 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
           formContext.getAttribute("statecode").setValue(0);
           formContext.getAttribute("statuscode").setValue(717800007);
         }
+        formContext.data.save().then(() => {
+          formContext.data.refresh();
+        }).catch((e) => {
+          SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        });
+
         let tabName = stageToTabMap[processStageName.trim()];
         if (tabName !== undefined) {
           let tab = formContext.ui.tabs.get(tabName);
