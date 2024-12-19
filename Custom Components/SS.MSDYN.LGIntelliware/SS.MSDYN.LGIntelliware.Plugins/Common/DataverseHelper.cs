@@ -174,6 +174,344 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("Fault exception occured executing Update: " + ex.Message + ".");
             }
         }
+        public static EntityCollection RetrieveProperties(this IOrganizationService service, ITracingService tracingService, string entityName, string uprn, ColumnSet columnSet)
+        {
+            try
+            {
+                tracingService.Trace("{0}", "Starting execution of 'RetrieveProperties' method.");
+                var allRecords = new EntityCollection();
+                if (uprn != null)
+                {
+                    var query = new QueryExpression(entityName)
+                    {
+                        ColumnSet = columnSet,
+                        Criteria = new FilterExpression
+                        {
+                            Conditions =
+         {
+             new ConditionExpression(PropertyTableColumnNames.Uprn, ConditionOperator.Equal, uprn)
+         }
+                        },
+                        PageInfo = new PagingInfo
+                        {
+                            Count = 5000,
+                            PageNumber = 1
+                        }
+                    };
+                    do
+                    {
+                        var currentPage = service.RetrieveMultiple(query);
+                        allRecords.Entities.AddRange(currentPage.Entities);
+                        // Check if more records exist
+                        if (currentPage.MoreRecords)
+                        {
+                            query.PageInfo.PageNumber++;
+                            query.PageInfo.PagingCookie = currentPage.PagingCookie;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    } while (true);
+                }
+                tracingService.Trace("{0}", "Exiting from 'RetrieveProperties' method after execution.");
+                return allRecords;
+            }
+            catch (Exception ex)
+            {
+                tracingService.Trace("An exception occurred while executing RetrieveProperties: {0}.", ex.ToString());
+                throw new InvalidPluginExecutionException("An error occurred while retrieving properties: " + ex.Message + ".");
+            }
+        }
+        public static void CreateContactProperty(this IOrganizationService service, ITracingService tracingService, EntityCollection properties, Guid contactId)
+        {
+            try
+            {
+                tracingService.Trace("{0}", "Starting execution of 'CreateContactProperty' method.");
+                var totalProperties = properties.Entities.Count;
+                var recordsPerPage = 500;
+                var totalPages = (int)Math.Ceiling((double)totalProperties / recordsPerPage);
+                for (var pageNumber = 0; pageNumber < totalPages; pageNumber++)
+                {
+                    // Create an ExecuteMultipleRequest object.
+                    var multipleRequest = new ExecuteMultipleRequest()
+                    {
+                        Settings = new ExecuteMultipleSettings()
+                        {
+                            ContinueOnError = false,
+                            ReturnResponses = true
+                        },
+                        Requests = new OrganizationRequestCollection()
+                    };
+                    var startIndex = pageNumber * recordsPerPage;
+                    var endIndex = Math.Min(startIndex + recordsPerPage, totalProperties);
+                    for (var index = startIndex; index < endIndex; index++)
+                    {
+                        var property = properties.Entities[index];
+                        var contactproperty = new Entity(ContactPropertyTableColumnNames.TableName)
+                        {
+                            [ContactPropertyTableColumnNames.Property] = new EntityReference(PropertyTableColumnNames.TableName, property.Id),
+                            [ContactPropertyTableColumnNames.Contact] = new EntityReference(ContactTableColumnNames.TableName, contactId),
+                        };
+                        multipleRequest.Requests.Add(new CreateRequest { Target = contactproperty });
+                    }
+                    var multipleResponse = (ExecuteMultipleResponse)service.Execute(multipleRequest);
+                    foreach (var responseItem in multipleResponse.Responses)
+                    {
+                        if (responseItem.Fault != null)
+                        {
+                            tracingService.Trace("Error creating record in table `contactproperty`: {0}", responseItem.Fault.Message);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                tracingService.Trace("An exception occurred while executing CreateContactProperty: {0}.", ex.ToString());
+                throw new InvalidPluginExecutionException("An error occurred while creating records in table `contact property`: " + ex.Message + ".");
+            }
+        }
+        public static EntityCollection RetrieveContacts(this IOrganizationService service, ITracingService tracingService, string entityName, string uprn, ColumnSet columnSet)
+        {
+            try
+            {
+                tracingService.Trace("{0}", "Starting execution of 'RetrieveContact' method.");
+                var allRecords = new EntityCollection();
+                if (uprn != null)
+                {
+                    var query = new QueryExpression(entityName)
+                    {
+                        ColumnSet = columnSet,
+                        Criteria = new FilterExpression
+                        {
+                            Conditions =
+         {
+             new ConditionExpression(ContactTableColumnNames.Uprn, ConditionOperator.Equal, uprn)
+         }
+                        },
+                        PageInfo = new PagingInfo
+                        {
+                            Count = 5000,
+                            PageNumber = 1
+                        }
+                    };
+
+                    do
+                    {
+                        var currentPage = service.RetrieveMultiple(query);
+                        allRecords.Entities.AddRange(currentPage.Entities);
+                        if (currentPage.MoreRecords)
+                        {
+                            query.PageInfo.PageNumber++;
+                            query.PageInfo.PagingCookie = currentPage.PagingCookie;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    } while (true);
+                }
+
+                tracingService.Trace("{0}", "Exiting from 'RetrieveContacts' method after execution.");
+                return allRecords;
+            }
+            catch (Exception ex)
+            {
+                tracingService.Trace("An exception occurred while executing RetrieveContacts: {0}.", ex.ToString());
+                throw new InvalidPluginExecutionException("An error occurred while retrieving contacts: " + ex.Message + ".");
+            }
+        }
+        public static void AddContactProperty(this IOrganizationService service, ITracingService tracingService, EntityCollection contacts, Guid propertyId)
+        {
+            try
+            {
+                tracingService.Trace("{0}", "Starting execution of 'AddContactProperty' method.");
+                var totalcontacts = contacts.Entities.Count;
+                var recordsPerPage = 500;
+                var totalPages = (int)Math.Ceiling((double)totalcontacts / recordsPerPage);
+                for (var pageNumber = 0; pageNumber < totalPages; pageNumber++)
+                {
+                    // Create an ExecuteMultipleRequest object.
+                    var multipleRequest = new ExecuteMultipleRequest()
+                    {
+                        Settings = new ExecuteMultipleSettings()
+                        {
+                            ContinueOnError = false,
+                            ReturnResponses = true
+                        },
+                        Requests = new OrganizationRequestCollection()
+                    };
+
+                    // Determine start and end index for current page
+                    var startIndex = pageNumber * recordsPerPage;
+                    var endIndex = Math.Min(startIndex + recordsPerPage, totalcontacts);
+
+                    for (var index = startIndex; index < endIndex; index++)
+                    {
+                        var contact = contacts.Entities[index];
+                        var contactproperty = new Entity(ContactPropertyTableColumnNames.TableName)
+                        {
+                            [ContactPropertyTableColumnNames.Property] = new EntityReference(PropertyTableColumnNames.TableName, propertyId),
+                            [ContactPropertyTableColumnNames.Contact] = new EntityReference(ContactTableColumnNames.TableName, contact.Id),
+                        };
+                        multipleRequest.Requests.Add(new CreateRequest { Target = contactproperty });
+                    }
+                    var multipleResponse = (ExecuteMultipleResponse)service.Execute(multipleRequest);
+                    foreach (var responseItem in multipleResponse.Responses)
+                    {
+                        if (responseItem.Fault != null)
+                        {
+                            tracingService.Trace("Error creating record in table `contactproperty`: {0}", responseItem.Fault.Message);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                tracingService.Trace("An exception occurred while executing AddContactProperty: {0}.", ex.ToString());
+                throw new InvalidPluginExecutionException("An error occurred while creating records in table `contact property`: " + ex.Message + ".");
+            }
+        }
+        public static EntityCollection RetrieveContactProperties(this IOrganizationService service, ITracingService tracingService, string entityName, Guid contactId, ColumnSet columnSet)
+        {
+            try
+            {
+                tracingService.Trace("{0}", "Starting execution of 'RetrieveContactProperties' method.");
+                var query = new QueryExpression(entityName)
+                {
+                    ColumnSet = columnSet,
+                    Criteria = new FilterExpression
+                    {
+                        Conditions =
+         {
+             new ConditionExpression(ContactPropertyTableColumnNames.Contact, ConditionOperator.Equal, contactId)
+         }
+                    },
+                    PageInfo = new PagingInfo
+                    {
+                        Count = 5000,
+                        PageNumber = 1
+                    }
+                };
+                var allRecords = new EntityCollection();
+                do
+                {
+                    var currentPage = service.RetrieveMultiple(query);
+                    allRecords.Entities.AddRange(currentPage.Entities);
+                    if (currentPage.MoreRecords)
+                    {
+                        query.PageInfo.PageNumber++;
+                        query.PageInfo.PagingCookie = currentPage.PagingCookie;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                } while (true);
+
+                tracingService.Trace("{0}", "Exiting from 'RetrieveContactProperties' method after execution.");
+                return allRecords;
+            }
+            catch (Exception ex)
+            {
+                tracingService.Trace("An exception occurred while executing RetrieveContactProperties: {0}.", ex.ToString());
+                throw new InvalidPluginExecutionException("An error occurred while retrieve contact properties: " + ex.Message + ".");
+            }
+        }
+        public static void DeleteContactProperties(this IOrganizationService service, ITracingService tracingService, EntityCollection contactProperties)
+        {
+            try
+            {
+                tracingService.Trace("{0}", "Starting execution of 'DeleteContactProperties' method.");
+                var totalContactProperties = contactProperties.Entities.Count;
+                var recordsPerPage = 500;
+                var totalPages = (int)Math.Ceiling((double)totalContactProperties / recordsPerPage);
+
+                for (var pageNumber = 0; pageNumber < totalPages; pageNumber++)
+                {
+                    var multipleRequest = new ExecuteMultipleRequest()
+                    {
+                        Settings = new ExecuteMultipleSettings()
+                        {
+                            ContinueOnError = false,
+                            ReturnResponses = true
+                        },
+                        Requests = new OrganizationRequestCollection()
+                    };
+                    var startIndex = pageNumber * recordsPerPage;
+                    var endIndex = Math.Min(startIndex + recordsPerPage, totalContactProperties);
+                    for (var index = startIndex; index < endIndex; index++)
+                    {
+                        var contact = contactProperties.Entities[index];
+                        multipleRequest.Requests.Add(new DeleteRequest { Target = new EntityReference(ContactPropertyTableColumnNames.TableName, contact.Id) });
+                    }
+                    var multipleResponse = (ExecuteMultipleResponse)service.Execute(multipleRequest);
+                    foreach (var responseItem in multipleResponse.Responses)
+                    {
+                        if (responseItem.Fault != null)
+                        {
+                            tracingService.Trace("Error deleting record in table `contactproperty`: {0}", responseItem.Fault.Message);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                tracingService.Trace("An exception occurred while executing DeleteContactProperties: {0}.", ex.ToString());
+                throw new InvalidPluginExecutionException("An error occurred while deleting records in table `contact property`: " + ex.Message + ".");
+            }
+        }
+        public static EntityCollection RetrievePropertiesContact(this IOrganizationService service, ITracingService tracingService, string entityName, Guid propertyId, ColumnSet columnSet)
+        {
+            try
+            {
+                tracingService.Trace("{0}", "Starting execution of 'RetrievePropertiesContact' method.");
+                var allRecords = new EntityCollection();
+                // Initialize query
+                var query = new QueryExpression(entityName)
+                {
+                    ColumnSet = columnSet,
+                    Criteria = new FilterExpression
+                    {
+                        Conditions =
+         {
+             new ConditionExpression(ContactPropertyTableColumnNames.Property, ConditionOperator.Equal, propertyId)
+         }
+                    },
+                    PageInfo = new PagingInfo
+                    {
+                        Count = 5000,
+                        PageNumber = 1
+                    }
+                };
+                do
+                {
+                    var currentPage = service.RetrieveMultiple(query);
+                    allRecords.Entities.AddRange(currentPage.Entities);
+                    if (currentPage.MoreRecords)
+                    {
+                        query.PageInfo.PageNumber++;
+                        query.PageInfo.PagingCookie = currentPage.PagingCookie;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                } while (true);
+
+                tracingService.Trace("{0}", "Exiting from 'RetrievePropertiesContact' method after execution.");
+                return allRecords;
+            }
+            catch (Exception ex)
+            {
+                tracingService.Trace("An exception occurred while executing RetrievePropertiesContact: {0}.", ex.ToString());
+                throw new InvalidPluginExecutionException("An error occurred while retrieve  properties contact: " + ex.Message + ".");
+            }
+        }
+
+
     }
+
+
 }
 
