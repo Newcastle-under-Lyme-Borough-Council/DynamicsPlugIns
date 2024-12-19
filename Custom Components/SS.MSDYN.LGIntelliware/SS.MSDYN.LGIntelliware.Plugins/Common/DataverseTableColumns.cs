@@ -105,6 +105,33 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     {
         public const string TableName = "contact";
         public const string TableAlias = "ss_contact_alias";
+        public const string Uprn = "ss_uprn";
+        public const string ContactId = "contactid";
     }
     #endregion
+
+     #region Sealed Class: PropertyTableColumnNames
+ /// <summary>
+ /// Sealed class for property table column names.
+ /// </summary>
+ public sealed class PropertyTableColumnNames
+ {
+     public const string TableName = "ss_property";
+     public const string Uprn = "ss_uprn";
+ }
+ #endregion
+
+
+ #region Sealed Class: ContactPropertyTableColumnNames
+ /// <summary>
+ /// Sealed class for contactproperty table column names.
+ /// </summary>
+ public sealed class ContactPropertyTableColumnNames
+ {
+     public const string TableName = "ss_contactproperty";
+     public const string Contact = "ss_contact";
+     public const string Property = "ss_property";
+ }
+ #endregion
+
 }
