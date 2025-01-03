@@ -21,6 +21,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.serviceBasedBPF(executionContext);
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.registerAddOnStageChangeEvent(executionContext);
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.disableBpfFields(executionContext);
+      SS.MSDYN.LGIntelliware.WR.TaxiLicence.bpfStatusChange(executionContext);
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
@@ -1015,7 +1016,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
           "Grant": "tab_summary",
           "Reject": "tab_summary"
         };
-        if (activeStage.getName() == "Get MOT History") {
+        if (activeStage.getName() == "Review MOT History") {
           formContext.getAttribute("statecode").setValue(0);
           formContext.getAttribute("statuscode").setValue(717800005);
         }
@@ -1069,6 +1070,46 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
+  },
+  bpfStatusChange: function (executionContext) {
+    var formContext = executionContext.getFormContext();
+    var process = formContext.data.process;
+    // Add an event listener for process status change
+    process.addOnProcessStatusChange(function () {
+      var bpfStatus = process.getStatus();
+      if (bpfStatus === "finished") {
+        if (formContext.getControl("header_ss_serviceconfiguration")) {
+          let serviceConfigurationLookup = formContext
+            .getControl("header_ss_serviceconfiguration")
+            .getAttribute();
+          if (
+            serviceConfigurationLookup.getValue() &&
+            serviceConfigurationLookup.getValue().length > 0 &&
+            serviceConfigurationLookup.getValue()[0].name
+          ) {
+            let serviceConfigurationName = serviceConfigurationLookup
+              .getValue()[0]
+              .name.toLowerCase();
+            if (
+              serviceConfigurationName ===
+              "taxi licence - notification of convictions and offences"
+            ) {
+              formContext.getAttribute("statecode").setValue(1);
+              formContext.getAttribute("statuscode").setValue(717800004);
+            } else {
+              let grantReject = formContext.getAttribute("ss_grantreject").getValue();
+              if (grantReject === 0) {
+                formContext.getAttribute("statecode").setValue(1);
+                formContext.getAttribute("statuscode").setValue(2);
+              } else if (grantReject === 1) {
+                formContext.getAttribute("statecode").setValue(1);
+                formContext.getAttribute("statuscode").setValue(717800002);
+              }
+            }
+            formContext.data.entity.save();
+          }
+        }
+      }
+    });
   }
-
 };
