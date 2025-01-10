@@ -67,6 +67,7 @@ function CustomStepper(props: any) {
       ss_servicelogicalname: "",
       ss_serviceprimarykeycolumnname: "",
       ss_description: "",
+      ss_avoidableContactReason: "",
       ss_sourcetype: 1,
       customerFirstName: "",
       customerLastName: "",
@@ -79,6 +80,7 @@ function CustomStepper(props: any) {
       ss_reportingonbehalfofsomeone: false,
       ss_allowservicerequest: true,
       knowledgeBase: false,
+      avoidableContact: false,
       reportedByUserFirstName: "",
       reportedByUserLastName: "",
       reportedByUserFullName: "",
@@ -294,6 +296,27 @@ function CustomStepper(props: any) {
     setActiveStep(activeStep - 1);
   };
 
+  const CreateAvoidableContact = () => {
+    var record: any = {};
+    record["ss_Contact@odata.bind"] = `/contacts(${serviceDetails.customerId})`; // Lookup
+    record.ss_isthiscontactavoidable = true; // Boolean
+    record[
+      "ss_Service@odata.bind"
+    ] = `/ss_serviceconfigurations(${serviceDetails.ss_serviceconfigurationid})`; // Lookup
+    record.ss_reasonforavoidablecontact =
+      serviceDetails.ss_avoidableContactReason; // Text
+
+    props.EContext.webAPI.createRecord("ss_avoidablecontact", record).then(
+      function success(result: any) {
+        var newId = result.id;
+        // console.log(newId);
+      },
+      function (error: any) {
+        console.log(error.message);
+      }
+    );
+  };
+
   const submitService = () => {
     let submitError;
     setBtnLoading(true);
@@ -349,6 +372,13 @@ function CustomStepper(props: any) {
             submitErrorFunc(submitError);
           } else if (activeStep === 5 && serviceDetails.ss_description === "") {
             submitError = "Please provide description.";
+            submitErrorFunc(submitError);
+          } else if (
+            activeStep === 5 &&
+            serviceDetails.avoidableContact &&
+            serviceDetails.ss_avoidableContactReason === ""
+          ) {
+            submitError = "Please provide reason for avoidable contact.";
             submitErrorFunc(submitError);
           }
 
@@ -442,6 +472,10 @@ function CustomStepper(props: any) {
             props.EContext.webAPI.createRecord(entityName, record).then(
               function success(result: any) {
                 setCreateServiceId(result.id);
+
+                if (serviceDetails.avoidableContact) {
+                  CreateAvoidableContact();
+                }
 
                 serviceDetails.ss_serviceconfigurationid = "";
                 setShowSuccessScreen(true);

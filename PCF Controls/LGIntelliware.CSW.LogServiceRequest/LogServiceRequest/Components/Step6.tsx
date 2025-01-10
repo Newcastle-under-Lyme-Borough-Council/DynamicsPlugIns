@@ -35,6 +35,15 @@ const Step6 = (props: any) => {
       ss_description: details,
     });
   };
+
+  const onHandleAvoidableContactReason = (e: any) => {
+    let avoidContactReason = e.target.value;
+
+    set({
+      ...serviceDetails,
+      ss_avoidableContactReason: avoidContactReason,
+    });
+  };
   const HandleApplicationReferenceNumber = (e: any) => {
     let ApplicationReferenceNumber = e.target.value;
 
@@ -42,6 +51,21 @@ const Step6 = (props: any) => {
       ...serviceDetails,
       ss_applicationreferencenumber: ApplicationReferenceNumber,
     });
+  };
+
+  const onHandleAvoidableContact = (e: any) => {
+    // serviceDetails.knowledgeBase = e.target.checked;
+    if (e.target.checked === true) {
+      set({
+        ...serviceDetails,
+        avoidableContact: e.target.checked,
+      });
+    } else {
+      set({
+        ...serviceDetails,
+        avoidableContact: false,
+      });
+    }
   };
 
   return (
@@ -197,6 +221,46 @@ const Step6 = (props: any) => {
                   />
                 </Col>
               </Form.Group>
+              <Form.Group as={Row} className="mb-3">
+                <Form.Label column sm="2">
+                  Is this Contact Avoidable ?
+                </Form.Label>
+                <Col sm="10" className="d-flex">
+                  {/* <span className="text-danger steric-style">*</span> */}
+                  <Form.Check
+                    type="checkbox"
+                    id="1"
+                    // label="Is this contact avoidable"
+                    onChange={onHandleAvoidableContact}
+                    checked={serviceDetails.avoidableContact}
+                  />
+                </Col>
+              </Form.Group>
+
+              {serviceDetails.avoidableContact && (
+                <Form.Group
+                  as={Row}
+                  className="mb-3"
+                  controlId="formPlaintextPassword"
+                >
+                  <Form.Label column sm="2">
+                    Reason for Avoidable Contact
+                  </Form.Label>
+                  <Col sm="10" className="d-flex">
+                    <span className="text-danger steric-style">*</span>
+                    <Form.Control
+                      as="textarea"
+                      rows={5}
+                      defaultValue={
+                        serviceDetails.ss_avoidableContactReason
+                          ? serviceDetails.ss_avoidableContactReason
+                          : ""
+                      }
+                      onChange={onHandleAvoidableContactReason}
+                    />
+                  </Col>
+                </Form.Group>
+              )}
             </Form>
           </div>
         </div>
