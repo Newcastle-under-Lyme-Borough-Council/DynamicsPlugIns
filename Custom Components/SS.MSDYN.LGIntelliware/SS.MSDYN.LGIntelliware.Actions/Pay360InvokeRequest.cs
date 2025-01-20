@@ -33,6 +33,10 @@ namespace SS.MSDYN.LGIntelliware.Actions
                 var VATCode = context.InputParameters["VATCode"].ToString();
                 var Price = context.InputParameters["Price"].ToString();
                 var ServiceName = context.InputParameters["ServiceName"].ToString();
+                if (ServiceName.Length>50)
+                {
+                    ServiceName = ServiceName.Substring(0, 50);
+                }
                 var RequestID = context.InputParameters["RequestID"].ToString();
 
                 string Pay360serviceurl = context.InputParameters["Pay360serviceurl"].ToString();//GetEnvironmentVariableDefaultValue("ss_Pay360HMACSecretKeyWebserviceEndpoint", service).ToString() + "/scpClient";//"https://sbsctest.e-paycapita.com/scp/scpws/scpClient";
