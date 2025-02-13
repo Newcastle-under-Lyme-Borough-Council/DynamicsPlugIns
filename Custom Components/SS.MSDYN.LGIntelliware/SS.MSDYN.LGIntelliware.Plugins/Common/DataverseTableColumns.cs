@@ -30,7 +30,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string ReportedBy = "ss_onbehalfofsomeone";
         public const string ServiceConfiguration = "ss_serviceconfiguration";
         public const string Case = "ss_incidentid";
-
+        public const string ContactProperty = "ss_contactproperty";
     }
     #endregion
 
@@ -83,6 +83,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Subject = "subjectid";
         public const string CaseNumber = "ticketnumber";
         public const string Origin = "caseorigincode";
+        public const string ContactProperty = "ss_contactproperty";
     }
     #endregion
 

@@ -128,6 +128,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     else if (missedBinSourceType == ServiceRequestSourceType.Portal.GetHashCode())
                         entityToCreate.Attributes.Add(Incident.Origin, new OptionSetValue(IncidentOrigin.Portal.GetHashCode()));
                 }
+
+                if (entity.Attributes.ContainsKey(ServiceRequest.ContactProperty) && entity.Attributes[ServiceRequest.ContactProperty] != null)
+                {
+                
+                    entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ContactProperty).Id));
+                }
                 return service.Create(entityToCreate); ;
             }
             catch (Exception ex)
