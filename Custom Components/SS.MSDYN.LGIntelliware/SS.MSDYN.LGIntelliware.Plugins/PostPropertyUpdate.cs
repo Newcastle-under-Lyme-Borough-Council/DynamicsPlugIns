@@ -22,7 +22,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             var context = localContext.PluginExecutionContext;
             //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
-
+            if (context.Depth > 1)
+            {
+                return;
+            }
             try
             {
                 // Check if context message name is 'Update' ...

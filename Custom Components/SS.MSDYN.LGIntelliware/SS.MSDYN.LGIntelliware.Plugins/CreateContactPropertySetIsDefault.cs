@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
-    public class UpdateContactPropertySetIsDefault : PluginBase
+    public class CreateContactPropertySetIsDefault : PluginBase
     {
-        public UpdateContactPropertySetIsDefault() : base(typeof(UpdateContactPropertySetIsDefault))
+        public CreateContactPropertySetIsDefault() : base(typeof(CreateContactPropertySetIsDefault))
         {
-            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, ContactProperty.TableName, Execute));
+            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ContactProperty.TableName, Execute));
         }
         protected void Execute(LocalPluginContext localContext)
         {
@@ -25,7 +25,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             try
             {
                 // Check if context message name is 'Create' ...
-                if (context.MessageName.Equals(PluginExecutionMessageName.UPDATE))
+                if (context.MessageName.Equals(PluginExecutionMessageName.CREATE))
                 {
                     // Check if context has 'Target' input parameter...
                     if (context.InputParameters.ContainsKey(ContextInputParameters.TARGET) && context.InputParameters[ContextInputParameters.TARGET] != null)
@@ -38,21 +38,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 var IsDefault = entity.GetAttributeValue<bool>(ContactProperty.IsDefault);
                                 if (IsDefault == true)
                                 {
-                                    var contactProperty = DataverseHelper.RetrieveContactProperty(service, ContactProperty.TableName, entity.Id, new ColumnSet(true));
-                                    
-                                    var ContactID = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Contact);
-                                    var contact = DataverseHelper.RetrieveContact(service, Contact.TableName, ContactID.Id, new ColumnSet(true));
-                                    
-                                    var PropertyID = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Property);
-                                    var property = DataverseHelper.RetrieveProperty(service, Property.TableName, PropertyID.Id, new ColumnSet(true));
-                                 
-                                    if (property.Attributes.Contains(Property.Uprn) && contact.Attributes.Contains(Contact.Uprn)
-                                        && property.Attributes[Property.Uprn] != contact.Attributes[Contact.Uprn])
-                                    {
-                                        DataverseHelper.UpdateContactwithPropertyData(service, Contact.TableName, contact.Id, property);
-                                    }
-                                    
-                                    var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, ContactID.Id, new ColumnSet(true));
+                                    var contact = entity.GetAttributeValue<EntityReference>(ContactProperty.Contact);
+                                    var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contact.Id, new ColumnSet(true));
                                     foreach (var cp in contactProperties.Entities)
                                     {
                                         if (cp.Contains(ContactProperty.IsDefault) && cp.Id != entity.Id)
@@ -68,6 +55,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         }
                     }
                 }
+            }
+            catch (FaultException<OrganizationServiceFault> ex)
+            {
+                throw new InvalidPluginExecutionException("Fault exception occured executing UpdateContactPropertySetIsDefault: " + ex.Message + ".");
             }
             catch (Exception ex)
             {

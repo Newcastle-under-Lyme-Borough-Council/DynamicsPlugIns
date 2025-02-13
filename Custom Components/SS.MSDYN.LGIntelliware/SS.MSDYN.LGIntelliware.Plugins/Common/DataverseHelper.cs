@@ -513,40 +513,16 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        public static Guid RetrieveProperty(this IOrganizationService service, string entityName, string contact, Guid propertyId)
+        public static Entity RetrieveProperty(this IOrganizationService service, string entityName, Guid propertyId, ColumnSet columnSet)
         {
             try
             {
-                var columnSet = new ColumnSet(false);
+                return service.Retrieve(entityName, propertyId, columnSet);
 
-                var query = new QueryExpression(entityName)
-                {
-                    ColumnSet = columnSet,
-                    Criteria = new FilterExpression
-                    {
-                        Conditions =
-                {
-                    new ConditionExpression(ContactProperty.Contact, ConditionOperator.Equal, new Guid(contact)),
-                    new ConditionExpression(ContactProperty.Property, ConditionOperator.Equal, propertyId)
-                }
-                    }
-                };
-
-                var entityCollection = service.RetrieveMultiple(query);
-
-                if (entityCollection.Entities.Count > 0)
-                {
-                    return entityCollection.Entities[0].Id;
-                }
-
-                else
-                {
-                    return new Guid();
-                }
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieving records from table `contact property`: " + ex.Message, ex);
+                throw new InvalidPluginExecutionException("An error occurred while retrieve contact properties: " + ex.Message + ".");
             }
         }
 
@@ -556,11 +532,19 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             {
                 var entityToCreate = new Entity(Property.TableName);
                 entityToCreate[Property.Uprn] = uprn;
-                entityToCreate[Property.Address] = contact.GetAttributeValue<string>(Contact.Address);
-                entityToCreate[Property.Address2] = contact.GetAttributeValue<string>(Contact.Address2);
-                entityToCreate[Property.TownName] = contact.GetAttributeValue<string>(Contact.City);
+                entityToCreate[Property.Addresscs] = contact.GetAttributeValue<string>(Contact.Address1_address);
                 entityToCreate[Property.County] = contact.GetAttributeValue<string>(Contact.County);
+                entityToCreate[Property.Addressoscs] = contact.GetAttributeValue<string>(Contact.Address);
+                entityToCreate[Property.Localityname] = contact.GetAttributeValue<string>(Contact.Address2);
+                entityToCreate[Property.Streetname] = contact.GetAttributeValue<string>(Contact.Address1_line3);
+                entityToCreate[Property.TownName] = contact.GetAttributeValue<string>(Contact.City);
                 entityToCreate[Property.PostCode] = contact.GetAttributeValue<string>(Contact.PostCode);
+                entityToCreate[Property.Posttown] = contact.GetAttributeValue<string>(Contact.Stateorprovince);
+
+                entityToCreate[Property.Region] = contact.GetAttributeValue<string>(Contact.Country);
+                entityToCreate[Property.Latitude] = contact.GetAttributeValue<double>(Contact.Latitude);
+                entityToCreate[Property.Longitude] = contact.GetAttributeValue<double>(Contact.Longitude);
+                
                 return service.Create(entityToCreate);
             }
             catch (Exception ex)
@@ -569,7 +553,23 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
 
         }
+        public static void UpdateContactwithPropertyData(IOrganizationService service, string tableName, Guid Contactid, Entity property)
+        {
+            var entityToCreate = new Entity(Contact.TableName, Contactid);
+            entityToCreate[Contact.Address1_address] = property.GetAttributeValue<string>(Property.Addresscs);
+            entityToCreate[Contact.County] = property.GetAttributeValue<string>(Property.County);
+            entityToCreate[Contact.Address] = property.GetAttributeValue<string>(Property.Addressoscs);
+            entityToCreate[Contact.Address2] = property.GetAttributeValue<string>(Property.Localityname);
+            entityToCreate[Contact.Address1_line3] = property.GetAttributeValue<string>(Property.Streetname);
+            entityToCreate[Contact.City] = property.GetAttributeValue<string>(Property.TownName);
+            entityToCreate[Contact.PostCode] = property.GetAttributeValue<string>(Property.PostCode);
+            entityToCreate[Contact.Stateorprovince] = property.GetAttributeValue<string>(Property.Posttown);
+            entityToCreate[Contact.Country] = property.GetAttributeValue<string>(Property.Region);
+            entityToCreate[Contact.Latitude] = property.GetAttributeValue<double>(Property.Latitude);
+            entityToCreate[Contact.Longitude] = property.GetAttributeValue<double>(Property.Longitude);
 
+            service.Update(entityToCreate);
+        }
 
         public static void RemoveOtherContactPropertyfromDefault(this IOrganizationService service, Guid contactPropertyId)
         {
@@ -729,6 +729,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("An error occurred while retrieve property: " + ex.Message + ".");
             }
         }
+
 
     }
 }

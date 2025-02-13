@@ -6,6 +6,7 @@ using System.Linq;
 using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Xrm.Sdk.Extensions;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
@@ -22,7 +23,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             var context = localContext.PluginExecutionContext;
             //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
-
+            if (context.Depth > 1)
+            {
+                return;
+            }
             try
             {
                 // Check if context message name is 'Create' ...

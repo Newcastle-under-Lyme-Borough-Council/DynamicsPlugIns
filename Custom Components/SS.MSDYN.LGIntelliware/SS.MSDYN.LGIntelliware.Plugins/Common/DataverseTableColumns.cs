@@ -112,6 +112,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string City = "address1_city";
         public const string County = "address1_county";
         public const string PostCode = "address1_postalcode";
+        public const string Address1_address = "ss_address1_address";
+        public const string Address1_line3 = "address1_line3";
+        public const string Stateorprovince = "address1_stateorprovince";
+        public const string Country = "address1_country";
+        public const string Latitude = "address1_latitude";
+        public const string Longitude = "address1_longitude";
 
 
 
@@ -129,11 +135,17 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string TableName = "ss_property";
         public const string Uprn = "ss_uprn";
         public const string Contact = "ss_contact";
-        public const string Address = "ss_addresscs";
-        public const string Address2 = "ss_addressoscs";
+        public const string Addresscs = "ss_addresscs";
+        public const string Addressoscs = "ss_addressoscs";
         public const string TownName = "ss_townname";
         public const string County = "ss_county";
         public const string PostCode = "ss_postcode";
+        public const string Localityname = "ss_localityname";
+        public const string Posttown = "ss_posttown";
+        public const string Region = "ss_region";
+        public const string Latitude = "ss_latitude";
+        public const string Longitude = "ss_longitude";
+        public const string Streetname = "ss_streetname";
 
     }
     #endregion

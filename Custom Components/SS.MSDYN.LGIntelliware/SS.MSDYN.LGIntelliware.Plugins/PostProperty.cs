@@ -21,7 +21,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             var context = localContext.PluginExecutionContext;
             //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
-
+            if (context.Depth > 1)
+            {
+                return;
+            }
             try
             {
                 // Check if context message name is 'Create' ...
@@ -40,17 +43,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 var contact = entity.GetAttributeValue<string>(Property.Contact);
                                 if (contact != null)
                                 {
-                                    DataverseHelper.CreatePropertyContact(service, new Guid(contact), propertyId, true);
+                                    DataverseHelper.CreatePropertyContact(service, new Guid(contact), propertyId, false);
                                 }
                             }
                         }
                     }
                 }
 
-            }
-            catch (FaultException<OrganizationServiceFault> ex)
-            {
-                throw new InvalidPluginExecutionException("Fault exception occured executing PostProperty: " + ex.Message + ".");
             }
             catch (Exception ex)
             {
