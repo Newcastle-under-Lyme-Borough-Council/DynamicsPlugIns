@@ -14,7 +14,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     {
         public PostPropertyUpdate() : base(typeof(PostPropertyUpdate))
         {
-            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, PropertyTableColumnNames.TableName, Execute));
+            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, Property.TableName, Execute));
         }
         protected void Execute(LocalPluginContext localContext)
         {
@@ -34,18 +34,18 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         var entity = (Entity)context.InputParameters[ContextInputParameters.TARGET];
                         if (entity != null)
                         {
-                            if (entity.LogicalName.Equals(PropertyTableColumnNames.TableName))
+                            if (entity.LogicalName.Equals(Property.TableName))
                             {
                                 var propertyId = entity.Id;
-                                var uprn = entity.GetAttributeValue<string>(PropertyTableColumnNames.Uprn);
-                                var contact = entity.GetAttributeValue<string>(PropertyTableColumnNames.Contact);
+                                var uprn = entity.GetAttributeValue<string>(Property.Uprn);
+                                var contact = entity.GetAttributeValue<string>(Property.Contact);
                                 //delete previous records 
-                                var retrievePropertiesContact = DataverseHelper.RetrievePropertiesContact(service, ContactPropertyTableColumnNames.TableName, propertyId, new ColumnSet(false));
+                                var retrievePropertiesContact = DataverseHelper.RetrievePropertiesContact(service, ContactProperty.TableName, propertyId, new ColumnSet(false));
                                 if (retrievePropertiesContact != null && retrievePropertiesContact.Entities.Count > 0)
                                 {
                                     DataverseHelper.DeleteContactProperties(service, retrievePropertiesContact);
                                 }
-                                var contacts = DataverseHelper.RetrieveContacts(service, ContactTableColumnNames.TableName, uprn, new ColumnSet(false));
+                                var contacts = DataverseHelper.RetrieveContacts(service, Contact.TableName, uprn, new ColumnSet(false));
                                 if (contacts != null && contacts.Entities.Count > 0)
                                 {
                                     DataverseHelper.AddContactProperty(service, contacts, propertyId);

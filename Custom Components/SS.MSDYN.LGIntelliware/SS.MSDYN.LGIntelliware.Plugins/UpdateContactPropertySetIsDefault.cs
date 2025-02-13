@@ -13,7 +13,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     {
         public UpdateContactPropertySetIsDefault() : base(typeof(UpdateContactPropertySetIsDefault))
         {
-            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PreOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, ContactPropertyTableColumnNames.TableName, Execute));
+            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PreOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, ContactProperty.TableName, Execute));
         }
         protected void Execute(LocalPluginContext localContext)
         {
@@ -33,19 +33,19 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         var entity = (Entity)context.InputParameters[ContextInputParameters.TARGET];
                         if (entity != null)
                         {
-                            if (entity.LogicalName.Equals(ContactPropertyTableColumnNames.TableName))
+                            if (entity.LogicalName.Equals(ContactProperty.TableName))
                             {
-                                var IsDefault = entity.GetAttributeValue<bool>(ContactPropertyTableColumnNames.IsDefault);
+                                var IsDefault = entity.GetAttributeValue<bool>(ContactProperty.IsDefault);
                                 if (IsDefault == true)
                                 {
-                                    var contactProperty = DataverseHelper.RetrieveContactProperty(service, ContactPropertyTableColumnNames.TableName, entity.Id, new ColumnSet(true));
-                                    var contact = contactProperty.GetAttributeValue<EntityReference>(ContactPropertyTableColumnNames.Contact);
-                                    var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactPropertyTableColumnNames.TableName, contact.Id, new ColumnSet(true));
+                                    var contactProperty = DataverseHelper.RetrieveContactProperty(service, ContactProperty.TableName, entity.Id, new ColumnSet(true));
+                                    var contact = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Contact);
+                                    var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contact.Id, new ColumnSet(true));
                                     foreach (var cp in contactProperties.Entities)
                                     {
-                                        if (cp.Contains(ContactPropertyTableColumnNames.IsDefault) && cp.Id != entity.Id)
+                                        if (cp.Contains(ContactProperty.IsDefault) && cp.Id != entity.Id)
                                         {
-                                            if ((bool)(cp[ContactPropertyTableColumnNames.IsDefault]) == true)
+                                            if ((bool)(cp[ContactProperty.IsDefault]) == true)
                                             {
                                                 DataverseHelper.RemoveOtherContactPropertyfromDefault(service, cp.Id);
                                             }

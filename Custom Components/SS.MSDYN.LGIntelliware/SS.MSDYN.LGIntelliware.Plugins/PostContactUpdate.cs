@@ -15,7 +15,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     {
         public PostContactUpdate() : base(typeof(PostContactUpdate))
         {
-            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, ContactTableColumnNames.TableName, Execute));
+            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, Contact.TableName, Execute));
         }
         protected void Execute(LocalPluginContext localContext)
         {
@@ -34,19 +34,29 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         var entity = (Entity)context.InputParameters[ContextInputParameters.TARGET];
                         if (entity != null)
                         {
-                            if (entity.LogicalName.Equals(ContactTableColumnNames.TableName))
+                            var contactId = entity.Id;
+                            var contact = DataverseHelper.RetrieveContact(service, Contact.TableName, contactId, new ColumnSet(true));
+                            var uprn = entity.GetAttributeValue<string>(Contact.Uprn);
+                            var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
+
+                            if (propertyId == Guid.Empty)
                             {
-                                var contactId = entity.Id;
-                                var uprn = entity.GetAttributeValue<string>(ContactTableColumnNames.Uprn);
-                                var fetchpropertyId = DataverseHelper.CheckPropertiesContactExist(service, PropertyTableColumnNames.TableName, contactId, uprn, new ColumnSet(false));
-                                if (fetchpropertyId == new Guid())
+                                propertyId = DataverseHelper.CreateProperty(service, contact, uprn);
+                            }
+
+                            if (propertyId != Guid.Empty)
+                            {
+                                var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(true));
+                                foreach (var item in ExistingContactProperties.Entities)
                                 {
-                                    var propertyId = DataverseHelper.CreateProperty(service, contactId,entity, uprn);
-                                    if (propertyId != new Guid())
+             
+                                    if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
                                     {
-                                        DataverseHelper.CreatePropertyContact(service, contactId, propertyId);
+                                        DataverseHelper.SetContactPropertyToDefault(service, item.Id);
+                                        return;
                                     }
                                 }
+                                DataverseHelper.CreatePropertyContact(service, contactId, propertyId, true);
                             }
                         }
                     }

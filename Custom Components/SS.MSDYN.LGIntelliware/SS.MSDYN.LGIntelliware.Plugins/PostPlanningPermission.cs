@@ -16,7 +16,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         /// </summary>
         public PostPlanningPermission() : base(typeof(PostPlanningPermission))
         {
-            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ServiceRequestTableColumnNames.PlanningPermissionTableName, Execute));
+            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ServiceRequest.PlanningPermissionTableName, Execute));
         }
 
         /// <summary>
@@ -42,19 +42,19 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         if (entity != null)
                         {
                             // Check if entity reference is of type planning permission...
-                            if (entity.LogicalName.Equals(ServiceRequestTableColumnNames.PlanningPermissionTableName))
+                            if (entity.LogicalName.Equals(ServiceRequest.PlanningPermissionTableName))
                             {
-                                if (entity.Attributes.ContainsKey(ServiceRequestTableColumnNames.ServiceConfiguration) && entity.Attributes[ServiceRequestTableColumnNames.ServiceConfiguration] != null)
+                                if (entity.Attributes.ContainsKey(ServiceRequest.ServiceConfiguration) && entity.Attributes[ServiceRequest.ServiceConfiguration] != null)
                                 {
-                                    var serviceConfigurationId = entity.GetAttributeValue<EntityReference>(ServiceRequestTableColumnNames.ServiceConfiguration).Id;
-                                    var serviceConfigurations = DataverseHelper.RetrieveServiceConfiguration(service, ServiceConfigurationTableColumnNames.TableName, serviceConfigurationId, new ColumnSet(ServiceConfigurationTableColumnNames.Subject, ServiceConfigurationTableColumnNames.Name));
+                                    var serviceConfigurationId = entity.GetAttributeValue<EntityReference>(ServiceRequest.ServiceConfiguration).Id;
+                                    var serviceConfigurations = DataverseHelper.RetrieveServiceConfiguration(service, ServiceConfiguration.TableName, serviceConfigurationId, new ColumnSet(ServiceConfiguration.Subject, ServiceConfiguration.Name));
                                     if (serviceConfigurations != null && serviceConfigurations.Entities != null && serviceConfigurations.Entities.Count > 0)
                                     {
                                         var serviceConfiguration = serviceConfigurations.Entities[0];
-                                        if (serviceConfiguration.Attributes.ContainsKey(ServiceConfigurationTableColumnNames.Subject) && serviceConfiguration.Attributes[ServiceConfigurationTableColumnNames.Subject] != null)
+                                        if (serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.Subject) && serviceConfiguration.Attributes[ServiceConfiguration.Subject] != null)
                                         {
-                                            var title = serviceConfiguration.GetAttributeValue<string>(ServiceConfigurationTableColumnNames.Subject);
-                                            var subjects = DataverseHelper.RetrieveSubject(service, SubjectTableColumnNames.TableName, title, new ColumnSet(SubjectTableColumnNames.Title));
+                                            var title = serviceConfiguration.GetAttributeValue<string>(ServiceConfiguration.Subject);
+                                            var subjects = DataverseHelper.RetrieveSubject(service, Subject.TableName, title, new ColumnSet(Subject.Title));
                                             if (subjects != null && subjects.Entities != null && subjects.Entities.Count > 0)
                                             {
                                                 var subject = subjects.Entities[0];
@@ -64,7 +64,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                                 {
                                                     Id = entity.Id
                                                 };
-                                                entityToUpdate.Attributes.Add(ServiceRequestTableColumnNames.Case, new EntityReference(IncidentTableColumnNames.TableName, incidentId));
+                                                entityToUpdate.Attributes.Add(ServiceRequest.Case, new EntityReference(Incident.TableName, incidentId));
                                                 DataverseHelper.Update(service, entityToUpdate);
                                             }
                                             else
