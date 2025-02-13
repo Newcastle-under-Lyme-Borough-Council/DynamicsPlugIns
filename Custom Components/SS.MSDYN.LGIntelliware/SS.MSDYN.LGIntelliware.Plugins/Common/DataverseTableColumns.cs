@@ -107,8 +107,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string TableAlias = "ss_contact_alias";
         public const string Uprn = "ss_uprn";
         public const string ContactId = "contactid";
-    
-
+        public const string PostCode = "address1_postalcode";
+        public const string Address = "address1_line2";
     }
     #endregion
 
@@ -122,6 +122,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string TableName = "ss_property";
         public const string Uprn = "ss_uprn";
         public const string Contact = "ss_contact";
+        public const string PostCode = "ss_postcode";
+        public const string Address = "ss_addresscs";
     }
     #endregion
 

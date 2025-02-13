@@ -23,7 +23,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             var context = localContext.PluginExecutionContext;
             //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
-
             try
             {
                 // Check if context message name is 'Create' ...
@@ -39,41 +38,19 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             {
                                 var contactId = entity.Id;
                                 var uprn = entity.GetAttributeValue<string>(ContactTableColumnNames.Uprn);
-                                //delete previous records 
-                                //var retrieveContactProperties = DataverseHelper.RetrieveContactProperties(service, tracingService, ContactPropertyTableColumnNames.TableName, contactId, new ColumnSet(false));
-                                //if (retrieveContactProperties != null && retrieveContactProperties.Entities.Count > 0)
-                                //{
-                                //    DataverseHelper.DeleteContactProperties(service, tracingService, retrieveContactProperties);
-                                //}
-                                //var check = DataverseHelper.RetrieveCreatedProperty(service, tracingService, PropertyTableColumnNames.TableName, uprn,contactId, new ColumnSet(false));
-                                var propertiesRecords = DataverseHelper.RetrievePropertiesContact(service, PropertyTableColumnNames.TableName, contactId, uprn, new ColumnSet(false));
                                 var fetchpropertyId = DataverseHelper.CheckPropertiesContactExist(service, PropertyTableColumnNames.TableName, contactId, uprn, new ColumnSet(false));
-                                if (fetchpropertyId != new Guid())
+                                if (fetchpropertyId == new Guid())
                                 {
-                                    //DataverseHelper.CreateContactProperty(service, tracingService, properties, contactId);
-                                   // DataverseHelper.UpdatePropertiesIsDefault(service, propertiesRecords, contactId);
-                                 //   DataverseHelper.SetPropertyToDefault(service, fetchpropertyId);
-
-                                }
-                                else
-                                {
-                                    var propertyId = DataverseHelper.CreateProperty(service, contactId, uprn);
+                                    var propertyId = DataverseHelper.CreateProperty(service, contactId,entity, uprn);
                                     if (propertyId != new Guid())
                                     {
                                         DataverseHelper.CreatePropertyContact(service, contactId, propertyId);
-                                        //DataverseHelper.UpdatePropertiesIsDefault(service, propertiesRecords, contactId);
-                                   //     DataverseHelper.SetPropertyToDefault(service, propertyId);
                                     }
-
                                 }
                             }
                         }
                     }
                 }
-            }
-            catch (FaultException<OrganizationServiceFault> ex)
-            {
-                throw new InvalidPluginExecutionException("Fault exception occured executing PostContactUpdate: " + ex.Message + ".");
             }
             catch (Exception ex)
             {

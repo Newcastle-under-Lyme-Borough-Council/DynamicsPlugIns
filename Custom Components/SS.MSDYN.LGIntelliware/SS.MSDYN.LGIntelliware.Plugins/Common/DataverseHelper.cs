@@ -146,52 +146,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("Fault exception occured executing Update: " + ex.Message + ".");
             }
         }
-        public static EntityCollection RetrieveProperties(this IOrganizationService service, string entityName, string uprn, ColumnSet columnSet)
-        {
-            try
-            {
-                var allRecords = new EntityCollection();
-                if (uprn != null)
-                {
-                    var query = new QueryExpression(entityName)
-                    {
-                        ColumnSet = columnSet,
-                        Criteria = new FilterExpression
-                        {
-                            Conditions =
-                {
-                    new ConditionExpression(PropertyTableColumnNames.Uprn, ConditionOperator.Equal, uprn)
-                }
-                        },
-                        PageInfo = new PagingInfo
-                        {
-                            Count = 5000,
-                            PageNumber = 1
-                        }
-                    };
-                    do
-                    {
-                        var currentPage = service.RetrieveMultiple(query);
-                        allRecords.Entities.AddRange(currentPage.Entities);
-                        // Check if more records exist
-                        if (currentPage.MoreRecords)
-                        {
-                            query.PageInfo.PageNumber++;
-                            query.PageInfo.PagingCookie = currentPage.PagingCookie;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    } while (true);
-                }
-                return allRecords;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while retrieving properties: " + ex.Message + ".");
-            }
-        }
 
         public static bool RetrieveCreatedProperty(this IOrganizationService service, string entityName, string uprn, Guid contactId, ColumnSet columnSet)
         {
@@ -530,24 +484,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        public static void CreatePropertyOnContactCreation(this IOrganizationService service, Guid contact, string propertyId)
-        {
-            try
-            {
-                var entityToCreate = new Entity(ContactPropertyTableColumnNames.TableName)
-                {
-                    [ContactPropertyTableColumnNames.Property] = new EntityReference(PropertyTableColumnNames.TableName, new Guid(propertyId)),
-                    [ContactPropertyTableColumnNames.Contact] = new EntityReference(ContactTableColumnNames.TableName, (contact))
-                };
-                service.Create(entityToCreate);
-
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table `contact property`: " + ex.Message + ".");
-            }
-        }
-
+        
         public static void AddCreatedContact(this IOrganizationService service, string contact, Guid propertyId)
         {
             try
@@ -620,13 +557,15 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        public static Guid CreateProperty(this IOrganizationService service, Guid contact, string uprn)
+        public static Guid CreateProperty(this IOrganizationService service, Guid contactId, Entity contact, string uprn)
         {
             try
             {
                 var entityToCreate = new Entity(PropertyTableColumnNames.TableName);
                 entityToCreate[PropertyTableColumnNames.Uprn] = uprn;
-                entityToCreate[PropertyTableColumnNames.Contact] = contact.ToString();
+                entityToCreate[PropertyTableColumnNames.PostCode] = contact.GetAttributeValue<string>(ContactTableColumnNames.PostCode);
+                entityToCreate[PropertyTableColumnNames.Address] = contact.GetAttributeValue<string>(ContactTableColumnNames.Address);
+                entityToCreate[PropertyTableColumnNames.Contact] = contactId.ToString();
                 return service.Create(entityToCreate);
             }
             catch (Exception ex)
@@ -652,6 +591,23 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             catch (Exception ex)
             {
                 throw new InvalidPluginExecutionException("An error occurred while updating the property record: " + ex.Message, ex);
+            }
+        }
+        public static void SetPropertyToDefault(this IOrganizationService service, Guid contactPropertyId)
+        {
+            try
+            {
+                var entityToUpdate = new Entity(ContactPropertyTableColumnNames.TableName)
+                {
+                    Id = contactPropertyId
+                };
+
+                entityToUpdate[ContactPropertyTableColumnNames.IsDefault] = true;
+                service.Update(entityToUpdate);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("An error occurred while updating the contact property record: " + ex.Message, ex);
             }
         }
 
@@ -743,7 +699,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact properties: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An error occurred while retrieve property: " + ex.Message + ".");
             }
         }
 

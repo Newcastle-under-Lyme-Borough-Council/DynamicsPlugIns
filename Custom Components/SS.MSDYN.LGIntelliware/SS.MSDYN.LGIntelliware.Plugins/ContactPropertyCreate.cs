@@ -9,12 +9,11 @@ using System.Threading.Tasks;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
-    public class PostContact : PluginBase
+    public class ContactPropertyCreate: PluginBase
     {
-        public PostContact() : base(typeof(PostContact))
+        public ContactPropertyCreate() : base(typeof(ContactPropertyCreate))
         {
-            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ContactTableColumnNames.TableName, Execute));
-
+            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ContactPropertyTableColumnNames.TableName, Execute));
         }
         protected void Execute(LocalPluginContext localContext)
         {
@@ -22,7 +21,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             var context = localContext.PluginExecutionContext;
             //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
-            
             try
             {
                 // Check if context message name is 'Create' ...
@@ -34,27 +32,19 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         var entity = (Entity)context.InputParameters[ContextInputParameters.TARGET];
                         if (entity != null)
                         {
-                            var contactId = entity.Id;
-                            var uprn = entity.GetAttributeValue<string>(ContactTableColumnNames.Uprn);
-                            var fetchpropertyId = DataverseHelper.CheckPropertiesContactExist(service, PropertyTableColumnNames.TableName, contactId, uprn, new ColumnSet(false));
-                            if (fetchpropertyId == new Guid())
+                            if (entity.LogicalName.Equals(ContactPropertyTableColumnNames.TableName))
                             {
-                                var propertyId = DataverseHelper.CreateProperty(service, contactId,entity, uprn);
-                                if (propertyId != new Guid())
-                                {
-                                    DataverseHelper.CreatePropertyContact(service, contactId, propertyId);
-                                }
-                        }
+                                var contactPropertyId = entity.Id;
+                                DataverseHelper.SetPropertyToDefault(service, contactPropertyId);
+                            }
                         }
                     }
                 }
             }
-            catch (Exception ex)
+            catch (FaultException<OrganizationServiceFault> ex)
             {
-                throw new InvalidPluginExecutionException("An exception occured executing PostContact: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing PostContactUpdate: " + ex.Message + ".");
             }
-
         }
-
     }
 }
