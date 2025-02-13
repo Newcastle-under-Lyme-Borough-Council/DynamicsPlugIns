@@ -30,6 +30,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string ReportedBy = "ss_onbehalfofsomeone";
         public const string ServiceConfiguration = "ss_serviceconfiguration";
         public const string Case = "ss_incidentid";
+
     }
     #endregion
 
@@ -82,7 +83,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Subject = "subjectid";
         public const string CaseNumber = "ticketnumber";
         public const string Origin = "caseorigincode";
-        public const string ServiceRequestStatus = "ss_externalsystemservicerequeststatus";
     }
     #endregion
 
@@ -107,31 +107,36 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string TableAlias = "ss_contact_alias";
         public const string Uprn = "ss_uprn";
         public const string ContactId = "contactid";
+    
+
     }
     #endregion
 
-     #region Sealed Class: PropertyTableColumnNames
- /// <summary>
- /// Sealed class for property table column names.
- /// </summary>
- public sealed class PropertyTableColumnNames
- {
-     public const string TableName = "ss_property";
-     public const string Uprn = "ss_uprn";
- }
- #endregion
+
+    #region Sealed Class: PropertyTableColumnNames
+    /// <summary>
+    /// Sealed class for property table column names.
+    /// </summary>
+    public sealed class PropertyTableColumnNames
+    {
+        public const string TableName = "ss_property";
+        public const string Uprn = "ss_uprn";
+        public const string Contact = "ss_contact";
+    }
+    #endregion
 
 
- #region Sealed Class: ContactPropertyTableColumnNames
- /// <summary>
- /// Sealed class for contactproperty table column names.
- /// </summary>
- public sealed class ContactPropertyTableColumnNames
- {
-     public const string TableName = "ss_contactproperty";
-     public const string Contact = "ss_contact";
-     public const string Property = "ss_property";
- }
- #endregion
+    #region Sealed Class: ContactPropertyTableColumnNames
+    /// <summary>
+    /// Sealed class for contactproperty table column names.
+    /// </summary>
+    public sealed class ContactPropertyTableColumnNames
+    {
+        public const string TableName = "ss_contactproperty";
+        public const string Contact = "ss_contact";
+        public const string Property = "ss_property";
+        public const string IsDefault = "ss_isdefault";
+    }
+    #endregion
 
 }
