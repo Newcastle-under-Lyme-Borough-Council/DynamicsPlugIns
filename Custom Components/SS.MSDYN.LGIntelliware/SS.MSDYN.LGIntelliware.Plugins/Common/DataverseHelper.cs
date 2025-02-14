@@ -134,6 +134,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                     entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ContactProperty).Id));
                 }
+                if (entity.Attributes.ContainsKey(ServiceRequest.Property) && entity.Attributes[ServiceRequest.Property] != null)
+                {
+
+                    entityToCreate.Attributes.Add(Incident.Property, entity.GetAttributeValue<string>(ServiceRequest.Property));
+                }
                 return service.Create(entityToCreate); ;
             }
             catch (Exception ex)
