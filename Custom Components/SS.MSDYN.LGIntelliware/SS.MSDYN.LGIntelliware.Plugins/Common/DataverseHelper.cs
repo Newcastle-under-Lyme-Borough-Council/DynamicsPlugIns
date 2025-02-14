@@ -131,7 +131,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.ContactProperty) && entity.Attributes[ServiceRequest.ContactProperty] != null)
                 {
-                
+
                     entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ContactProperty).Id));
                 }
                 return service.Create(entityToCreate); ;
@@ -550,7 +550,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 entityToCreate[Property.Region] = contact.GetAttributeValue<string>(Contact.Country);
                 entityToCreate[Property.Latitude] = contact.GetAttributeValue<double>(Contact.Latitude);
                 entityToCreate[Property.Longitude] = contact.GetAttributeValue<double>(Contact.Longitude);
-                
+
                 return service.Create(entityToCreate);
             }
             catch (Exception ex)
@@ -562,6 +562,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public static void UpdateContactwithPropertyData(IOrganizationService service, string tableName, Guid Contactid, Entity property)
         {
             var entityToCreate = new Entity(Contact.TableName, Contactid);
+            entityToCreate[Contact.Uprn] = property.GetAttributeValue<string>(Property.Uprn);
             entityToCreate[Contact.Address1_address] = property.GetAttributeValue<string>(Property.Addresscs);
             entityToCreate[Contact.County] = property.GetAttributeValue<string>(Property.County);
             entityToCreate[Contact.Address] = property.GetAttributeValue<string>(Property.Addressoscs);
