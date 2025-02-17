@@ -38,12 +38,30 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         {
                             if (entity.LogicalName.Equals(Property.TableName))
                             {
-                                //var uprn = entity.GetAttributeValue<string>(ContactTableColumnNames.Uprn);
-                                var propertyId = entity.Id;
-                                var contact = entity.GetAttributeValue<string>(Property.Contact);
-                                if (contact != null)
+                                var entityId = entity.Id;
+                                var uprn = entity.GetAttributeValue<string>(Property.Uprn);
+                                var contactId = entity.GetAttributeValue<string>(Property.Contact);
+                                var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
+
+                                if (entityId != propertyId)
                                 {
-                                    DataverseHelper.CreatePropertyContact(service, new Guid(contact), propertyId, false);
+                                    DataverseHelper.DeleteProperty(service, Property.TableName, entityId);
+                                }
+
+                                if (contactId != null)
+                                {
+                                    var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, new Guid(contactId), new ColumnSet(true));
+                                    foreach (var item in ExistingContactProperties.Entities)
+                                    {
+                                        if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId
+                                            && item.Attributes.Contains(ContactProperty.Contact) && ((EntityReference)(item.Attributes[ContactProperty.Contact])).Id == new Guid(contactId)
+                                            )
+                                        {
+                                            return;
+                                        }
+                                    }
+
+                                    DataverseHelper.CreatePropertyContact(service, new Guid(contactId), propertyId, false);
                                 }
                             }
                         }

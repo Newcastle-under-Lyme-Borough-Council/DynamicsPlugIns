@@ -737,7 +737,17 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-
+        public static void DeleteProperty(this IOrganizationService service, string entityName, Guid propertyId)
+        {
+            try
+            {
+                service.Delete(entityName, propertyId);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("Fault exception occurred executing DeleteProperty: " + ex.Message + ".", ex);
+            }
+        }
     }
 }
 
