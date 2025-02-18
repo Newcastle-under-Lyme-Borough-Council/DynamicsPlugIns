@@ -40,25 +40,28 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         {
                             var contactId = entity.Id;
                             var uprn = entity.GetAttributeValue<string>(Contact.Uprn);
-                            var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
-
-                            if (propertyId == Guid.Empty)
+                            if (uprn != null)
                             {
-                                propertyId = DataverseHelper.CreateProperty(service, entity, uprn);
-                            }
+                                var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
 
-                            if (propertyId != Guid.Empty)
-                            {
-                                var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(true));
-                                foreach (var item in ExistingContactProperties.Entities)
+                                if (propertyId == Guid.Empty)
                                 {
-                                    if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
-                                    {
-                                        DataverseHelper.SetContactPropertyToDefault(service, item.Id);
-                                        return;
-                                    }
+                                    propertyId = DataverseHelper.CreateProperty(service, entity, uprn);
                                 }
-                                DataverseHelper.CreatePropertyContact(service, contactId, propertyId, true);
+
+                                if (propertyId != Guid.Empty)
+                                {
+                                    var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(true));
+                                    foreach (var item in ExistingContactProperties.Entities)
+                                    {
+                                        if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
+                                        {
+                                            DataverseHelper.SetContactPropertyToDefault(service, item.Id);
+                                            return;
+                                        }
+                                    }
+                                    DataverseHelper.CreatePropertyContact(service, contactId, propertyId, true);
+                                }
                             }
                         }
                     }
