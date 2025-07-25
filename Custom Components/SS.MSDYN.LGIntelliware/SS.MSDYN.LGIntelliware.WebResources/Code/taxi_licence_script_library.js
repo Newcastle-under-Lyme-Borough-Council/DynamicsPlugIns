@@ -48,11 +48,11 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
           // Show or hide tabs based on the service configuration
           if (
             serviceConfigurationName ===
-            "taxi licence - dual hackney carriage and private hire"
+            "taxi licence - taxi driver licence"
           ) {
             SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
               executionContext,
-              "Dual_hackney_carriage_and_private_hire_details",
+              "tab_detail_sec_taxi_driver_licence",
               true
             );
             SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
@@ -60,9 +60,9 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
               "tab_mot",
               false
             );
-            SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsInTabDHC(
+            SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsInTabTDL(
               executionContext,
-              "Dual_hackney_carriage_and_private_hire_details"
+              "tab_detail_sec_taxi_driver_licence"
             );
             //SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsOnReviewTab(executionContext);
           } else if (
@@ -405,7 +405,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       }
     });
   },
-  hideEmptyFieldsInTabDHC: function (executionContext, tabName) {
+  hideEmptyFieldsInTabTDL: function (executionContext, tabName) {
     try {
       let formContext = executionContext.getFormContext();
       let tab = formContext.ui.tabs.get(tabName);
@@ -592,7 +592,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         if (lookupValue && lookupValue.length > 0 && lookupValue[0].name) {
           let serviceConfigurationName = lookupValue[0].name.toLowerCase();
           const bpfMapping = {
-            "taxi licence - dual hackney carriage and private hire": "ss_bpf_dualhackneycarriagevehicle",
+            "taxi licence - taxi driver licence": "ss_bpf_dualhackneycarriagevehicle",
             "taxi licence - private hire operator": "ss_bpf_privatehireoperatorvehicle",
             "taxi licence - notification of convictions and offences": "ss_bpf_notificationofconvictionsandoffencesvehicle",
             "taxi licence - hackney carriage vehicle": "ss_bpf_hackneycarriagevehicle",
@@ -668,8 +668,8 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
               .getValue()[0]
               .name.toLowerCase();
             const serviceConfigurationMap = {
-              "taxi licence - dual hackney carriage and private hire":
-                "Dual_hackney_carriage_and_private_hire_details",
+              "taxi licence - taxi driver licence":
+                "tab_detail_sec_taxi_driver_licence",
               "taxi licence - hackney carriage vehicle":
                 "tab_detail_sec_hackney_carriage_and_private_hire",
               "taxi licence - private hire vehicle":
