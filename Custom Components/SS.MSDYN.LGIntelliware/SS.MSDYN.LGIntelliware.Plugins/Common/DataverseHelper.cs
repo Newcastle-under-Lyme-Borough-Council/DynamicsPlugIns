@@ -10,6 +10,7 @@ using System.Collections;
 using System.Runtime.Remoting.Services;
 using System.Web.UI.WebControls;
 using System.IdentityModel.Metadata;
+using System.Runtime.Remoting.Contexts;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
@@ -131,13 +132,33 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.ContactProperty) && entity.Attributes[ServiceRequest.ContactProperty] != null)
                 {
-
                     entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ContactProperty).Id));
                 }
                 if (entity.Attributes.ContainsKey(ServiceRequest.Property) && entity.Attributes[ServiceRequest.Property] != null)
                 {
 
                     entityToCreate.Attributes.Add(Incident.Property, entity.GetAttributeValue<string>(ServiceRequest.Property));
+                }
+               
+                if(!entity.Contains(ServiceRequest.ContactProperty) && entity.LogicalName.Equals(ServiceRequest.MissedBinTableName))
+                { 
+                    var contactProperty = RetrieveDefaultContactProperty(service,ContactProperty.TableName,entity.GetAttributeValue<EntityReference>(ServiceRequest.Customer).Id,new ColumnSet(ContactProperty.Property,ContactProperty.ContactPropertyId));
+                    if (contactProperty!= null)
+                    {
+                        var propertyId = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Property).Id;
+                        var contactPropertyId = contactProperty.GetAttributeValue<Guid>(ContactProperty.ContactPropertyId);
+                        if (propertyId!=null)
+                        {
+                          var property=  RetrieveProperty(service, Property.TableName, propertyId, new ColumnSet(Property.Addresscs));
+                            if (property != null)
+                            {
+                                entityToCreate.Attributes.Add(Incident.Property, property.GetAttributeValue<string>(Property.Addresscs));
+                            }
+                        }
+
+                        entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, contactPropertyId));
+                    }
+
                 }
                 return service.Create(entityToCreate); ;
             }
@@ -751,6 +772,30 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             catch (Exception ex)
             {
                 throw new InvalidPluginExecutionException("Fault exception occurred executing DeleteProperty: " + ex.Message + ".", ex);
+            }
+        }
+        public static Entity RetrieveDefaultContactProperty(this IOrganizationService service, string entityName, Guid contactId, ColumnSet columnSet)
+        {
+            try
+            {
+                QueryExpression query = new QueryExpression(entityName)
+                {
+                    ColumnSet = columnSet,
+                    Criteria = new FilterExpression
+                    {
+                        Conditions =
+                        {
+                         new ConditionExpression(ContactProperty.Contact, ConditionOperator.Equal, contactId),
+                         new ConditionExpression(ContactProperty.IsDefault, ConditionOperator.Equal, true) ,
+                        }
+                    }
+                };
+                var result= service.RetrieveMultiple(query);
+                return result.Entities.Count > 0 ? result.Entities[0] : null;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveDefaultContactProperty: " + ex.Message + ".");
             }
         }
     }
