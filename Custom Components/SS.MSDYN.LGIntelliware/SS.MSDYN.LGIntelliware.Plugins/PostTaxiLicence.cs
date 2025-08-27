@@ -27,7 +27,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         {
             if (localContext == null) throw new ArgumentNullException(nameof(localContext));
             var context = localContext.PluginExecutionContext;
-            //var tracingService = localContext.TracingService;
+           //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
 
             try

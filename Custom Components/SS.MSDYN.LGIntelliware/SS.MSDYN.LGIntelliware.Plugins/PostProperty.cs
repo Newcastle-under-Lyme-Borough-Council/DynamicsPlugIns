@@ -48,6 +48,16 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                     DataverseHelper.DeleteProperty(service, Property.TableName, entityId);
                                 }
 
+                                if(propertyId != null)
+                                {
+                                    Entity postImage = new Entity();
+                                    if(context.PostEntityImages.Contains("PostTarget"))
+                                    {
+                                        postImage = context.PostEntityImages["PostTarget"];
+                                        var updateProperty = DataverseHelper.PropertyUpdate(service, postImage, uprn, propertyId);
+                                    }
+                                }
+
                                 if (contactId != null)
                                 {
                                     var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, new Guid(contactId), new ColumnSet(true));

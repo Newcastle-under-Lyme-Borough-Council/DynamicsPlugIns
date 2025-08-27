@@ -10,6 +10,7 @@ using System.Collections;
 using System.Runtime.Remoting.Services;
 using System.Web.UI.WebControls;
 using System.IdentityModel.Metadata;
+using System.Runtime.Remoting.Contexts;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
@@ -131,13 +132,33 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.ContactProperty) && entity.Attributes[ServiceRequest.ContactProperty] != null)
                 {
-
                     entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ContactProperty).Id));
                 }
                 if (entity.Attributes.ContainsKey(ServiceRequest.Property) && entity.Attributes[ServiceRequest.Property] != null)
                 {
 
                     entityToCreate.Attributes.Add(Incident.Property, entity.GetAttributeValue<string>(ServiceRequest.Property));
+                }
+               
+                if(!entity.Contains(ServiceRequest.ContactProperty) && entity.LogicalName.Equals(ServiceRequest.MissedBinTableName))
+                { 
+                    var contactProperty = RetrieveDefaultContactProperty(service,ContactProperty.TableName,entity.GetAttributeValue<EntityReference>(ServiceRequest.Customer).Id,new ColumnSet(ContactProperty.Property,ContactProperty.ContactPropertyId));
+                    if (contactProperty!= null)
+                    {
+                        var propertyId = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Property).Id;
+                        var contactPropertyId = contactProperty.GetAttributeValue<Guid>(ContactProperty.ContactPropertyId);
+                        if (propertyId!=null)
+                        {
+                          var property=  RetrieveProperty(service, Property.TableName, propertyId, new ColumnSet(Property.Addresscs));
+                            if (property != null)
+                            {
+                                entityToCreate.Attributes.Add(Incident.Property, property.GetAttributeValue<string>(Property.Addresscs));
+                            }
+                        }
+
+                        entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, contactPropertyId));
+                    }
+
                 }
                 return service.Create(entityToCreate); ;
             }
@@ -560,9 +581,67 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table `contact property`: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An error occurred while creating records in table `property`: " + ex.Message + ".");
             }
 
+        }
+
+        public static Guid UpdateProperty(this IOrganizationService service, Entity contact, string uprn, Guid propertyId)
+        {
+            try
+            {
+                var entityToUpdate = new Entity(Property.TableName)
+                {
+                    Id = propertyId
+                };
+                entityToUpdate[Property.Addresscs] = contact.GetAttributeValue<string>(Contact.Address1_address);
+                entityToUpdate[Property.County] = contact.GetAttributeValue<string>(Contact.County);
+                entityToUpdate[Property.Addressoscs] = contact.GetAttributeValue<string>(Contact.Address);
+                entityToUpdate[Property.Localityname] = contact.GetAttributeValue<string>(Contact.Address2);
+                entityToUpdate[Property.Streetname] = contact.GetAttributeValue<string>(Contact.Address1_line3);
+                entityToUpdate[Property.TownName] = contact.GetAttributeValue<string>(Contact.City);
+                entityToUpdate[Property.PostCode] = contact.GetAttributeValue<string>(Contact.PostCode);
+                entityToUpdate[Property.Posttown] = contact.GetAttributeValue<string>(Contact.Stateorprovince);
+                entityToUpdate[Property.Region] = contact.GetAttributeValue<string>(Contact.Country);
+                entityToUpdate[Property.Latitude] = contact.GetAttributeValue<double?>(Contact.Latitude);
+                entityToUpdate[Property.Longitude] = contact.GetAttributeValue<double?>(Contact.Longitude);
+                service.Update(entityToUpdate);
+
+                return propertyId;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("An error occurred while updating records in table ` property`: " + ex.Message + ".");
+            }
+        }
+
+        public static Guid PropertyUpdate(this IOrganizationService service, Entity property, string uprn, Guid propertyId)
+        {
+            try
+            {
+                var entityToUpdate = new Entity(Property.TableName)
+                {
+                    Id = propertyId
+                };
+                entityToUpdate[Property.Addresscs] = property.GetAttributeValue<string>(Property.Addresscs);
+                entityToUpdate[Property.County] = property.GetAttributeValue<string>(Property.County);
+                entityToUpdate[Property.Addressoscs] = property.GetAttributeValue<string>(Property.Addressoscs);
+                entityToUpdate[Property.Localityname] = property.GetAttributeValue<string>(Property.Localityname);
+                entityToUpdate[Property.Streetname] = property.GetAttributeValue<string>(Property.Streetname);
+                entityToUpdate[Property.TownName] = property.GetAttributeValue<string>(Property.TownName);
+                entityToUpdate[Property.PostCode] = property.GetAttributeValue<string>(Property.PostCode);
+                entityToUpdate[Property.Posttown] = property.GetAttributeValue<string>(Property.Posttown);
+                entityToUpdate[Property.Region] = property.GetAttributeValue<string>(Property.Region);
+                entityToUpdate[Property.Latitude] = property.GetAttributeValue<double?>(Property.Latitude);
+                entityToUpdate[Property.Longitude] = property.GetAttributeValue<double?>(Property.Longitude);
+                service.Update(entityToUpdate);
+
+                return propertyId;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("An error occurred while updating records in table ` property`: " + ex.Message + ".");
+            }
         }
         public static void UpdateContactwithPropertyData(IOrganizationService service, string tableName, Guid Contactid, Entity property)
         {
@@ -582,7 +661,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             service.Update(entityToCreate);
         }
-
         public static void RemoveOtherContactPropertyfromDefault(this IOrganizationService service, Guid contactPropertyId)
         {
             try
@@ -751,6 +829,30 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             catch (Exception ex)
             {
                 throw new InvalidPluginExecutionException("Fault exception occurred executing DeleteProperty: " + ex.Message + ".", ex);
+            }
+        }
+        public static Entity RetrieveDefaultContactProperty(this IOrganizationService service, string entityName, Guid contactId, ColumnSet columnSet)
+        {
+            try
+            {
+                QueryExpression query = new QueryExpression(entityName)
+                {
+                    ColumnSet = columnSet,
+                    Criteria = new FilterExpression
+                    {
+                        Conditions =
+                        {
+                         new ConditionExpression(ContactProperty.Contact, ConditionOperator.Equal, contactId),
+                         new ConditionExpression(ContactProperty.IsDefault, ConditionOperator.Equal, true) ,
+                        }
+                    }
+                };
+                var result= service.RetrieveMultiple(query);
+                return result.Entities.Count > 0 ? result.Entities[0] : null;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveDefaultContactProperty: " + ex.Message + ".");
             }
         }
     }

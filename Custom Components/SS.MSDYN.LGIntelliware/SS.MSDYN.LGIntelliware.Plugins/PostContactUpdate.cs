@@ -50,6 +50,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                             if (propertyId != Guid.Empty)
                             {
+                                var updateProperty = DataverseHelper.UpdateProperty(service, entity, uprn, propertyId);
                                 var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(true));
                                 foreach (var item in ExistingContactProperties.Entities)
                                 {

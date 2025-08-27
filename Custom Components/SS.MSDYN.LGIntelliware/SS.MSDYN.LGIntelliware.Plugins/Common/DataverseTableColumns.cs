@@ -164,6 +164,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Contact = "ss_contact";
         public const string Property = "ss_property";
         public const string IsDefault = "ss_isdefault";
+        public const string ContactPropertyId = "ss_contactpropertyid";
     }
     #endregion
 
