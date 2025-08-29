@@ -85,11 +85,6 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
               "tab_dvla_vehicle_details",
               false
             );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_dbs",
-              false
-            );
             SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsInTabHCV(
               executionContext,
               "tab_detail_sec_hackney_carriage_and_private_hire"
@@ -396,7 +391,13 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         });
       });
     };
-
+ formContext.getControl("ss_group2medicalform").setDisabled(true);
+ formContext.getControl("ss_uploadgaragetestpasscertificate").setDisabled(true);
+formContext.getControl("ss_taximeterreportupload").setDisabled(true);
+formContext.getControl("ss_uploadpublichireinsurancecertificate").setDisabled(true);
+formContext.getControl("ss_uploadconversioncertificate").setDisabled(true);
+formContext.getControl("ss_uploadv5logbookv5slip").setDisabled(true);
+formContext.getControl("ss_uploadprivatehireinsurancecertificate").setDisabled(true);
     // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
     tab.addTabStateChange(function () {
       if (tab.getDisplayState() === "expanded") {
@@ -458,6 +459,10 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         });
       };
 
+      formContext.getControl("ss_group2medicalform").setDisabled(true);
+        formContext.getControl("ss_certificateofgoodconductfromembassy").setDisabled(true);
+        formContext.getControl("ss_dbscertificate").setDisabled(true);
+ formContext.getControl("ss_disabilityequalitysafeguardingtrainingcertif").setDisabled(true);
       // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
       tab.addTabStateChange(function () {
         if (tab.getDisplayState() === "expanded") {
@@ -551,7 +556,10 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         });
       });
     };
-
+   formContext.getControl("ss_premisespublicliabilityinsurance").setDisabled(true);
+   formContext.getControl("ss_uploadbasicdisclosurecertificateenhanceddbs").setDisabled(true);
+formContext.getControl("ss_uploaddisabilityequalitysafeguardingtraining").setDisabled(true);
+formContext.getControl("ss_uploadfleetinsurancewithscheduleofvehicles").setDisabled(true);
     // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
     tab.addTabStateChange(function () {
       if (tab.getDisplayState() === "expanded") {
