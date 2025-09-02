@@ -1,36 +1,40 @@
+// Define namespace
 if (typeof (SS) === "undefined") { SS = {}; }
 if (typeof (SS.MSDYN) === "undefined") { SS.MSDYN = {}; }
 if (typeof (SS.MSDYN.LGIntelliware) === "undefined") { SS.MSDYN.LGIntelliware = {}; }
 if (typeof (SS.MSDYN.LGIntelliware.WR) === "undefined") { SS.MSDYN.LGIntelliware.WR = {}; }
-
+// Namespace for MissedBin-related functionality
 SS.MSDYN.LGIntelliware.WR.MissedBin = {
+    // Handles check bartec status button click
     checkBartecMunicipalStatusButtonForm: function (primaryControl) {
         try {
             let formContext = primaryControl;
-            let confirmStrings = { text: "Do you want to Check Status in Bartec Municipal? You can't undo this action.", title: "Confirm Bartec Municipal Check Status" };
-            let confirmOptions = { height: 200, width: 450 };
+            // Confirmation dialog text and configuration
+            let confirmStrings = { text: SS.MSDYN.LGIntelliware.WR.Constants.missedBinTableDialogueConfiguration.bartecMunicipalCheckServiceRequestStatusText, title: SS.MSDYN.LGIntelliware.WR.Constants.missedBinTableDialogueConfiguration.bartecMunicipalCheckServiceRequestStatusTitle };
+            let confirmOptions = { height: SS.MSDYN.LGIntelliware.WR.Constants.missedBinTableDialogueConfiguration.bartecMunicipalCheckServiceRequestStatusHeight, width: SS.MSDYN.LGIntelliware.WR.Constants.missedBinTableDialogueConfiguration.bartecMunicipalCheckServiceRequestStatusWidth };
+            // Open confirmation dialog
             Xrm.Navigation.openConfirmDialog(confirmStrings, confirmOptions).then(
                 function (success) {
                     if (success.confirmed) {
+                        // User confirmed Show progress indicator
                         SS.MSDYN.LGIntelliware.WR.Common.showProgressIndicator();
-
                         let entityId = formContext.data.entity.getId().replace("{", "").replace("}", "");
-                        // Execute Bartec Municipal: Check service request status custom action...
+                        // Execute bartec municipal: check service request status custom action
                         let execute_ss_BartecMunicipalCheckServiceRequestStatus_Request = {
                             // Parameters
-                            entity: { entityType: "ss_missedbin", id: entityId }, // entity
-
+                            entity: { entityType: SS.MSDYN.LGIntelliware.WR.Constants.missedBinTableFields.missedBinTableName, id: entityId },
+                            // Metadata for custom action call
                             getMetadata: function () {
                                 return {
-                                    boundParameter: "entity",
+                                    boundParameter: SS.MSDYN.LGIntelliware.WR.Constants.customActionParameter.boundParameter,
                                     parameterTypes: {
-                                        entity: { typeName: "mscrm.ss_missedbin", structuralProperty: 5 }
+                                        entity: { typeName: SS.MSDYN.LGIntelliware.WR.Constants.missedBinTableCustomAction.typeName, structuralProperty: SS.MSDYN.LGIntelliware.WR.Constants.customActionParameter.structuralProperty }
                                     },
-                                    operationType: 0, operationName: "ss_BartecMunicipalCheckServiceRequestStatus"
+                                    operationType: SS.MSDYN.LGIntelliware.WR.Constants.customActionParameter.operationType, operationName: SS.MSDYN.LGIntelliware.WR.Constants.missedBinTableCustomAction.bartecMunicipalCheckServiceRequestStatus
                                 };
                             }
                         };
-
+                        // Execute the custom action using Web API
                         Xrm.WebApi.execute(execute_ss_BartecMunicipalCheckServiceRequestStatus_Request).then(
                             function success(response) {
                                 if (response.ok) {
@@ -38,6 +42,7 @@ SS.MSDYN.LGIntelliware.WR.MissedBin = {
                                 }
                             }
                         ).catch(function (e) {
+                            // Hide progress and show error if action fails
                             SS.MSDYN.LGIntelliware.WR.Common.hideProgressIndicator();
                             SS.MSDYN.LGIntelliware.WR.Common.showError(e.message, false);
                         });

@@ -1,3 +1,4 @@
+// Define namespace
 if (typeof SS === "undefined") {
   SS = {};
 }
@@ -12,576 +13,296 @@ if (typeof SS.MSDYN.LGIntelliware.WR === "undefined") {
 }
 
 SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
+  // Handles form onLoad event
   onLoad: function (executionContext) {
     try {
-      // Show/Hide columns...
-      SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideTabBasedOnFieldValue(
+      //Show/hide relevant tabs based on service configuration
+      SS.MSDYN.LGIntelliware.WR.TaxiLicence.configureFormByServiceConfigurationValue(
         executionContext
       );
+      //Set bpf based on service configuration
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.serviceBasedBPF(executionContext);
+      //Register event on bpf stage change
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.registerAddOnStageChangeEvent(executionContext);
-      SS.MSDYN.LGIntelliware.WR.TaxiLicence.disableBpfFields(executionContext);
-      SS.MSDYN.LGIntelliware.WR.TaxiLicence.bpfStatusChange(executionContext);
+      //Badgenumber column validation 
+      SS.MSDYN.LGIntelliware.WR.TaxiLicence.badgeNumberValidation(executionContext);
+      //Handle bpf status change
+      SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleBpfCompletionStatusChange(executionContext);
+      //Handle bpf status change
+      SS.MSDYN.LGIntelliware.WR.TaxiLicence.lockBPFFields(executionContext);
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
 
-  showHideTabBasedOnFieldValue: function (executionContext) {
+  //Show form and fileds based on service configuration value
+  configureFormByServiceConfigurationValue: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      let configControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceHeaderFields.headerServiceConfiguration);
+
+      if (!configControl) {
+        // If service configuration field is missing, log error and exit
+        SS.MSDYN.LGIntelliware.WR.Common.showError("Service configuration missing.", false);
+        return;
+      }
+      //Get configControl value
+      let value = configControl.getAttribute().getValue();
+      if (value && value.length > 0 && value[0].name) {
+        let serviceName = value[0].name.toLowerCase();
+        if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.taxiDriverLicence) {
+          SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleTaxiDriverLicence(executionContext);
+
+        }
+        if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.privateHireOperator) {
+          SS.MSDYN.LGIntelliware.WR.TaxiLicence.handlePrivateHireOperator(executionContext);
+
+        }
+        if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.privateHireVehicle) {
+          SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleHackneyCarriageOrPrivateHire(executionContext);
+
+        }
+        if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.hackneyCarriageVehicle) {
+          SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleHackneyCarriageOrPrivateHire(executionContext);
+
+        }
+        if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.notificationOfConvictions) {
+          SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleNotificationOfConvictions(executionContext);
+
+        }
+      }
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+
+  //Handle Taxi driver licence form
+  handleTaxiDriverLicence: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      //Hide or show tabs 
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.taxiDriverLicence, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.mot, false);
+      // Disable fields that should not be editable by the user
+      SS.MSDYN.LGIntelliware.WR.Common.disableFields(formContext, [
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.group2MedicalForm,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.certificateOfGoodConduct,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.dbsCertificate,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.disabilityEqualityCertificate,
+      ]);
+
+      // Hide all empty fields in the taxi driver licence tab exclude the office use only section from hiding
+      SS.MSDYN.LGIntelliware.WR.Common.hideEmptyFieldsInTab(formContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.taxiDriverLicence, [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableSections.officeUseOnly]);
+      // Hide any subgrids in the taxi driver licence tab that have no records
+      SS.MSDYN.LGIntelliware.WR.Common.hideEmptySubgridsInTab(formContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.taxiDriverLicence);
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+
+  //Handle hackney carriage or private hire vehicle form
+  handleHackneyCarriageOrPrivateHire: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
 
-      // Check for the service configuration control
-      if (formContext.getControl("header_ss_serviceconfiguration")) {
-        let serviceConfigurationLookup = formContext
-          .getControl("header_ss_serviceconfiguration")
-          .getAttribute();
-        if (
-          serviceConfigurationLookup.getValue() &&
-          serviceConfigurationLookup.getValue().length > 0 &&
-          serviceConfigurationLookup.getValue()[0].name
-        ) {
-          let serviceConfigurationName = serviceConfigurationLookup
-            .getValue()[0]
-            .name.toLowerCase();
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.hackneyCarriageAndPrivateHire, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaDriverData, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaVehicleDetails, false);
+      // Disable fields that should not be editable by the user
+      SS.MSDYN.LGIntelliware.WR.Common.disableFields(formContext, [
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.group2MedicalForm,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.garageTestPassCertificate,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.taximeterReport,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.publicHireInsuranceCertificate,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.conversionCertificate,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.v5Logbookv5Slip,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.privateHireInsuranceCertificate,
+      ]);
 
-          // Show or hide tabs based on the service configuration
-          if (
-            serviceConfigurationName ===
-            "taxi licence - taxi driver licence"
-          ) {
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_detail_sec_taxi_driver_licence",
-              true
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_mot",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsInTabTDL(
-              executionContext,
-              "tab_detail_sec_taxi_driver_licence"
-            );
-            //SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsOnReviewTab(executionContext);
-          } else if (
-            serviceConfigurationName ===
-            "taxi licence - hackney carriage vehicle" ||
-            serviceConfigurationName === "taxi licence - private hire vehicle"
-          ) {
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_detail_sec_hackney_carriage_and_private_hire",
-              true
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_dvla_driver_data",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_dvla_vehicle_details",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsInTabHCV(
-              executionContext,
-              "tab_detail_sec_hackney_carriage_and_private_hire"
-            );
-          } else if (
-            serviceConfigurationName === "taxi licence - private hire operator"
-          ) {
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_detail_sec_private_hire_operator",
-              true
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_dvla_driver_data",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_dvla_vehicle_details",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_dbs",
-              true
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_mot",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.TaxiLicence.hideEmptyFieldsInTabPHO(
-              executionContext,
-              "tab_detail_sec_private_hire_operator"
-            );
-          } else if (
-            serviceConfigurationName ===
-            "taxi licence - notification of convictions and offences"
-          ) {
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "Notification_of_convictions_details",
-              true
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_dvla_driver_data",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_dvla_vehicle_details",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_dbs",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_mot",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_pay360",
-              false
-            );
+      // Hide all empty fields 
+      SS.MSDYN.LGIntelliware.WR.Common.hideEmptyFieldsInTab(formContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.hackneyCarriageAndPrivateHire);
 
-            // Get radio button field
-            const radioButtons = formContext.getAttribute(
-              "ss_whatareyounotifyingusoff"
-            );
-
-            // Get section controls by their names
-            const motoringOffenceSection = formContext.ui.tabs
-              .get("Notification_of_convictions_details")
-              .sections.get("motorings_offence_details_section_4");
-            const cautionWarningSection = formContext.ui.tabs
-              .get("Notification_of_convictions_details")
-              .sections.get("caution_or_warning_details_section_5");
-            const policeInterviewSection = formContext.ui.tabs
-              .get("Notification_of_convictions_details")
-              .sections.get("questioned_or_interviewed_details_section_6");
-            const convictionsSection = formContext.ui.tabs
-              .get("Notification_of_convictions_details")
-              .sections.get("convictions_details_section_7");
-            const licenceDetailsSection = formContext.ui.tabs
-              .get("Notification_of_convictions_details")
-              .sections.get("licence_details_section_8");
-
-            // Function to check and hide empty fields and sections
-            function hideEmptyFields(section) {
-              let allFieldsEmpty = true; // Track if all fields are empty
-
-              section.controls.forEach((control) => {
-                let attribute = control.getAttribute();
-                if (attribute) {
-                  let value = attribute.getValue();
-                  if (!value) {
-                    control.setVisible(false); // Hide control if empty
-                  } else {
-                    control.setVisible(true); // Show control if it has value
-                    allFieldsEmpty = false; // Mark as not all fields empty
-                  }
-                }
-              });
-
-              // Hide entire section if all fields are empty
-              section.setVisible(!allFieldsEmpty);
-            }
-
-            // Function to toggle sections based on the selected radio button value
-            function toggleSections() {
-              // Hide all sections first
-              motoringOffenceSection.setVisible(false);
-              cautionWarningSection.setVisible(false);
-              policeInterviewSection.setVisible(false);
-              convictionsSection.setVisible(false);
-              licenceDetailsSection.setVisible(false); // Hide licence details section initially
-
-              // Get the selected radio button value
-              const selectedValue = radioButtons.getValue();
-
-              // Show the corresponding section based on the selected radio button value
-              if (selectedValue) {
-                switch (selectedValue.toString()) {
-                  case "1":
-                    hideEmptyFields(motoringOffenceSection);
-                    SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-                      executionContext,
-                      "tab_dvla_driver_data",
-                      true
-                    );
-                    SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-                      executionContext,
-                      "tab_dvla_vehicle_details",
-                      true
-                    );
-                    break;
-                  case "2":
-                    hideEmptyFields(cautionWarningSection);
-                    break;
-                  case "3":
-                    hideEmptyFields(policeInterviewSection);
-                    break;
-                  case "4":
-                    hideEmptyFields(convictionsSection);
-                    break;
-                  default:
-                    break;
-                }
-              }
-
-              // Check the licence details section for visibility
-              hideEmptyFields(licenceDetailsSection); // Check if licence details should be visible
-
-              // Hide the radio button column if it has no value
-              if (!selectedValue) {
-                formContext
-                  .getControl("ss_whatareyounotifyingusoff")
-                  .setVisible(false);
-              } else {
-                formContext
-                  .getControl("ss_whatareyounotifyingusoff")
-                  .setVisible(true);
-              }
-            }
-
-            // Add event listener to the radio buttons to handle change events
-            radioButtons.controls.forEach((control) => {
-              control.addOnChange(() => {
-                toggleSections(); // Call the function to show/hide sections
-              });
-            });
-
-            // Initialize the visibility based on the selected radio button value on form load
-            toggleSections();
-          } else {
-            // If no relevant configuration, hide both tabs
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "tab_applicant_details",
-              false
-            );
-            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(
-              executionContext,
-              "Notification_of_convictions_details",
-              false
-            );
-          }
-        }
-      } else {
-        SS.MSDYN.LGIntelliware.WR.Common.showError(
-          "Unable to find relevant service to show application details. Please contact system administrator for more information.",
-          false
-        );
-      }
-    } catch (e) {
-      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
-    }
-  },
-  hideEmptyFieldsOnReviewTab: function (executionContext) {
-    try {
-      let formContext = executionContext.getFormContext(); // Get the form context
-      let attributes = formContext.data.entity.attributes.get(); // Get all attributes (fields)
-
-      attributes.forEach(function (attribute) {
-        let fieldName = attribute.getName();
-        let control = formContext.getControl(fieldName);
-
-        if (control && !attribute.getValue()) {
-          // Check if the field is empty
-          if (
-            control.getControlType() === "standard" ||
-            control.getControlType() === "boolean"
-          ) {
-            // Standard input or checkbox
-            control.setVisible(false); // Hide the empty field or checkbox
-          }
-        }
-      });
+      SS.MSDYN.LGIntelliware.WR.Common.hideEmptySubgridsInTab(formContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.hackneyCarriageAndPrivateHire);
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
 
-  hideEmptyFieldsInTabHCV: function (executionContext, tabName) {
-    let formContext = executionContext.getFormContext();
-    let tab = formContext.ui.tabs.get(tabName);
-
-    if (!tab) return;
-
-    const areYouApplyingAs = formContext
-      .getAttribute("ss_additionalquestionsareyouapplyingas")
-      .getValue();
-    const jointOwnershipSection = tab.sections.get(
-      "tab_detail_sec_joint_ownership"
-    );
-    const companyDetailsSection = tab.sections.get(
-      "tab_detail_sec_company_details"
-    );
-    const declaration = tab.sections.get("tab_detail_sec_declaration");
-
-    // Generic function to update section visibility based on subgrid record count
-    const updateSectionVisibility = function (gridControlName, section) {
-      let gridControl = formContext.getControl(gridControlName);
-      if (gridControl) {
-        gridControl.addOnLoad(function () {
-          const totalRecordCount = gridControl.getGrid().getTotalRecordCount();
-          if (section !== companyDetailsSection) {
-            section.setVisible(totalRecordCount > 0);
-          } else if (section === companyDetailsSection) {
-            gridControl.setVisible(totalRecordCount > 0);
-          }
-        });
-      }
-    };
-
-    // Generic function to handle visibility logic based on conditions
-    const handleSectionVisibility = function () {
-      updateSectionVisibility("Subgrid_declaration", declaration);
-      switch (areYouApplyingAs) {
-        case 1:
-          if (jointOwnershipSection) jointOwnershipSection.setVisible(false);
-          if (companyDetailsSection) companyDetailsSection.setVisible(false);
-          break;
-        case 2:
-          if (companyDetailsSection) companyDetailsSection.setVisible(false);
-          updateSectionVisibility(
-            "Subgrid_joint_ownership",
-            jointOwnershipSection
-          );
-          break;
-        case 3:
-          if (jointOwnershipSection) jointOwnershipSection.setVisible(false);
-          updateSectionVisibility("Subgrid_directors", companyDetailsSection);
-          break;
-        default:
-          if (jointOwnershipSection) jointOwnershipSection.setVisible(false);
-          if (companyDetailsSection) companyDetailsSection.setVisible(false);
-      }
-    };
-
-    // Generic function to hide empty fields in a given tab
-    const hideEmptyFields = function () {
-      tab.sections.forEach(function (section) {
-        section.controls.forEach(function (control) {
-          let attribute = control.getAttribute();
-          if (!attribute) return;
-
-          let value = attribute.getValue();
-          let attributeType = attribute.getAttributeType();
-
-          if (["lookup", "boolean"].includes(attributeType)) return;
-
-          control.setVisible(
-            attributeType === "optionset"
-              ? value !== null
-              : value !== null && value !== undefined && value !== ""
-          );
-        });
-      });
-    };
- formContext.getControl("ss_group2medicalform").setDisabled(true);
- formContext.getControl("ss_uploadgaragetestpasscertificate").setDisabled(true);
-formContext.getControl("ss_taximeterreportupload").setDisabled(true);
-formContext.getControl("ss_uploadpublichireinsurancecertificate").setDisabled(true);
-formContext.getControl("ss_uploadconversioncertificate").setDisabled(true);
-formContext.getControl("ss_uploadv5logbookv5slip").setDisabled(true);
-formContext.getControl("ss_uploadprivatehireinsurancecertificate").setDisabled(true);
-    // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
-    tab.addTabStateChange(function () {
-      if (tab.getDisplayState() === "expanded") {
-        handleSectionVisibility();
-        hideEmptyFields();
-      }
-    });
-  },
-  hideEmptyFieldsInTabTDL: function (executionContext, tabName) {
+  //Handle private hire operator form
+  handlePrivateHireOperator: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
-      let tab = formContext.ui.tabs.get(tabName);
-      if (!tab) return;
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaDriverData, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaVehicleDetails, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dbs, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.mot, false);
+      // Disable fields that should not be editable by the user
+      SS.MSDYN.LGIntelliware.WR.Common.disableFields(formContext, [
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.premisesPublicLiabilityInsurance,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.basicDisclosureCertificate,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.disabilityEqualitySafeguardingTraining,
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.fleetInsuranceWithScheduleOfVehicles,
+      ]);
+      // Hide any empty fields and subgrids 
+      SS.MSDYN.LGIntelliware.WR.Common.hideEmptyFieldsInTab(formContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator);
+      SS.MSDYN.LGIntelliware.WR.Common.hideEmptySubgridsInTab(formContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator);
 
-      const hideEmptyFields = function () {
-        tab.sections.forEach(function (section) {
-          // Skip the section named 'tab_details_sec_office_use_only'
-          if (section.getName() === "tab_details_sec_office_use_only") {
-            return; // Skip this section
-          }
-
-          // Apply the hide logic to other sections
-          section.controls.forEach(function (control) {
-            let attribute = control.getAttribute();
-            if (!attribute) return;
-
-            let value = attribute.getValue();
-            let attributeType = attribute.getAttributeType();
-
-            // Exclude 'lookup' and 'boolean' types from the logic
-            if (["lookup", "boolean"].includes(attributeType)) return;
-
-            // Set visibility based on attribute type and value
-            control.setVisible(
-              attributeType === "optionset"
-                ? value !== null
-                : value !== null && value !== undefined && value !== ""
-            );
-          });
-        });
-      };
-
-      // Function to update visibility of subgrids based on record count
-      const hideshowSubgrid = function () {
-        tab.sections.forEach(function (section) {
-          section.controls.forEach(function (control) {
-            if (control.getControlType() === "subgrid") {
-              let subgridControl = control;
-              subgridControl.addOnLoad(function () {
-                let recordCount = subgridControl
-                  .getGrid()
-                  .getTotalRecordCount();
-                // Hide subgrid if there are no records, show otherwise
-                subgridControl.setVisible(recordCount > 0);
-                subgridControl.setDisabled(true);
-              });
-            }
-          });
-        });
-      };
-
-      formContext.getControl("ss_group2medicalform").setDisabled(true);
-        formContext.getControl("ss_certificateofgoodconductfromembassy").setDisabled(true);
-        formContext.getControl("ss_dbscertificate").setDisabled(true);
- formContext.getControl("ss_disabilityequalitysafeguardingtrainingcertif").setDisabled(true);
-      // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
-      tab.addTabStateChange(function () {
-        if (tab.getDisplayState() === "expanded") {
-          // Call hideEmptyFields when tab is expanded
-          hideEmptyFields();
-          hideshowSubgrid();
-        }
-      });
+      // Additional PHO section logic based on Are you applying as question
+      let areYouApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.additionalQuestionsApplyingAs)?.getValue();
+      // Get relevant sections for visibility control
+      const companyDetails = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator).sections.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableSections.companyDetails);
+      const detailsJointApplicants = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator).sections.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableSections.jointApplicants);
+      const individualApplicants = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator).sections.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableSections.individualApplicants);
+      const evidenceRightToWork = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator).sections.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableSections.evidenceRightToWork);
+      const evidenceRightToWorkJointOwner = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator).sections.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableSections.evidenceRightToWorkJointOwner);
+      // Control section visibility based on the applicant type
+      switch (areYouApplyingAs) {
+        case 1:
+          companyDetails?.setVisible(false);
+          detailsJointApplicants?.setVisible(false);
+          evidenceRightToWorkJointOwner?.setVisible(false);
+          break;
+        case 2:
+          companyDetails?.setVisible(false);
+          individualApplicants?.setVisible(false);
+          evidenceRightToWork?.setVisible(false);
+          break;
+        case 3:
+          detailsJointApplicants?.setVisible(false);
+          evidenceRightToWorkJointOwner?.setVisible(false);
+          evidenceRightToWork?.setVisible(false);
+          break;
+      }
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
-  hideEmptyFieldsInTabPHO: function (executionContext, tabName) {
-    let formContext = executionContext.getFormContext();
-    let tab = formContext.ui.tabs.get(tabName);
 
-    if (!tab) return;
+  //Handle notification of conviction form
+  handleNotificationOfConvictions: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      // Show/hide tabs
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.notificationOfConvictions, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaDriverData, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaVehicleDetails, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dbs, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.mot, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.pay360, false);
 
-    const areYouApplyingAs = formContext
-      .getAttribute("ss_additionalquestionsareyouapplyingas")
-      .getValue();
-    const companyDetails = tab.sections.get("tab_details_sec_company_details");
-    const detailsJointApplicants = tab.sections.get(
-      "tab_detail_sec_details_of_join_applicants"
-    );
-    const individualApplicants = tab.sections.get(
-      "tab_detail_section_individual_applicant_details"
-    );
-    const evidenceRightToWork = tab.sections.get(
-      "tab_detail_sec_evidence_of_right_to_Work_in_the_uk"
-    );
-    const evidenceRightToWorkJointOwner = tab.sections.get(
-      "tab_detail_sec_evidence_of_right_to_work_in_the_uk_joint"
-    );
+      const radio = formContext.getAttribute(
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.whatAreYouNotifyingUsOf
+      );
+      // Get the radio button attribute for what are you notifying us of?
 
-    // Function to update visibility of subgrids based on record count
-    const hideshowSubgrid = function () {
-      tab.sections.forEach(function (section) {
-        section.controls.forEach(function (control) {
-          if (control.getControlType() === "subgrid") {
-            let subgridControl = control;
-            subgridControl.addOnLoad(function () {
-              let recordCount = subgridControl.getGrid().getTotalRecordCount();
-              // Hide subgrid if there are no records, show otherwise
-              subgridControl.setVisible(recordCount > 0);
-              subgridControl.setDisabled(true);
-            });
-          }
-        });
-      });
-    };
+      if (radio) {
+        // Attach change event handle what are you notifying us of
+        radio.controls.forEach((c) => c.addOnChange(() => {
+          SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleWhatAreYoNotifyingUsOf(executionContext);
+        }));
 
-    const handleShowSectionVisibility = function () {
-      switch (areYouApplyingAs) {
-        case 1:
-          if (companyDetails) companyDetails.setVisible(false);
-          if (detailsJointApplicants) detailsJointApplicants.setVisible(false);
-          if (evidenceRightToWorkJointOwner)
-            evidenceRightToWorkJointOwner.setVisible(false);
-          break;
-        case 2:
-          if (companyDetails) companyDetails.setVisible(false);
-          if (individualApplicants) individualApplicants.setVisible(false);
-          if (evidenceRightToWork) evidenceRightToWork.setVisible(false);
-          break;
-        case 3:
-          if (detailsJointApplicants) detailsJointApplicants.setVisible(false);
-          if (evidenceRightToWorkJointOwner)
-            evidenceRightToWorkJointOwner.setVisible(false);
-          if (evidenceRightToWork) evidenceRightToWork.setVisible(false);
-          break;
+        // Run toggle once on form load to set initial visibility
+        SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleWhatAreYoNotifyingUsOf(executionContext);
       }
-    };
-
-    const hideEmptyFields = function () {
-      tab.sections.forEach(function (section) {
-        section.controls.forEach(function (control) {
-          let attribute = control.getAttribute();
-          if (!attribute) return;
-
-          let value = attribute.getValue();
-          let attributeType = attribute.getAttributeType();
-
-          if (["lookup", "boolean"].includes(attributeType)) return;
-
-          control.setVisible(
-            attributeType === "optionset"
-              ? value !== null
-              : value !== null && value !== undefined && value !== ""
-          );
-        });
-      });
-    };
-   formContext.getControl("ss_premisespublicliabilityinsurance").setDisabled(true);
-   formContext.getControl("ss_uploadbasicdisclosurecertificateenhanceddbs").setDisabled(true);
-formContext.getControl("ss_uploaddisabilityequalitysafeguardingtraining").setDisabled(true);
-formContext.getControl("ss_uploadfleetinsurancewithscheduleofvehicles").setDisabled(true);
-    // Attach TabStateChange to handle subgrid and field visibility only when the tab is displayed
-    tab.addTabStateChange(function () {
-      if (tab.getDisplayState() === "expanded") {
-        hideshowSubgrid();
-        hideEmptyFields();
-        handleShowSectionVisibility();
-      }
-    });
+    }
+    catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
   },
+  // Toggle visibility of sections within the notification of convictions tab
+  handleWhatAreYoNotifyingUsOf: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      const radio = formContext.getAttribute(
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.whatAreYouNotifyingUsOf
+      );
+
+      const tabName = SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.notificationOfConvictions;
+      const sections = SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableSections;
+      let selected = radio.getValue();
+      // Hide sections initially
+      SS.MSDYN.LGIntelliware.WR.Common.tabSectionVisible(formContext, tabName, sections.motoringOffenceDetailsSection, false);
+      SS.MSDYN.LGIntelliware.WR.Common.tabSectionVisible(formContext, tabName, sections.cautionOrWarningDetails, false);
+      SS.MSDYN.LGIntelliware.WR.Common.tabSectionVisible(formContext, tabName, sections.questionedORInterviewedDetails, false);
+      SS.MSDYN.LGIntelliware.WR.Common.tabSectionVisible(formContext, tabName, sections.convictionsDetails, false);
+      SS.MSDYN.LGIntelliware.WR.Common.tabSectionVisible(formContext, tabName, sections.licenceDetails, false);
+
+      // Show relevant section based on radio button selection
+      if (selected) {
+        switch (selected.toString()) {
+          case "1": // Motoring Offence
+            SS.MSDYN.LGIntelliware.WR.Common.hideEmptyFieldsInTab(formContext, tabName, [
+              sections.cautionOrWarningDetails,
+              sections.questionedORInterviewedDetails,
+              sections.convictionsDetails
+            ]);
+            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaDriverData, true);
+            SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaVehicleDetails, true);
+            break;
+
+          case "2": // Caution / Warning
+            SS.MSDYN.LGIntelliware.WR.Common.hideEmptyFieldsInTab(formContext, tabName, [
+              sections.motoringOffenceDetailsSection,
+              sections.questionedORInterviewedDetails,
+              sections.convictionsDetails
+            ]);
+            break;
+
+          case "3": // Police Interview
+            SS.MSDYN.LGIntelliware.WR.Common.hideEmptyFieldsInTab(formContext, tabName, [
+              sections.motoringOffenceDetailsSection,
+              sections.cautionOrWarningDetails,
+              sections.convictionsDetails
+            ]);
+            break;
+
+          case "4": // Convictions
+            SS.MSDYN.LGIntelliware.WR.Common.hideEmptyFieldsInTab(formContext, tabName, [
+              sections.motoringOffenceDetailsSection,
+              sections.cautionOrWarningDetails,
+              sections.questionedORInterviewedDetails
+            ]);
+            break;
+        }
+      }
+
+      SS.MSDYN.LGIntelliware.WR.Common.hideEmptyFieldsInTab(formContext, tabName, [
+        sections.motoringOffenceDetailsSection,
+        sections.cautionOrWarningDetails,
+        sections.questionedORInterviewedDetails,
+        sections.convictionsDetails
+      ]);
+
+      // Hide empty subgrids in Notification of Convictions
+      SS.MSDYN.LGIntelliware.WR.Common.hideEmptySubgridsInTab(formContext, tabName);
+
+      // Show/hide radio itself
+      formContext.getControl(
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.whatAreYouNotifyingUsOf
+      ).setVisible(!!selected);
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+  //Retrieves the Business Process Flow (BPF) ID by its unique name.
   getBPFIdByName: function (bpfName, callback) {
     try {
-      let query = `?$select=workflowid&$filter=uniquename eq '${bpfName}'  and statecode eq 1`;
+      // Build the web api query to fetch the workflow with the specified unique name and active state
+      let query = `?$select=workflowid&$filter=uniquename eq '${bpfName}' and ${SS.MSDYN.LGIntelliware.WR.Constants.workFlowTableFields.stateCode} eq ${SS.MSDYN.LGIntelliware.WR.Constants.workFlowTableStateCode.active}`;
+      // Execute the web api request to retrieve multiple records from the workflow entity
       Xrm.WebApi.retrieveMultipleRecords("workflow", query).then(
         function success(results) {
+          // Check if any workflow records were returned
           if (results.entities.length > 0) {
+            // Get the workflow ID of the first matching workflow
             let workflowId = results.entities[0].workflowid;
             callback(workflowId);
           } else {
             callback(null);
           }
         },
-        function (error) {
+        function (e) {
           callback(null);
           SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
@@ -591,22 +312,26 @@ formContext.getControl("ss_uploadfleetinsurancewithscheduleofvehicles").setDisab
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
+
+  // //Activates the appropriate business process flow based on the selected service configuration.
   serviceBasedBPF: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
-      if (formContext.getControl("header_ss_serviceconfiguration")) {
-        let serviceConfigurationLookup = formContext.getControl("header_ss_serviceconfiguration").getAttribute();
+      if (formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceHeaderFields.headerServiceConfiguration)) {
+        let serviceConfigurationLookup = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceHeaderFields.headerServiceConfiguration).getAttribute();
         let lookupValue = serviceConfigurationLookup.getValue();
+        // Proceed only if a service configuration is selected
         if (lookupValue && lookupValue.length > 0 && lookupValue[0].name) {
           let serviceConfigurationName = lookupValue[0].name.toLowerCase();
+          // Map service configuration names to corresponding BPF names
           const bpfMapping = {
-            "taxi licence - taxi driver licence": "ss_bpf_dualhackneycarriagevehicle",
-            "taxi licence - private hire operator": "ss_bpf_privatehireoperatorvehicle",
-            "taxi licence - notification of convictions and offences": "ss_bpf_notificationofconvictionsandoffencesvehicle",
-            "taxi licence - hackney carriage vehicle": "ss_bpf_hackneycarriagevehicle",
-            "taxi licence - private hire vehicle": "ss_bpf_privatehirevehicle"
+            [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.taxiDriverLicence]: SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFNames.taxiDriverLicence,
+            [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.privateHireOperator]: SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFNames.privateHireOperator,
+            [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.notificationOfConvictions]: SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFNames.notificationOfConvictions,
+            [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.hackneyCarriageVehicle]: SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFNames.hackneyCarriageVehicle,
+            [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.privateHireVehicle]: SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFNames.privateHireVehicle
           };
-          let bpfName = bpfMapping[serviceConfigurationName] || "ss_bpf_hackneycarriagevehicle";
+          let bpfName = bpfMapping[serviceConfigurationName] || SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFNames.hackneyCarriageVehicle;
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.getBPFIdByName(bpfName, function (bpfId) {
             if (bpfId) {
               formContext.data.process.setActiveProcess(bpfId, function (status) {
@@ -623,30 +348,12 @@ formContext.getControl("ss_uploadfleetinsurancewithscheduleofvehicles").setDisab
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
-  setExpiryAndGrantDate: function (executionContext) {
-    try {
-      let formContext = executionContext.getFormContext();
-      if (formContext.getControl("ss_newlicenceissuedate")) {
-        let issueDate = formContext.getAttribute("ss_newlicenceissuedate").getValue();
-        if (issueDate !== null) {
-          if (!(issueDate instanceof Date)) {
-            issueDate = new Date(issueDate);
-          }
-          let expiryDate = new Date(issueDate);
-          expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-          expiryDate.setDate(expiryDate.getDate() - 1);
-          let today = new Date();
-          formContext.getAttribute("ss_newlicencegrantdate").setValue(today);
-          formContext.getAttribute("ss_newlicenceexpirydate").setValue(expiryDate);
-        }
-      }
-    } catch (e) {
-      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
-    }
-  },
+
+  // Register an event handler for business process flow  stage changes
   registerAddOnStageChangeEvent: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
+      // Attach the stage change event to the current bpf instance
       formContext.data.process.addOnStageChange(function (stageContext) {
         SS.MSDYN.LGIntelliware.WR.TaxiLicence.tabFocusOnBPFStageChange(stageContext);
       });
@@ -655,17 +362,20 @@ formContext.getControl("ss_uploadfleetinsurancewithscheduleofvehicles").setDisab
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
+  // Handles tab focus and status updates when the business process flow stage changes
   tabFocusOnBPFStageChange: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
       let activeProcess = formContext.data.process.getActiveProcess();
       let activeStage = formContext.data.process.getActiveStage();
       if (activeProcess && activeStage) {
+        // Determine the corresponding tab for the active stage
         let processStageName = activeStage.getName();
         let applicationReview = '';
-        if (formContext.getControl("header_ss_serviceconfiguration")) {
+        // Get service configuration value to map Review Application" stage
+        if (formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceHeaderFields.headerServiceConfiguration)) {
           let serviceConfigurationLookup = formContext
-            .getControl("header_ss_serviceconfiguration")
+            .getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceHeaderFields.headerServiceConfiguration)
             .getAttribute();
           if (
             serviceConfigurationLookup.getValue() &&
@@ -676,48 +386,58 @@ formContext.getControl("ss_uploadfleetinsurancewithscheduleofvehicles").setDisab
               .getValue()[0]
               .name.toLowerCase();
             const serviceConfigurationMap = {
-              "taxi licence - taxi driver licence":
-                "tab_detail_sec_taxi_driver_licence",
-              "taxi licence - hackney carriage vehicle":
-                "tab_detail_sec_hackney_carriage_and_private_hire",
-              "taxi licence - private hire vehicle":
-                "tab_detail_sec_hackney_carriage_and_private_hire",
-              "taxi licence - private hire operator":
-                "tab_detail_sec_private_hire_operator",
-              "taxi licence - notification of convictions and offences":
-                "Notification_of_convictions_details"
+              [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.taxiDriverLicence]:
+                SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.taxiDriverLicence,
+              [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.hackneyCarriageVehicle]:
+                SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.hackneyCarriageAndPrivateHire,
+              [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.privateHireVehicle]:
+                SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.hackneyCarriageAndPrivateHire,
+              [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.privateHireOperator]:
+                SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator,
+              [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.notificationOfConvictions]:
+                SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.notificationOfConvictions,
             };
             applicationReview = serviceConfigurationMap[serviceConfigurationName] || '';
           }
         }
+        // Map all bpf stages to their corresponding tabs
         let stageToTabMap = {
-          "Review Application": applicationReview,
-          "DVLA (Driver Data) Review": "tab_dvla_driver_data",
-          "DVLA (Vehicle Details) Review": "tab_dvla_vehicle_details",
-          "DBS Review": "tab_dbs",
-          "Payment Review": "tab_pay360",
-          "Review MOT History": "tab_mot",
-          "Grant": "tab_summary",
-          "Reject": "tab_summary"
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.reviewApplication]: applicationReview,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.dvlaDriverDataReview]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaDriverData,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.dvlaVehicleDetailsReview]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaVehicleDetails,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.dbsReview]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dbs,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.paymentReview]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.pay360,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.reviewMOTHistory]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.mot,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.grant]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.summary,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.reject]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.summary
         };
-        if (activeStage.getName() == "Review MOT History") {
-          formContext.getAttribute("statecode").setValue(0);
-          formContext.getAttribute("statuscode").setValue(717800005);
+        // Update statusCode/stateCode for specific stages
+        if (activeStage.getName() == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.reviewMOTHistory) {
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.motHistoryVerification);
         }
-        else if (activeStage.getName() == "Payment Review") {
-          formContext.getAttribute("statecode").setValue(0);
-          formContext.getAttribute("statuscode").setValue(717800006);
+        else if (activeStage.getName() == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.paymentReview) {
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.paymentPending);
         }
-        else if (activeStage.getName() == "Grant/Reject") {
-          formContext.getAttribute("statecode").setValue(0);
-          formContext.getAttribute("statuscode").setValue(717800007);
+        else if (activeStage.getName() == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.grantOrReject) {
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.paid);
         }
+        // Save and refresh form to reflect updates
         formContext.data.save().then(() => {
           formContext.data.refresh();
         }).catch((e) => {
           SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         });
-
+        // Focus the corresponding tab for the active stage
         let tabName = stageToTabMap[processStageName.trim()];
         if (tabName !== undefined) {
           let tab = formContext.ui.tabs.get(tabName);
@@ -730,17 +450,12 @@ formContext.getControl("ss_uploadfleetinsurancewithscheduleofvehicles").setDisab
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
-  disableBpfFields: function (executionContext) {
+
+  //Validation on badge number column
+  badgeNumberValidation: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
-      let bpfFieldNames = ['header_process_ss_paid', 'header_process_ss_whatareyounotifyingusoff'];
-      bpfFieldNames.forEach(function (fieldName) {
-        let bpfControl = formContext.getControl(fieldName);
-        if (bpfControl) {
-          bpfControl.setDisabled(true);
-        }
-      });
-      let badgeNumber = formContext.getControl("header_process_ss_newbadgenumber");
+      let badgeNumber = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.headerBadgeNumber);
       if (badgeNumber) {
         badgeNumber.getAttribute().addOnChange(function () {
           let value = badgeNumber.getAttribute().getValue();
@@ -755,45 +470,53 @@ formContext.getControl("ss_uploadfleetinsurancewithscheduleofvehicles").setDisab
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
-  bpfStatusChange: function (executionContext) {
-    var formContext = executionContext.getFormContext();
-    var process = formContext.data.process;
-    // Add an event listener for process status change
-    process.addOnProcessStatusChange(function () {
-      var bpfStatus = process.getStatus();
-      if (bpfStatus === "finished") {
-        if (formContext.getControl("header_ss_serviceconfiguration")) {
-          let serviceConfigurationLookup = formContext
-            .getControl("header_ss_serviceconfiguration")
-            .getAttribute();
-          if (
-            serviceConfigurationLookup.getValue() &&
-            serviceConfigurationLookup.getValue().length > 0 &&
-            serviceConfigurationLookup.getValue()[0].name
-          ) {
-            let serviceConfigurationName = serviceConfigurationLookup
-              .getValue()[0]
-              .name.toLowerCase();
-            if (
-              serviceConfigurationName ===
-              "taxi licence - notification of convictions and offences"
-            ) {
-              formContext.getAttribute("statecode").setValue(1);
-              formContext.getAttribute("statuscode").setValue(717800004);
+  //Lock bpf fields 
+  lockBPFFields: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      let bpfFieldNames = [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.paid, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.whatAreYouNotifying];
+      bpfFieldNames.forEach(function (fieldName) {
+        let bpfControl = formContext.getControl(fieldName);
+        if (bpfControl) {
+          bpfControl.setDisabled(true);
+        }
+      });
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+  handleBpfCompletionStatusChange: function (executionContext) {
+    try {
+      var formContext = executionContext.getFormContext();
+      var process = formContext.data.process;
+      // Register event handler for process status changes
+      process.addOnProcessStatusChange(function () {
+        if (process.getStatus() === SS.MSDYN.LGIntelliware.WR.Constants.bpfStatus.finished) {
+          let serviceConfigurationLookup = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.serviceConfiguration);
+
+          if (serviceConfigurationLookup && serviceConfigurationLookup.getValue()?.length > 0) {
+            let serviceConfigurationName = serviceConfigurationLookup.getValue()[0].name.toLowerCase();
+            // Handle Notification of Convictions service 
+            if (serviceConfigurationName === SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.notificationOfConvictions) {
+              formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
+              formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.ClosedOrCompleted);
             } else {
-              let grantReject = formContext.getAttribute("ss_grantreject").getValue();
+              // Handle other service configurations based on grant/reject decision
+              let grantReject = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.grantReject)?.getValue();
               if (grantReject === 0) {
-                formContext.getAttribute("statecode").setValue(1);
-                formContext.getAttribute("statuscode").setValue(2);
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.closedORRejected);
               } else if (grantReject === 1) {
-                formContext.getAttribute("statecode").setValue(1);
-                formContext.getAttribute("statuscode").setValue(717800002);
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.granted);
               }
             }
-            formContext.data.entity.save();
+            formContext.data.entity.save("save");
           }
         }
-      }
-    });
+      });
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
   }
 };
