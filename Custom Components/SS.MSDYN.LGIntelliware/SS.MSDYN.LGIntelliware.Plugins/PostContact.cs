@@ -16,7 +16,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public PostContact() : base(typeof(PostContact))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, Contact.TableName, Execute));
-
         }
         protected void Execute(LocalPluginContext localContext)
         {
@@ -53,7 +52,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                                 if (propertyId != Guid.Empty)
                                 {
-                                    var updateProperty = DataverseHelper.UpdateProperty(service,entity,uprn,propertyId);
+                                    var updateProperty = DataverseHelper.UpdatePropertyFromContact(service,entity,uprn,propertyId);
                                     // Retrieve all contact properties linked to this contact
                                     var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(true));
                                     // Check if the property is already linked to the contact

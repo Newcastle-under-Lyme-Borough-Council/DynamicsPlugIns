@@ -25,7 +25,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             try
             {
-                // Check if context message name is 'Create' ...
+                // Check if context message name is 'Update' ...
                 if (context.MessageName.Equals(PluginExecutionMessageName.UPDATE))
                 {
                     // Check if context has 'Target' input parameter...
@@ -37,15 +37,16 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             if (entity.LogicalName.Equals(ContactProperty.TableName))
                             {
                                 var IsDefault = entity.GetAttributeValue<bool>(ContactProperty.IsDefault);
+                                //Only proceed if this contact property is set as default
                                 if (IsDefault == true)
                                 {
                                     var contactProperty = DataverseHelper.RetrieveContactProperty(service, ContactProperty.TableName, entity.Id, new ColumnSet(true));
                                     
-                                    var ContactID = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Contact);
-                                    var contact = DataverseHelper.RetrieveContact(service, Contact.TableName, ContactID.Id, new ColumnSet(true));
+                                    var contactId = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Contact);
+                                    var contact = DataverseHelper.RetrieveContact(service, Contact.TableName, contactId.Id, new ColumnSet(true));
                                     
-                                    var PropertyID = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Property);
-                                    var property = DataverseHelper.RetrieveProperty(service, Property.TableName, PropertyID.Id, new ColumnSet(true));
+                                    var propertyId = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Property);
+                                    var property = DataverseHelper.RetrieveProperty(service, Property.TableName, propertyId.Id, new ColumnSet(true));
 
                                     // Update Contact with property data if uprn do not match
                                     if (property.Attributes.Contains(Property.Uprn) && contact.Attributes.Contains(Contact.Uprn)
@@ -53,8 +54,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                     {
                                         DataverseHelper.UpdateContactwithPropertyData(service, Contact.TableName, contact.Id, property);
                                     }
-                                    
-                                    var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, ContactID.Id, new ColumnSet(true));
+                                    // Remove IsDefault flag from all other contact property records for this contact
+                                    var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId.Id, new ColumnSet(true));
                                     foreach (var cp in contactProperties.Entities)
                                     {
                                         if (cp.Contains(ContactProperty.IsDefault) && cp.Id != entity.Id)

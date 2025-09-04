@@ -20,7 +20,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
 
         //Registers the plugin to run after a missedbin record is created.
-
         public PostMissedBin() : base(typeof(PostMissedBin))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ServiceRequest.MissedBinTableName, Execute));

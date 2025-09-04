@@ -51,6 +51,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 {
                                     var serviceConfigurationId = entity.GetAttributeValue<EntityReference>(ServiceRequest.ServiceConfiguration).Id;
                                     var serviceConfigurations = DataverseHelper.RetrieveServiceConfiguration(service, ServiceConfiguration.TableName, serviceConfigurationId, new ColumnSet(ServiceConfiguration.Subject, ServiceConfiguration.Name));
+                                    // Check if the taxi licence has a service configuration
                                     if (serviceConfigurations != null && serviceConfigurations.Entities != null && serviceConfigurations.Entities.Count > 0)
                                     {
                                         var serviceConfiguration = serviceConfigurations.Entities[0];
@@ -61,6 +62,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                             if (subjects != null && subjects.Entities != null && subjects.Entities.Count > 0)
                                             {
                                                 var subject = subjects.Entities[0];
+                                                // Create Incident (case) for taxi licence
                                                 var incidentId = DataverseHelper.CreateIncident(service, entity, serviceConfiguration, subject);
 
                                                 Entity entityToUpdate = new Entity(entity.LogicalName)

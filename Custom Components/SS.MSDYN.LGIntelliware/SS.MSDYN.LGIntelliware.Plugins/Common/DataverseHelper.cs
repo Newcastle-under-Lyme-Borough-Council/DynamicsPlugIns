@@ -11,6 +11,8 @@ using System.Runtime.Remoting.Services;
 using System.Web.UI.WebControls;
 using System.IdentityModel.Metadata;
 using System.Runtime.Remoting.Contexts;
+using System.Diagnostics.Contracts;
+using System.ServiceModel.Channels;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
@@ -147,9 +149,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                     entityToCreate.Attributes.Add(Incident.Property, entity.GetAttributeValue<string>(ServiceRequest.Property));
                 }
-               
-                if(!entity.Contains(ServiceRequest.ContactProperty) && entity.LogicalName.Equals(ServiceRequest.MissedBinTableName))
-                { 
+                // Check if the current entity does not already contain a contact property and if the entity is of type missedbin
+                if (!entity.Contains(ServiceRequest.ContactProperty) && entity.LogicalName.Equals(ServiceRequest.MissedBinTableName))
+                {
+                    // Retrieve the default contactProperty record for the related Customer
                     var contactProperty = RetrieveDefaultContactProperty(service,ContactProperty.TableName,entity.GetAttributeValue<EntityReference>(ServiceRequest.Customer).Id,new ColumnSet(ContactProperty.Property,ContactProperty.ContactPropertyId));
                     if (contactProperty!= null)
                     {
@@ -158,6 +161,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         if (propertyId!=null)
                         {
                           var property=  RetrieveProperty(service, Property.TableName, propertyId, new ColumnSet(Property.Addresscs));
+                            // If the property record is found, set its address on the Incident record being created
                             if (property != null)
                             {
                                 entityToCreate.Attributes.Add(Incident.Property, property.GetAttributeValue<string>(Property.Addresscs));
@@ -238,7 +242,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         PageNumber = 1
                     }
                 };
-                // Create entitycollection instance to store all record
+                // Create entity collection instance to store all record
                 var allRecords = new EntityCollection();
                 //Loop through all pages until no more records
                 do
@@ -306,8 +310,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        //Updates a property record with address details from a given contact entity.
-        public static Guid UpdateProperty(this IOrganizationService service, Entity contact, string uprn, Guid propertyId)
+        //Updates a property record using address details from a Contact record
+        public static Guid UpdatePropertyFromContact(this IOrganizationService service, Entity contact, string uprn, Guid propertyId)
         {
             try
             {
@@ -335,8 +339,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("An error occurred while updating records in table ` property`: " + ex.Message + ".");
             }
         }
-        //Updates a property record in dataverse using values from an existing property entity
-        public static Guid PropertyUpdate(this IOrganizationService service, Entity property, string uprn, Guid propertyId)
+        //Updates a property record using new values from the same Property record
+        public static Guid UpdatePropertyDetails(this IOrganizationService service, Entity property, string uprn, Guid propertyId)
         {
             try
             {
@@ -423,7 +427,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("An error occurred while updating the contact property record: " + ex.Message, ex);
             }
         }
-
+        
+        // Creates a new contact property relationship record in dataverse, linking a contact to a property.
         public static Guid CreatePropertyContact(this IOrganizationService service, Guid contact, Guid propertyId, bool IsDefault)
         {
             try
