@@ -13,6 +13,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 {
     public class PostContactUpdate : PluginBase
     {
+        //Registers the plugin to run after a contact record is updated.
+
         public PostContactUpdate() : base(typeof(PostContactUpdate))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, Contact.TableName, Execute));
@@ -23,6 +25,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             var context = localContext.PluginExecutionContext;
             //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
+            // Prevent infinite loops by limiting depth
             if (context.Depth > 1)
             {
                 return;
@@ -39,8 +42,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         if (entity != null)
                         {
                             var contactId = entity.Id;
+                            // Retrieve contact record from Dataverse
                             var contact = DataverseHelper.RetrieveContact(service, Contact.TableName, contactId, new ColumnSet(true));
                             var uprn = entity.GetAttributeValue<string>(Contact.Uprn);
+                            // Check if a property with this UPRN already exists
                             var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
 
                             if (propertyId == Guid.Empty)
@@ -48,6 +53,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 propertyId = DataverseHelper.CreateProperty(service, contact, uprn);
                             }
 
+                            // If a valid property exists, handle the contact property relationship
                             if (propertyId != Guid.Empty)
                             {
                                 var updateProperty = DataverseHelper.UpdateProperty(service, entity, uprn, propertyId);
@@ -61,6 +67,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                         return;
                                     }
                                 }
+                                // Create a new contact property relationship
                                 DataverseHelper.CreatePropertyContact(service, contactId, propertyId, true);
                             }
                         }

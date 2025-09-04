@@ -14,6 +14,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         /// <summary>
         /// Constructor.
         /// </summary>
+
+        //Registers the plugin to run after a planning permission record is created.
+
         public PostPlanningPermission() : base(typeof(PostPlanningPermission))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ServiceRequest.PlanningPermissionTableName, Execute));

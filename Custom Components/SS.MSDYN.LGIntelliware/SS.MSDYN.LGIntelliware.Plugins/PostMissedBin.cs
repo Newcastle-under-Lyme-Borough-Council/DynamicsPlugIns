@@ -17,6 +17,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         /// <summary>
         /// Constructor.
         /// </summary>
+
+
+        //Registers the plugin to run after a missedbin record is created.
+
         public PostMissedBin() : base(typeof(PostMissedBin))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ServiceRequest.MissedBinTableName, Execute));
@@ -47,6 +51,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             // Check if entity reference is of type missed bin...
                             if (entity.LogicalName.Equals(ServiceRequest.MissedBinTableName))
                             {
+                                // Check if the entity has a service configuration reference
                                 if (entity.Attributes.ContainsKey(ServiceRequest.ServiceConfiguration) && entity.Attributes[ServiceRequest.ServiceConfiguration] != null)
                                 {
                                     var serviceConfigurationId = entity.GetAttributeValue<EntityReference>(ServiceRequest.ServiceConfiguration).Id;
@@ -61,6 +66,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                             if (subjects != null && subjects.Entities != null && subjects.Entities.Count > 0)
                                             {
                                                 var subject = subjects.Entities[0];
+                                                // Create an Incident (case) for the missed bin
                                                 var incidentId = DataverseHelper.CreateIncident(service, entity, serviceConfiguration, subject);
 
                                                 Entity entityToUpdate = new Entity(entity.LogicalName)
