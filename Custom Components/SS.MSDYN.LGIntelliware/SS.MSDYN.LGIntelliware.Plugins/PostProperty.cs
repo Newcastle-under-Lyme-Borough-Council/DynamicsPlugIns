@@ -12,7 +12,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     public class PostProperty : PluginBase
     {
         //Registers the plugin to run after a property record is created.
-
         public PostProperty() : base(typeof(PostProperty))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, Property.TableName, Execute));
@@ -43,26 +42,29 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 var entityId = entity.Id;
                                 var uprn = entity.GetAttributeValue<string>(Property.Uprn);
                                 var contactId = entity.GetAttributeValue<string>(Property.Contact);
+                                //Check if a property with the same uprn already exists
                                 var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
-
+                                // If the newly created record is duplicate, delete it
                                 if (entityId != propertyId)
                                 {
                                     DataverseHelper.DeleteProperty(service, Property.TableName, entityId);
                                 }
 
-                                if(propertyId != null)
+                                // Update existing property with new details
+                                if (propertyId != null)
                                 {
                                     Entity postImage = new Entity();
                                     if(context.PostEntityImages.Contains("PostTarget"))
                                     {
                                         postImage = context.PostEntityImages["PostTarget"];
-                                        var updateProperty = DataverseHelper.PropertyUpdate(service, postImage, uprn, propertyId);
+                                        var updateProperty = DataverseHelper.UpdatePropertyDetails(service, postImage, uprn, propertyId);
                                     }
                                 }
 
                                 if (contactId != null)
                                 {
                                     var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, new Guid(contactId), new ColumnSet(true));
+                                    // Check if relationship already exists
                                     foreach (var item in ExistingContactProperties.Entities)
                                     {
                                         if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId
@@ -72,7 +74,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                             return;
                                         }
                                     }
-
+                                    //Create a new contact property relationship if it does not exist
                                     DataverseHelper.CreatePropertyContact(service, new Guid(contactId), propertyId, false);
                                 }
                             }

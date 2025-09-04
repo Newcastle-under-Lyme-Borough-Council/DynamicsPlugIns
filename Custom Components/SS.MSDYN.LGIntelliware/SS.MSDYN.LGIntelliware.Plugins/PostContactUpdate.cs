@@ -32,7 +32,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             try
             {
-                // Check if context message name is 'Create' ...
+                // Check if context message name is 'Update' ...
                 if (context.MessageName.Equals(PluginExecutionMessageName.UPDATE))
                 {
                     // Check if context has 'Target' input parameter...
@@ -56,7 +56,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             // If a valid property exists, handle the contact property relationship
                             if (propertyId != Guid.Empty)
                             {
-                                var updateProperty = DataverseHelper.UpdateProperty(service, entity, uprn, propertyId);
+                                var updateProperty = DataverseHelper.UpdatePropertyFromContact(service, entity, uprn, propertyId);
                                 var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(true));
                                 foreach (var item in ExistingContactProperties.Entities)
                                 {
