@@ -1,13 +1,17 @@
+// Define namespace
 if (typeof (SS) === "undefined") { SS = {}; }
 if (typeof (SS.MSDYN) === "undefined") { SS.MSDYN = {}; }
 if (typeof (SS.MSDYN.LGIntelliware) === "undefined") { SS.MSDYN.LGIntelliware = {}; }
 if (typeof (SS.MSDYN.LGIntelliware.WR) === "undefined") { SS.MSDYN.LGIntelliware.WR = {}; }
 
+// Unique ids for notifications
 let COMPARE_DATE_UNIQUE_ID = "COMPARE_DATE_UNIQUE_ID";
 let COMPARE_YEAR_UNIQUE_ID = "COMPARE_YEAR_UNIQUE_ID";
 let VALIDATE_MOBILE_PHONE_UNIQUE_ID = "VALIDATE_MOBILE_PHONE_UNIQUE_ID";
+// Text to show in progress indicator
 let PROGRESS_INDICATOR_TEXT = "Processing...";
 
+// Common helper methods for form logic
 SS.MSDYN.LGIntelliware.WR.Common = {
     showError: function (e, validate) {
         if (validate) {
@@ -34,6 +38,7 @@ SS.MSDYN.LGIntelliware.WR.Common = {
             );
         }
     },
+    //Show or hide a tab on the form
     showHideTab: function (executionContext, tabId, visible) {
         try {
             let formContext = executionContext.getFormContext();
@@ -46,6 +51,7 @@ SS.MSDYN.LGIntelliware.WR.Common = {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
     },
+    //Show or hide a section within a tab
     showHideSection: function (executionContext, tabId, sectionId, visible) {
         try {
             let formContext = executionContext.getFormContext();
@@ -61,6 +67,7 @@ SS.MSDYN.LGIntelliware.WR.Common = {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
     },
+    //Compare two date fields
     compareDateValues: function (executionContext, sourceDateAttributeKey, targetDateAttributeKey, errorMessage) {
         try {
             let formContext = executionContext.getFormContext();
@@ -99,6 +106,7 @@ SS.MSDYN.LGIntelliware.WR.Common = {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
     },
+    //Compare year values between two date fields
     compareYearValues: function (executionContext, sourceDateAttributeKey, targetDateAttributeKey, errorMessage) {
         try {
             let formContext = executionContext.getFormContext();
@@ -141,17 +149,16 @@ SS.MSDYN.LGIntelliware.WR.Common = {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
     },
+    //Validate mobile phone format (must start with '00' and contain 12 digits)
     validateMobilePhoneFormat: function (executionContext, sourceAttributeKey, errorMessage) {
         try {
-            debugger;
             let regexMobilePhoneFormat = /^00\d{12}$/;
-
             let formContext = executionContext.getFormContext();
             let sourceAttribute = formContext.getAttribute(sourceAttributeKey);
             if (typeof (sourceAttribute) != "undefined" && sourceAttribute != null) {
                 let sourceAttributeValue = sourceAttribute.getValue();
                 if (typeof (sourceAttributeValue) != 'undefined' && sourceAttributeValue != null) {
-                    let formattedValue = sourceAttributeValue.replace(/\s+/g, "");
+                    let formattedValue = sourceAttributeValue.replace(/\s+/g, "");  //remove spaces
                     if (!formattedValue.match(regexMobilePhoneFormat)) {
                         formContext.getControl(sourceAttributeKey).setNotification(errorMessage, VALIDATE_MOBILE_PHONE_UNIQUE_ID);
                     }
@@ -165,11 +172,103 @@ SS.MSDYN.LGIntelliware.WR.Common = {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
     },
+    //Show progress indicator with a standard message
     showProgressIndicator: function () {
-        Xrm.Utility.showProgressIndicator(PROGRESS_INDICATOR_TEXT);
+        try {
+            Xrm.Utility.showProgressIndicator(PROGRESS_INDICATOR_TEXT);
+        } catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
     },
+    // Hide progress indicator
     hideProgressIndicator: function () {
-        Xrm.Utility.closeProgressIndicator();
+        try {
+            Xrm.Utility.closeProgressIndicator();
+        }
+        catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
+
+    //Hie empty fields in tab
+    hideEmptyFieldsInTab: function (formContext, tabName, excludedSections = []) {
+        try {
+            let tab = formContext.ui.tabs.get(tabName);
+            if (!tab) return;
+
+            tab.sections.forEach((section) => {
+                if (excludedSections.includes(section.getName())) return;
+
+                section.controls.forEach((control) => {
+                    let attribute = control.getAttribute();
+                    if (!attribute) return;
+
+                    let value = attribute.getValue();
+                    let type = attribute.getAttributeType();
+
+                    if (["lookup", "boolean"].includes(type)) return;
+
+                    control.setVisible(type === "optionset" ? value !== null : !!value);
+                });
+            });
+        } catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
+
+    //Hide empty subgrids in tab
+    hideEmptySubgridsInTab: function (formContext, tabName) {
+        try {
+            let tab = formContext.ui.tabs.get(tabName);
+            if (!tab) return;
+
+            tab.sections.forEach((section) => {
+                section.controls.forEach((control) => {
+                    if (control.getControlType() === "subgrid") {
+                        control.addOnLoad(() => {
+                            let recordCount = control.getGrid().getTotalRecordCount();
+                            control.setVisible(recordCount > 0);
+                            control.setDisabled(true);
+                        });
+                    }
+                });
+            });
+        } catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
+
+    //Disable control in form
+    disableFields: function (formContext, fieldNames = []) {
+        try {
+            fieldNames.forEach((field) => {
+                let ctrl = formContext.getControl(field);
+                if (ctrl) ctrl.setDisabled(true);
+            });
+        } catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
+
+    //Show or hide a section inside a specific tab
+    tabSectionVisible: function (formContext, tabName, sectionName, visible) {
+        try {
+            // Get the tab by name
+            let tab = formContext.ui.tabs.get(tabName);
+            if (tab) {
+                //Get the section by name
+                let section = tab.sections.get(sectionName);
+                if (section) {
+                    section.setVisible(visible);
+                }
+                else {
+                    return;
+                }
+            }
+        } catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
     }
+
 }
 
