@@ -15,49 +15,42 @@ SS.MSDYN.LGIntelliware.WR.CustomerInteraction = {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
+
   //Populate fields on the customer interaction form based on the regarding record.
   populateFields: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
       // Get the value of the regarding field (lookup)
-      var regardingObject = formContext.getAttribute("regardingobjectid").getValue();
+      var regardingObject = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.regardingObject).getValue();
       if (regardingObject !== null) {
         var entityId = regardingObject[0].id.replace("{", "")
           .replace("}", "");
         var entityType = regardingObject[0].entityType;
         // Based on the entity type retrieve fields and populate the form
-        if (entityType === "ss_taxilicence") {
-          SS.MSDYN.LGIntelliware.WR.CustomerInteraction.retrieveandsetfields("ss_taxilicences", "ss_taxilicenceid", entityId, formContext);
+        if (entityType === SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.taxiLicenceLogicalName) {
+          SS.MSDYN.LGIntelliware.WR.CustomerInteraction.retrieveandsetfields(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.taxiLicenceSchemaName, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.taxiLicenceId, entityId, formContext);
         }
-        else if (entityType === "ss_missedbin") {
-          SS.MSDYN.LGIntelliware.WR.CustomerInteraction.retrieveandsetfields("ss_missedbins", "ss_missedbinid", entityId, formContext);
+        else if (entityType === SS.MSDYN.LGIntelliware.WR.Constants.missedBinTableFields.missedBinLogicalName) {
+          SS.MSDYN.LGIntelliware.WR.CustomerInteraction.retrieveandsetfields(SS.MSDYN.LGIntelliware.WR.Constants.missedBinTableFields.missedBinSchemaName, SS.MSDYN.LGIntelliware.WR.Constants.missedBinTableFields.missedBinId, entityId, formContext);
         }
-        else if (entityType === "ss_planningpermission") {
-          SS.MSDYN.LGIntelliware.WR.CustomerInteraction.retrieveandsetfields("ss_planningpermissions", "ss_planningpermissionid", entityId, formContext);
-        }
-        else if (entityType === "ss_reportnoise") {
-          SS.MSDYN.LGIntelliware.WR.CustomerInteraction.retrieveandsetfields("ss_reportnoises", "ss_reportnoiseid", entityId, formContext);
-        }
-        else if (entityType === "ss_abandonbin") {
-          SS.MSDYN.LGIntelliware.WR.CustomerInteraction.retrieveandsetfields("ss_abandonbinses", "ss_abandonbinsid", entityId, formContext);
-        }
-        else if (entityType === "ss_abandonedvehicle") {
-          SS.MSDYN.LGIntelliware.WR.CustomerInteraction.retrieveandsetfields("ss_abandonedvehicles", "ss_abandonedvehicleid", entityId, formContext);
+        else if (entityType === SS.MSDYN.LGIntelliware.WR.Constants.planningPermissionTableFields.planningPermissionLogicalName) {
+        SS.MSDYN.LGIntelliware.WR.CustomerInteraction.retrieveandsetfields(SS.MSDYN.LGIntelliware.WR.Constants.planningPermissionTableFields.planningPermissionSchemaName, SS.MSDYN.LGIntelliware.WR.Constants.planningPermissionTableFields.planningPermissionId, entityId, formContext);
         }
       }
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
+
   //Retrieve related record fields and populate them on the customer interaction form.
   retrieveandsetfields: function (entitySchemaName, primarykey, entityId, formContext) {
     try {
-      // Create XMLHttpRequest to call Dataverse Web API
+      // Create XMLHttpRequest
       var req = new XMLHttpRequest();
       req.open(
         "GET",
         Xrm.Utility.getGlobalContext().getClientUrl() +
-        `/api/data/v9.2/${entitySchemaName}?$select=_ss_customer_value,_ss_serviceconfiguration_value&$filter=${primarykey} eq '${entityId}'`,
+        `/api/data/v9.2/${entitySchemaName}?$select=${SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.customerLookupValue},${SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.serviceConfigurationValue}&$filter=${primarykey} eq '${entityId}'`,
         true
       );
       //Set request headers for OData
@@ -75,15 +68,15 @@ SS.MSDYN.LGIntelliware.WR.CustomerInteraction = {
             if (results.value.length > 0) {
               var result = results.value[0];
               //Retrieve customer lookup field
-              var ss_customer = result["_ss_customer_value"];
-              var ss_customer_formatted = result["_ss_customer_value@OData.Community.Display.V1.FormattedValue"];
-              var ss_customer_lookuplogicalname = result["_ss_customer_value@Microsoft.Dynamics.CRM.lookuplogicalname"];
+              var ss_customer = result[SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.customerLookupValue];
+              var ss_customer_formatted = result[SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.customerLookupValue+"@OData.Community.Display.V1.FormattedValue"];
+              var ss_customer_lookuplogicalname = result[SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.customerLookupValue+"@Microsoft.Dynamics.CRM.lookuplogicalname"];
               //Retrieve service configuration lookup field
-              var ss_serviceconfiguration = result["_ss_serviceconfiguration_value"];
-              var ss_serviceconfiguration_formatted = result["_ss_serviceconfiguration_value@OData.Community.Display.V1.FormattedValue"];
-              var ss_serviceconfiguration_lookuplogicalname = result["_ss_serviceconfiguration_value@Microsoft.Dynamics.CRM.lookuplogicalname"];
+              var ss_serviceconfiguration = result[SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.serviceConfigurationValue];
+              var ss_serviceconfiguration_formatted = result[SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.serviceConfigurationValue+"@OData.Community.Display.V1.FormattedValue"];
+              var ss_serviceconfiguration_lookuplogicalname = result[SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.serviceConfigurationValue+"@Microsoft.Dynamics.CRM.lookuplogicalname"];
               // Set service configuration lookup on the form
-              formContext.getAttribute("ss_serviceconfigurationid").setValue([
+              formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.serviceConfiguration).setValue([
                 {
                   id: ss_serviceconfiguration,
                   entityType: ss_serviceconfiguration_lookuplogicalname,
@@ -91,7 +84,7 @@ SS.MSDYN.LGIntelliware.WR.CustomerInteraction = {
                 },
               ]);
               // Set customer lookup on the form
-              formContext.getAttribute("ss_customer").setValue([
+              formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.customer).setValue([
                 {
                   id: ss_customer,
                   entityType: ss_customer_lookuplogicalname,
@@ -109,15 +102,16 @@ SS.MSDYN.LGIntelliware.WR.CustomerInteraction = {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
+
   //Show or hide fields on the customer interaction form
   showHideFieldsOnCustomerInteraction: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
-      if (formContext.ui.getFormType() === 1) {
+      if (formContext.ui.getFormType() ===SS.MSDYN.LGIntelliware.WR.Constants.formType.create) {
         // Hide/Enable fields
-        formContext.getControl("ss_response").setVisible(false);
-        formContext.getControl("description").setDisabled(false);
-        formContext.getControl("ss_subject").setDisabled(false);
+        formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.response).setVisible(false);
+        formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.description).setDisabled(false);
+        formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.customerInteractionTableFields.subject).setDisabled(false);
       }
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);

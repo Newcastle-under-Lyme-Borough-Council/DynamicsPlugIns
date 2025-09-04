@@ -180,6 +180,7 @@ SS.MSDYN.LGIntelliware.WR.Common = {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
     },
+    // Hide progress indicator
     hideProgressIndicator: function () {
         try {
             Xrm.Utility.closeProgressIndicator();

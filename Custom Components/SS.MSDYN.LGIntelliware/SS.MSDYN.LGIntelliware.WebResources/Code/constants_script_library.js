@@ -12,12 +12,14 @@ if (typeof SS.MSDYN.LGIntelliware.WR === "undefined") {
     SS.MSDYN.LGIntelliware.WR = {};
 }
 
-
 // Namespace for constants
 SS.MSDYN.LGIntelliware.WR.Constants = {
     //----------------------------------------------------------------Taxi Licence Table------------------------------------------------------
     //Taxi licence table fields
     taxiLicenceTableFields: {
+        taxiLicenceSchemaName: "ss_taxilicences",
+        taxiLicenceId: "ss_taxilicenceid",
+        taxiLicenceLogicalName: "ss_taxilicence",
         group2MedicalForm: "ss_group2medicalform",
         certificateOfGoodConduct: "ss_certificateofgoodconductfromembassy",
         dbsCertificate: "ss_dbscertificate",
@@ -37,8 +39,9 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         additionalQuestionsApplyingAs: "ss_additionalquestionsareyouapplyingas",
         stateCode: "statecode",
         statusCode: "statuscode",
-        grantReject: "ss_grantreject",
+        grantReject: "ss_grantreject"
     },
+
     //Taxi licence table form tabs
     taxiLicenceTableTabs: {
         applicantDetails: "tab_applicant_details",
@@ -94,8 +97,8 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
     //Taxi licence bpf fields
     taxiLicenceBpfFields: {
         headerBadgeNumber: "header_process_ss_newbadgenumber",
-        paid:"header_process_ss_paid",
-whatAreYouNotifying:"header_process_ss_whatareyounotifyingusoff"
+        paid: "header_process_ss_paid",
+        whatAreYouNotifying: "header_process_ss_whatareyounotifyingusoff"
     },
 
     //Taxi licence form header fields
@@ -129,9 +132,14 @@ whatAreYouNotifying:"header_process_ss_whatareyounotifyingusoff"
         bartecMunicipalCheckServiceRequestStatus: "ss_BartecMunicipalCheckServiceRequestStatus",
         typeName: "mscrm.ss_missedbin"
     },
+
     //Missedbin table fields
     missedBinTableFields: {
         missedBinTableName: "ss_missedbin",
+        missedBinSchemaName: "ss_missedbins",
+        missedBinId: "ss_missedbinid",
+        missedBinLogicalName: "ss_missedbin",
+
     },
     //Missedbin table dialogue configurations 
     missedBinTableDialogueConfiguration: {
@@ -142,14 +150,51 @@ whatAreYouNotifying:"header_process_ss_whatareyounotifyingusoff"
     },
 
     //---------------------------------------------------------------Holiday Table -------------------------------------------------------
-     bankHolidayTableFields: {
+    bankHolidayTableFields: {
         date: "ss_date"
     },
- 
-    //Bank holiday table dialogue configurations 
+
+    //Bank holiday table field error message
     bankHolidayTableFieldErrorMessage: {
         restrictPastDatesText: "Past dates are not allowed. Please select today or a future date."
     },
+
+    //---------------------------------------------------------------Contact Table -------------------------------------------------------
+    contactTableFields: {
+        mobilePhone: "mobilephone"
+    },
+    //Contact table field error message
+    contactTableFieldErrorMessage: {
+        validateMobilePhoneFormatText: "Should start with 00, should have the Country code, and then the Phone number. Maximum allowed length is 14 digits, no + sign, spaces or - are allowed."
+    },
+
+    //----------------------------------------------------------------Sms Table ------------------------------------------------------
+
+    smsHeaderFields: {
+        headerScheduledEnd: "header_scheduledend"
+    },
+
+    //----------------------------------------------------------------Planning Permission Table ------------------------------------------------------
+    planningPermissionTableFields: {
+        planningPermissionSchemaName: "ss_planningpermissions",
+        planningPermissionId: "ss_planningpermissionid",
+        planningPermissionLogicalName: "ss_planningpermission",
+    },
+
+    
+    //----------------------------------------------------------------Customer Interaction Table ------------------------------------------------------
+
+    customerInteractionTableFields: {
+        regardingObject: "regardingobjectid",
+        response: "ss_response",
+        description: "description",
+        subject: "ss_subject",
+        customer: "ss_customer",
+        serviceConfiguration: "ss_serviceconfigurationid",
+        customerLookupValue: "_ss_customer_value",
+        serviceConfigurationValue: "_ss_serviceconfiguration_value"
+    },
+
 
     //----------------------------------------------------------------Custom Action ------------------------------------------------------
     customActionParameter: {
@@ -158,46 +203,28 @@ whatAreYouNotifying:"header_process_ss_whatareyounotifyingusoff"
         structuralProperty: 5
     },
 
-   
-    contactTableFields: {
-        mobilePhone: "mobilephone"
-    },
-    customerInteractionTableFields: {
-        regardingObject: "regardingobjectid",
-        response: "ss_response",
-        description: "description",
-        subject: "ss_subject",
-        customerLookup: "ss_customer",
-        serviceConfigurationLookup: "ss_serviceconfigurationid",
-        entities: {
-            taxiLicence: { table: "ss_taxilicences", id: "ss_taxilicenceid" },
-            missedBin: { table: "ss_missedbins", id: "ss_missedbinid" },
-            planningPermission: { table: "ss_planningpermissions", id: "ss_planningpermissionid" },
-            reportNoise: { table: "ss_reportnoises", id: "ss_reportnoiseid" },
-            abandonBin: { table: "ss_abandonbinses", id: "ss_abandonbinsid" },
-            abandonedVehicle: { table: "ss_abandonedvehicles", id: "ss_abandonedvehicleid" }
-        }
+
+    //---------------------------------------------------------------- Form Type ------------------------------------------------------
+
+    formType: {
+        create: 1
     },
 
-    smsTableFields: {
-        scheduledEnd: "header_scheduledend"
-    },
-
-    actionName: {
-        missedBinBartecStatus: "ss_BartecMunicipalCheckServiceRequestStatus",
-
-    },
-
+    //---------------------------------------------------------------- Status column ------------------------------------------------------
     stateCode: {
         active: 0,
         inactive: 1
     },
+    //---------------------------------------------------------------- Business Process Flow Status ------------------------------------------------------
     bpfStatus: {
         finished: "finished"
     },
+    //---------------------------------------------------------------- Business Process Flow Status ------------------------------------------------------
     workFlowTableStateCode: {
         active: 1
     },
+
+    //---------------------------------------------------------------- Work Flow Table ------------------------------------------------------
     workFlowTableFields: {
         stateCode: "statecode"
     }

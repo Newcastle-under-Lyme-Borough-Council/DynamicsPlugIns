@@ -20,22 +20,22 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.configureFormByServiceConfigurationValue(
         executionContext
       );
-      //Set bpf based on service configuration
+      //Set business process flow based on service configuration
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.serviceBasedBPF(executionContext);
-      //Register event on bpf stage change
+      //Register event on business process flow stage change
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.registerAddOnStageChangeEvent(executionContext);
       //Badgenumber column validation 
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.badgeNumberValidation(executionContext);
-      //Handle bpf status change
+      //Handle business process flow status change
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleBpfCompletionStatusChange(executionContext);
-      //Handle bpf status change
+      //Lock business process flow fields
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.lockBPFFields(executionContext);
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
 
-  //Show form and fileds based on service configuration value
+  //Show form and fields based on service configuration value
   configureFormByServiceConfigurationValue: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
@@ -50,22 +50,28 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       let value = configControl.getAttribute().getValue();
       if (value && value.length > 0 && value[0].name) {
         let serviceName = value[0].name.toLowerCase();
+      // Handle taxi driver licence configuration
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.taxiDriverLicence) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleTaxiDriverLicence(executionContext);
 
         }
+        // Handle private hire operator configuration
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.privateHireOperator) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handlePrivateHireOperator(executionContext);
 
         }
+      // Handle private hire vehicle configuration
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.privateHireVehicle) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleHackneyCarriageOrPrivateHire(executionContext);
 
         }
+      // Handle hackney carriage vehicle configuration
+
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.hackneyCarriageVehicle) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleHackneyCarriageOrPrivateHire(executionContext);
 
         }
+      // Handle notification of convictions configuration
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.notificationOfConvictions) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleNotificationOfConvictions(executionContext);
 
@@ -76,7 +82,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
     }
   },
 
-  //Handle Taxi driver licence form
+  //Handle taxi driver licence form
   handleTaxiDriverLicence: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
@@ -104,7 +110,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
   handleHackneyCarriageOrPrivateHire: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
-
+      //Hide or show tabs 
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.hackneyCarriageAndPrivateHire, true);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaDriverData, false);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaVehicleDetails, false);
@@ -121,7 +127,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
 
       // Hide all empty fields 
       SS.MSDYN.LGIntelliware.WR.Common.hideEmptyFieldsInTab(formContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.hackneyCarriageAndPrivateHire);
-
+      // Hide any subgrids that have no records
       SS.MSDYN.LGIntelliware.WR.Common.hideEmptySubgridsInTab(formContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.hackneyCarriageAndPrivateHire);
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
@@ -132,6 +138,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
   handlePrivateHireOperator: function (executionContext) {
     try {
       let formContext = executionContext.getFormContext();
+      //Hide or show tabs 
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaDriverData, false);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaVehicleDetails, false);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator, true);
@@ -148,7 +155,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.Common.hideEmptyFieldsInTab(formContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator);
       SS.MSDYN.LGIntelliware.WR.Common.hideEmptySubgridsInTab(formContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator);
 
-      // Additional PHO section logic based on Are you applying as question
+      // Additional pho section logic based on are you applying as question
       let areYouApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.additionalQuestionsApplyingAs)?.getValue();
       // Get relevant sections for visibility control
       const companyDetails = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator).sections.get(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableSections.companyDetails);
@@ -285,6 +292,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
+
   //Retrieves the Business Process Flow (BPF) ID by its unique name.
   getBPFIdByName: function (bpfName, callback) {
     try {
@@ -485,6 +493,8 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
+
+  //Record status change on business process flow completion
   handleBpfCompletionStatusChange: function (executionContext) {
     try {
       var formContext = executionContext.getFormContext();
@@ -496,7 +506,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
 
           if (serviceConfigurationLookup && serviceConfigurationLookup.getValue()?.length > 0) {
             let serviceConfigurationName = serviceConfigurationLookup.getValue()[0].name.toLowerCase();
-            // Handle Notification of Convictions service 
+            // Handle notification of convictions service 
             if (serviceConfigurationName === SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.notificationOfConvictions) {
               formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
               formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.ClosedOrCompleted);
