@@ -11,6 +11,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 {
     public class UpdateContactPropertySetIsDefault : PluginBase
     {
+        //Registers the plugin to run after a contact property  record is updated.
         public UpdateContactPropertySetIsDefault() : base(typeof(UpdateContactPropertySetIsDefault))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, ContactProperty.TableName, Execute));
@@ -45,7 +46,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                     
                                     var PropertyID = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Property);
                                     var property = DataverseHelper.RetrieveProperty(service, Property.TableName, PropertyID.Id, new ColumnSet(true));
-                                 
+
+                                    // Update Contact with property data if uprn do not match
                                     if (property.Attributes.Contains(Property.Uprn) && contact.Attributes.Contains(Contact.Uprn)
                                         && property.Attributes[Property.Uprn] != contact.Attributes[Contact.Uprn])
                                     {

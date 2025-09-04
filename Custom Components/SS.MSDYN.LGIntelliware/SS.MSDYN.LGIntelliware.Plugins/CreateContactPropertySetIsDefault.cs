@@ -11,6 +11,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 {
     public class CreateContactPropertySetIsDefault : PluginBase
     {
+        // Registers the plugin to run after a contactProperty record is created.
         public CreateContactPropertySetIsDefault() : base(typeof(CreateContactPropertySetIsDefault))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ContactProperty.TableName, Execute));

@@ -11,6 +11,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 {
     public class PostProperty : PluginBase
     {
+        //Registers the plugin to run after a property record is created.
+
         public PostProperty() : base(typeof(PostProperty))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, Property.TableName, Execute));

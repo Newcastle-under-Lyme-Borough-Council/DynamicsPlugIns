@@ -121,10 +121,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Country = "address1_country";
         public const string Latitude = "address1_latitude";
         public const string Longitude = "address1_longitude";
-
-
-
-
     }
     #endregion
 

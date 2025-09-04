@@ -19,10 +19,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     /// </summary>
     public static class DataverseHelper
     {
+        //Retrieves an active service configuration record by id
         public static EntityCollection RetrieveServiceConfiguration(this IOrganizationService service, string entityName, Guid serviceConfigurationId, ColumnSet columnSet)
         {
             try
             {
+                //Query to fetch service configuration record
                 QueryExpression query = new QueryExpression(entityName)
                 {
                     ColumnSet = columnSet,
@@ -36,6 +38,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         }
                     }
                 };
+                //Execute query and return result
                 return service.RetrieveMultiple(query);
             }
             catch (Exception ex)
@@ -43,6 +46,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveServiceConfiguration: " + ex.Message + ".");
             }
         }
+
+        // Retrieves a subject record by its title.
         public static EntityCollection RetrieveSubject(this IOrganizationService service, string entityName, string title, ColumnSet columnSet)
         {
             try
@@ -65,11 +70,14 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveSubject: " + ex.Message + ".");
             }
         }
+
+        //Create a new incident (case) in dataverse
         public static Guid CreateIncident(this IOrganizationService service, Entity entity, Entity serviceConfiguration, Entity subject)
         {
             try
             {
                 var entityToCreate = new Entity(Incident.TableName);
+                // For each  attribute check if it exists and then set it on the new Incident record.
                 if (serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != null)
                 {
                     entityToCreate.Attributes.Add(Incident.Service, new EntityReference(ServiceConfiguration.TableName, serviceConfiguration.GetAttributeValue<Guid>(ServiceConfiguration.ServiceConfigurationid)));
@@ -167,6 +175,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("Fault exception occured executing CreateIncident: " + ex.Message + ".");
             }
         }
+
+        //Updates the specified entity in Dataverse.
         public static void Update(this IOrganizationService service, Entity entityToUpdate)
         {
             try
@@ -179,196 +189,21 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        public static bool RetrieveCreatedProperty(this IOrganizationService service, string entityName, string uprn, Guid contactId, ColumnSet columnSet)
-        {
-            try
-            {
-                if (uprn != null)
-                {
-
-
-                    var query = new QueryExpression(entityName)
-                    {
-                        ColumnSet = columnSet,
-                        Criteria = new FilterExpression
-                        {
-                            Conditions =
-                {
-                    new ConditionExpression(Property.Uprn, ConditionOperator.Equal, uprn),
-                    new ConditionExpression(Property.Contact, ConditionOperator.Equal, contactId),
-                }
-                        }
-                    };
-
-                    var records = service.RetrieveMultiple(query);
-                    if (records.Entities.Count > 0)
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while retrieving properties: " + ex.Message, ex);
-            }
-        }
-
-
-        public static void CreateContactProperty(this IOrganizationService service, EntityCollection properties, Guid contactId)
-        {
-            try
-            {
-                var totalProperties = properties.Entities.Count;
-                var recordsPerPage = 500;
-                var totalPages = (int)Math.Ceiling((double)totalProperties / recordsPerPage);
-                for (var pageNumber = 0; pageNumber < totalPages; pageNumber++)
-                {
-                    // Create an ExecuteMultipleRequest object.
-                    var multipleRequest = new ExecuteMultipleRequest()
-                    {
-                        Settings = new ExecuteMultipleSettings()
-                        {
-                            ContinueOnError = false,
-                            ReturnResponses = true
-                        },
-                        Requests = new OrganizationRequestCollection()
-                    };
-                    var startIndex = pageNumber * recordsPerPage;
-                    var endIndex = Math.Min(startIndex + recordsPerPage, totalProperties);
-                    for (var index = startIndex; index < endIndex; index++)
-                    {
-                        var property = properties.Entities[index];
-                        var contactproperty = new Entity(ContactProperty.TableName)
-                        {
-                            [ContactProperty.Property] = new EntityReference(Property.TableName, property.Id),
-                            [ContactProperty.Contact] = new EntityReference(Contact.TableName, contactId),
-                        };
-                        multipleRequest.Requests.Add(new CreateRequest { Target = contactproperty });
-                    }
-                    var multipleResponse = (ExecuteMultipleResponse)service.Execute(multipleRequest);
-                    foreach (var responseItem in multipleResponse.Responses)
-                    {
-                        if (responseItem.Fault != null)
-                        {
-                            //   tracingService.Trace("Error creating record in table `contactproperty`: {0}", responseItem.Fault.Message);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table `contact property`: " + ex.Message + ".");
-            }
-        }
+        //Retrieve a contact record
         public static Entity RetrieveContact(this IOrganizationService service, string entityName, Guid contactId, ColumnSet columnSet)
         {
             try
             {
                 return service.Retrieve(entityName, contactId, columnSet);
-
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact properties: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An error occurred while retrieve contact: " + ex.Message + ".");
             }
         }
-        public static EntityCollection RetrieveContacts(this IOrganizationService service, string entityName, string uprn, ColumnSet columnSet)
-        {
-            try
-            {
-                var allRecords = new EntityCollection();
-                if (uprn != null)
-                {
-                    var query = new QueryExpression(entityName)
-                    {
-                        ColumnSet = columnSet,
-                        Criteria = new FilterExpression
-                        {
-                            Conditions =
-                {
-                    new ConditionExpression(Contact.Uprn, ConditionOperator.Equal, uprn)
-                }
-                        },
-                        PageInfo = new PagingInfo
-                        {
-                            Count = 5000,
-                            PageNumber = 1
-                        }
-                    };
-
-                    do
-                    {
-                        var currentPage = service.RetrieveMultiple(query);
-                        allRecords.Entities.AddRange(currentPage.Entities);
-                        if (currentPage.MoreRecords)
-                        {
-                            query.PageInfo.PageNumber++;
-                            query.PageInfo.PagingCookie = currentPage.PagingCookie;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    } while (true);
-                }
-
-                return allRecords;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while retrieving contacts: " + ex.Message + ".");
-            }
-        }
-        public static void AddContactProperty(this IOrganizationService service, EntityCollection contacts, Guid propertyId)
-        {
-            try
-            {
-                var totalcontacts = contacts.Entities.Count;
-                var recordsPerPage = 500;
-                var totalPages = (int)Math.Ceiling((double)totalcontacts / recordsPerPage);
-                for (var pageNumber = 0; pageNumber < totalPages; pageNumber++)
-                {
-                    // Create an ExecuteMultipleRequest object.
-                    var multipleRequest = new ExecuteMultipleRequest()
-                    {
-                        Settings = new ExecuteMultipleSettings()
-                        {
-                            ContinueOnError = false,
-                            ReturnResponses = true
-                        },
-                        Requests = new OrganizationRequestCollection()
-                    };
-
-                    // Determine start and end index for current page
-                    var startIndex = pageNumber * recordsPerPage;
-                    var endIndex = Math.Min(startIndex + recordsPerPage, totalcontacts);
-
-                    for (var index = startIndex; index < endIndex; index++)
-                    {
-                        var contact = contacts.Entities[index];
-                        var contactproperty = new Entity(ContactProperty.TableName)
-                        {
-                            [ContactProperty.Property] = new EntityReference(Property.TableName, propertyId),
-                            [ContactProperty.Contact] = new EntityReference(Contact.TableName, contact.Id),
-                        };
-                        multipleRequest.Requests.Add(new CreateRequest { Target = contactproperty });
-                    }
-                    var multipleResponse = (ExecuteMultipleResponse)service.Execute(multipleRequest);
-                    foreach (var responseItem in multipleResponse.Responses)
-                    {
-                        if (responseItem.Fault != null)
-                        {
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table `contact property`: " + ex.Message + ".");
-            }
-        }
+       
+       
+        //Retrieve contact property by its id
         public static Entity RetrieveContactProperty(this IOrganizationService service, string entityName, Guid contactPropertyId, ColumnSet columnSet)
         {
             try
@@ -378,10 +213,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact properties: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An error occurred while retrieve contact property: " + ex.Message + ".");
             }
         }
 
+        //Retrieve contact properties 
         public static EntityCollection RetrieveContactProperties(this IOrganizationService service, string entityName, Guid contactId, ColumnSet columnSet)
         {
             try
@@ -402,11 +238,14 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         PageNumber = 1
                     }
                 };
+                // Create entitycollection instance to store all record
                 var allRecords = new EntityCollection();
+                //Loop through all pages until no more records
                 do
                 {
                     var currentPage = service.RetrieveMultiple(query);
                     allRecords.Entities.AddRange(currentPage.Entities);
+                    // If there are more records, update paging info and continue
                     if (currentPage.MoreRecords)
                     {
                         query.PageInfo.PageNumber++;
@@ -417,7 +256,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         break;
                     }
                 } while (true);
-
+                // Return the complete collection of contact properties
                 return allRecords;
             }
             catch (Exception ex)
@@ -425,126 +264,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("An error occurred while retrieve contact properties: " + ex.Message + ".");
             }
         }
-        public static void DeleteContactProperties(this IOrganizationService service, EntityCollection contactProperties)
-        {
-            try
-            {
-                var totalContactProperties = contactProperties.Entities.Count;
-                var recordsPerPage = 500;
-                var totalPages = (int)Math.Ceiling((double)totalContactProperties / recordsPerPage);
 
-                for (var pageNumber = 0; pageNumber < totalPages; pageNumber++)
-                {
-                    var multipleRequest = new ExecuteMultipleRequest()
-                    {
-                        Settings = new ExecuteMultipleSettings()
-                        {
-                            ContinueOnError = false,
-                            ReturnResponses = true
-                        },
-                        Requests = new OrganizationRequestCollection()
-                    };
-                    var startIndex = pageNumber * recordsPerPage;
-                    var endIndex = Math.Min(startIndex + recordsPerPage, totalContactProperties);
-                    for (var index = startIndex; index < endIndex; index++)
-                    {
-                        var contact = contactProperties.Entities[index];
-                        multipleRequest.Requests.Add(new DeleteRequest { Target = new EntityReference(ContactProperty.TableName, contact.Id) });
-                    }
-                    var multipleResponse = (ExecuteMultipleResponse)service.Execute(multipleRequest);
-                    foreach (var responseItem in multipleResponse.Responses)
-                    {
-                        if (responseItem.Fault != null)
-                        {
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while deleting records in table `contact property`: " + ex.Message + ".");
-            }
-        }
-        public static EntityCollection RetrievePropertiesContact(this IOrganizationService service, string entityName, Guid propertyId, ColumnSet columnSet)
-        {
-            try
-            {
-                var allRecords = new EntityCollection();
-                // Initialize query
-                var query = new QueryExpression(entityName)
-                {
-                    ColumnSet = columnSet,
-                    Criteria = new FilterExpression
-                    {
-                        Conditions =
-                {
-                    new ConditionExpression(ContactProperty.Property, ConditionOperator.Equal, propertyId)
-                }
-                    },
-                    PageInfo = new PagingInfo
-                    {
-                        Count = 5000,
-                        PageNumber = 1
-                    }
-                };
-                do
-                {
-                    var currentPage = service.RetrieveMultiple(query);
-                    allRecords.Entities.AddRange(currentPage.Entities);
-                    if (currentPage.MoreRecords)
-                    {
-                        query.PageInfo.PageNumber++;
-                        query.PageInfo.PagingCookie = currentPage.PagingCookie;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                } while (true);
-
-                return allRecords;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve  properties contact: " + ex.Message + ".");
-            }
-        }
-
-        public static void AddCreatedContact(this IOrganizationService service, string contact, Guid propertyId)
-        {
-            try
-            {
-                var entityToCreate = new Entity(ContactProperty.TableName)
-                {
-                    [ContactProperty.Property] = new EntityReference(Property.TableName, propertyId),
-                    [ContactProperty.Contact] = new EntityReference(Contact.TableName, new Guid(contact))
-                };
-                service.Create(entityToCreate);
-
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table `contact property`: " + ex.Message + ".");
-            }
-        }
-
-        public static void AddUpdatedProperty(this IOrganizationService service, string contact, Guid propertyId)
-        {
-            try
-            {
-                var entityToUpdate = new Entity(ContactProperty.TableName)
-                {
-                    [ContactProperty.Property] = new EntityReference(Property.TableName, propertyId)
-                };
-                service.Update(entityToUpdate);
-
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table `contact property`: " + ex.Message + ".");
-            }
-        }
-
+        //Retrieve property by its id
         public static Entity RetrieveProperty(this IOrganizationService service, string entityName, Guid propertyId, ColumnSet columnSet)
         {
             try
@@ -554,10 +275,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact properties: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An error occurred while retrieve property: " + ex.Message + ".");
             }
         }
 
+        //Create property record 
         public static Guid CreateProperty(this IOrganizationService service, Entity contact, string uprn)
         {
             try
@@ -572,7 +294,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 entityToCreate[Property.TownName] = contact.GetAttributeValue<string>(Contact.City);
                 entityToCreate[Property.PostCode] = contact.GetAttributeValue<string>(Contact.PostCode);
                 entityToCreate[Property.Posttown] = contact.GetAttributeValue<string>(Contact.Stateorprovince);
-
                 entityToCreate[Property.Region] = contact.GetAttributeValue<string>(Contact.Country);
                 entityToCreate[Property.Latitude] = contact.GetAttributeValue<double>(Contact.Latitude);
                 entityToCreate[Property.Longitude] = contact.GetAttributeValue<double>(Contact.Longitude);
@@ -581,11 +302,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table `property`: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An error occurred while creating records in table property: " + ex.Message + ".");
             }
-
         }
 
+        //Updates a property record with address details from a given contact entity.
         public static Guid UpdateProperty(this IOrganizationService service, Entity contact, string uprn, Guid propertyId)
         {
             try
@@ -614,7 +335,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("An error occurred while updating records in table ` property`: " + ex.Message + ".");
             }
         }
-
+        //Updates a property record in dataverse using values from an existing property entity
         public static Guid PropertyUpdate(this IOrganizationService service, Entity property, string uprn, Guid propertyId)
         {
             try
@@ -643,6 +364,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("An error occurred while updating records in table ` property`: " + ex.Message + ".");
             }
         }
+
+        // Updates a contact record with property details from a given property entity.
         public static void UpdateContactwithPropertyData(IOrganizationService service, string tableName, Guid Contactid, Entity property)
         {
             var entityToCreate = new Entity(Contact.TableName, Contactid);
@@ -661,6 +384,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             service.Update(entityToCreate);
         }
+
+
+        //Remove the default flag from a specific contact property record.
         public static void RemoveOtherContactPropertyfromDefault(this IOrganizationService service, Guid contactPropertyId)
         {
             try
@@ -675,9 +401,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while updating the property record: " + ex.Message, ex);
+                throw new InvalidPluginExecutionException("An error occurred while removing contact property from default : " + ex.Message, ex);
             }
         }
+
+        //Set contact property as default
         public static void SetContactPropertyToDefault(this IOrganizationService service, Guid contactPropertyId)
         {
             try
@@ -708,87 +436,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table `contact property`: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An error occurred while creating records in table contact property: " + ex.Message + ".");
             }
         }
 
-        public static EntityCollection RetrievePropertiesContact(this IOrganizationService service, string entityName, Guid contactId, string uprn, ColumnSet columnSet)
-        {
-            try
-            {
-                var query = new QueryExpression(entityName)
-                {
-                    ColumnSet = columnSet,
-                    Criteria = new FilterExpression
-                    {
-                        Conditions =
-                {
-                    new ConditionExpression(Property.Contact, ConditionOperator.Equal, contactId.ToString()),
-                    //new ConditionExpression(PropertyTableColumnNames.Uprn, ConditionOperator.Equal, uprn)
-                }
-                    },
-                    PageInfo = new PagingInfo
-                    {
-                        Count = 5000,
-                        PageNumber = 1
-                    }
-                };
-                var allRecords = new EntityCollection();
-                do
-                {
-                    var currentPage = service.RetrieveMultiple(query);
-                    allRecords.Entities.AddRange(currentPage.Entities);
-                    if (currentPage.MoreRecords)
-                    {
-                        query.PageInfo.PageNumber++;
-                        query.PageInfo.PagingCookie = currentPage.PagingCookie;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                } while (true);
-
-                return allRecords;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact properties: " + ex.Message + ".");
-            }
-        }
-
-        public static Guid CheckPropertiesContactExist(this IOrganizationService service, string entityName, Guid contactId, string uprn, ColumnSet columnSet)
-        {
-            try
-            {
-                var query = new QueryExpression(entityName)
-                {
-                    ColumnSet = columnSet,
-                    Criteria = new FilterExpression
-                    {
-                        Conditions =
-                {
-                    new ConditionExpression(Property.Contact, ConditionOperator.Equal, contactId.ToString()),
-                    new ConditionExpression(Property.Uprn, ConditionOperator.Equal, uprn)
-                }
-                    },
-
-                };
-
-                var records = service.RetrieveMultiple(query);
-                if (records.Entities.Count > 0)
-                {
-                    return records.Entities[0].Id;
-                }
-
-                return new Guid();
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve property: " + ex.Message + ".");
-            }
-        }
-
+        // Checks whether a property record exists for a given UPRN.
         public static Guid CheckPropertiesExist(this IOrganizationService service, string entityName, string uprn, ColumnSet columnSet)
         {
             try
@@ -820,6 +472,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
+        //Delete property by its id
         public static void DeleteProperty(this IOrganizationService service, string entityName, Guid propertyId)
         {
             try
@@ -831,6 +484,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("Fault exception occurred executing DeleteProperty: " + ex.Message + ".", ex);
             }
         }
+
+        // Retrieves the default contact property record for a given contact.
         public static Entity RetrieveDefaultContactProperty(this IOrganizationService service, string entityName, Guid contactId, ColumnSet columnSet)
         {
             try

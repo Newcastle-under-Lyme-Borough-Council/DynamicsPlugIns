@@ -12,6 +12,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 {
     public class PostContact : PluginBase
     {
+        //Registers the plugin to run after a contact record is created.
         public PostContact() : base(typeof(PostContact))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, Contact.TableName, Execute));
@@ -42,6 +43,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             var uprn = entity.GetAttributeValue<string>(Contact.Uprn);
                             if (uprn != null)
                             {
+                                // Check if a property already exists for this uprn
                                 var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
 
                                 if (propertyId == Guid.Empty)
@@ -52,7 +54,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 if (propertyId != Guid.Empty)
                                 {
                                     var updateProperty = DataverseHelper.UpdateProperty(service,entity,uprn,propertyId);
+                                    // Retrieve all contact properties linked to this contact
                                     var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(true));
+                                    // Check if the property is already linked to the contact
                                     foreach (var item in ExistingContactProperties.Entities)
                                     {
                                         if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
@@ -61,6 +65,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                             return;
                                         }
                                     }
+                                    // If the property is not linked to the contact, create a new contactProperty record
                                     DataverseHelper.CreatePropertyContact(service, contactId, propertyId, true);
                                 }
                             }
