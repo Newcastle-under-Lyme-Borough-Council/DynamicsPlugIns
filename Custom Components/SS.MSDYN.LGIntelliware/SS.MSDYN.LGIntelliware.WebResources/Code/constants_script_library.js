@@ -45,12 +45,12 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
     //Taxi licence table form tabs
     taxiLicenceTableTabs: {
         applicantDetails: "tab_applicant_details",
-        notificationOfConvictions: "Notification_of_convictions_details",
-        taxiDriverLicence: "tab_detail_sec_taxi_driver_licence",
+        notificationOfConvictions: "tab_notification_of_convictions_details",
+        taxiDriverLicence: "tab_taxi_driver_licence_details",
         mot: "tab_mot",
-        hackneyCarriageAndPrivateHire: "tab_detail_sec_hackney_carriage_and_private_hire",
+        hackneyCarriageAndPrivateHire: "tab_hackney_carriage_and_private_hire_details",
         dvlaDriverData: "tab_dvla_driver_data",
-        privateHireOperator: "tab_detail_sec_private_hire_operator",
+        privateHireOperator: "tab_private_hire_operator_details",
         dvlaVehicleDetails: "tab_dvla_vehicle_details",
         dbs: "tab_dbs",
         pay360: "tab_pay360",
@@ -59,17 +59,17 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
 
     //Taxi licence table form sections
     taxiLicenceTableSections: {
-        officeUseOnly: "tab_details_sec_office_use_only",
-        motoringOffenceDetailsSection: "motorings_offence_details_section_4",
-        cautionOrWarningDetails: "caution_or_warning_details_section_5",
-        questionedORInterviewedDetails: "questioned_or_interviewed_details_section_6",
-        convictionsDetails: "convictions_details_section_7",
-        licenceDetails: "licence_details_section_8",
-        companyDetails: "tab_details_sec_company_details",
-        jointApplicants: "tab_detail_sec_details_of_join_applicants",
-        individualApplicants: "tab_detail_section_individual_applicant_details",
-        evidenceRightToWork: "tab_detail_sec_evidence_of_right_to_Work_in_the_uk",
-        evidenceRightToWorkJointOwner: "tab_detail_sec_evidence_of_right_to_work_in_the_uk_joint"
+        officeUseOnly: "tab_taxi_driver_licence_details_sec_office_use_only",
+        motoringOffenceDetailsSection: "tab_notification_of_convictions_details_sec_motoring_offence",
+        cautionOrWarningDetails: "tab_notification_of_convictions_details_sec_caution_or_warning",
+        questionedORInterviewedDetails: "tab_notification_of_convictions_details_sec_question_or_interviewed_by_police",
+        convictionsDetails: "tab_notification_of_convictions_details_sec_convictions",
+        licenceDetails: "tab_notification_of_convictions_details_sec_licence_details",
+        companyDetails: "tab_private_hire_operator_details_sec_company_details",
+        jointApplicants: "tab_private_hire_operator_details_sec_joint_applicant",
+        individualApplicants: "tab_private_hire_operator_details_sec_individual_applicant_details",
+        evidenceRightToWork: "tab_private_hire_operator_details_evidence_of_right_to_work",
+        evidenceRightToWorkJointOwner: "tab_private_hire_operator_details_sec_evidence_of_right_to_work_in_uk"
     },
 
     //Taxi licence table bpf ids
