@@ -14,6 +14,101 @@ if (typeof SS.MSDYN.LGIntelliware.WR === "undefined") {
 
 // Namespace for constants
 SS.MSDYN.LGIntelliware.WR.Constants = {
+
+    //----------------------------------------------------------------Licence Service Table------------------------------------------------------
+    //table fields
+    licenseServiceTableFields: {
+        licenseServiceSchemaName: "ss_LicenseService",
+        licenseServiceId: "ss_licenseserviceid",
+        licenseServiceLogicalName: "ss_licenseservice",
+        areYouAnAgent: "ss_areyouanagentactingonbehalfoftheapplicant",
+        agentActingOnBehalf: "ss_agentactingonbehalfoftheapplicant",
+        contact: "ss_contact",
+        newLicenseOrExisting: "ss_isthisanewlicenseorrenewinganexisting",
+        placingFurnitureOnPavement: "ss_applicationforplacingfurnitureonpavement",
+        licenseOfAlcohol: "ss_premiseshaveanalcohollicenseunderact2003",
+        premisesLicenseNumber: "ss_pleasestatethepremiseslicencenumber",
+        supplyOfAlcoholOnPavement: "ss_willalcoholbeusedintheareaofpavement",
+        postalAddressType: "ss_postaladdresstype",
+        premisesAddressOsMapReference: "ss_osmapreference",
+        premisesAddressDescription: "ss_addressdescription",
+        sellingOfRetailAlcohol: "ss_willyoubesellingalcoholbyoronbehalfofa",
+        capacity: "ss_capacityareyouapplyingfor",
+        confirmTheFollowing: "ss_confirmthefollowing",
+        applicantApplyingAs: "ss_applyingas",
+        applicantBusinessRegisteredInUK: "ss_isyourbusinessregistrdinukwithcompanyhouse",
+        applicantBusinessRegisteredOutsideUK: "ss_isyourbusinessregisteredoutsidetheuk",
+        applicantRegistrationNumber: "ss_registrationnumber",
+        applicantCommercialRegister: "ss_commercialregister",
+        agentApplyingAs: "ss_agentapplyingas",
+        agentBusinessRegisteredInUK: "ss_agentisyourbusinessregisteredinuk",
+        agentBusinessRegisteredOutsideUK: "ss_agentisyourbusinessregisteredoutsideuk",
+        agentRegistrationNumber: "ss_agentregistrationnumber",
+        agentCommercialRegister: "ss_agentcommercialregister",
+        updateRequired: "ss_arethereanyupdates"
+    },
+    //table form sections
+    licenseServiceTableSections: {
+        //Pavement Form
+        applicantContactDetails: "tab_AgentDetails_section_ApplicantContactDetails",
+        //Club Premises Form
+        applicantDetails: "tab_General_section_ApplicantDetails",
+        applicantBusiness: "tab_General_section_ApplicantBusiness",
+        agentDetails: "tab_General_section_AgentDetails",
+        agentBusiness: "tab_General_section_AgentBusiness",
+        agentBusinessAddress: "tab_General_section_AgentBusinessAddress",
+        postalAddressOfClubPremises: "tab_ApplicationDetails_section_PostalAddressOfPremises",
+        clubHoursMonday: "tab_ClubHours_section_Monday",
+        clubHoursTuesday: "tab_ClubHours_section_Tuesday",
+        clubHoursWednesday: "tab_ClubHours_section_Wednesday",
+        clubHoursThursday: "tab_ClubHours_section_Thursday",
+        clubHoursFriday: "tab_ClubHours_section_Friday",
+        clubHoursSaturday: "tab_ClubHours_section_Saturday",
+        clubHoursSunday: "tab_ClubHours_section_Sunday",
+        clubHoursStandartDaysAndTimings: "tab_ClubHours_section_Standard Days And Timings",
+        //premises form
+        osMapReference: "tab_PremisesDetails_section_OSMapReference",
+        addressDescription: "tab_PremisesDetails_section_AddressDescription",
+        postalAddressOfPremises: "tab_PremisesDetails_section_PostalAddressOfPremises",
+    },
+    //table form tabs
+    licenseServiceTableTabs: {
+        //premises
+        premisesDetails: "tab_PremisesDetails",
+        nonIndividualApplicant: "tab_NonIndividualApplicants",
+        individualApplicant: "tab_IndividualApplicantDetails",
+        //pavement
+        agentDetails: "tab_AgentDetails",
+        //club premises
+        general: "tab_General",
+        applicationDetails: "tab_ApplicationDetails",
+        clubHours: "tab_ClubHours"
+    },
+    //service configuration lookup values
+    licenceServiceServiceConfiguration: {
+        pavementLicense: "license service - pavement",
+        clubPremises: "license service - club premises",
+        personal: "license service - personal",
+        premises: "license service - premises"
+    },
+    //header fields
+    licenceServiceHeaderFields: {
+        serviceConfiguration: "ss_serviceconfiguration"
+    },
+    //form names
+    licenceServiceFormNames: {
+        pavementLicense: "back office - pavement license service",
+        clubPremises: "back office - club premises certificate",
+        personal: "back office - personal license service",
+        premises: "back office - premises license service"
+    },
+    //BPF names
+    licenseServiceBPFNames: {
+        pavementLicense: "ss_pavementlicensebpf",
+        clubPremises: "ss_clubpremisescertificatebpf",
+        personal: "ss_personallicenseservicebpf",
+        premises: "ss_premiseslicenseservicebpf"
+    },
     //----------------------------------------------------------------Taxi Licence Table------------------------------------------------------
     //Taxi licence table fields
     taxiLicenceTableFields: {
@@ -42,7 +137,7 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         grantReject: "ss_grantreject"
     },
 
-    //Taxi licence table form tabs
+     //Taxi licence table form tabs
     taxiLicenceTableTabs: {
         applicantDetails: "tab_applicant_details",
         notificationOfConvictions: "tab_notification_of_convictions_details",
@@ -181,7 +276,7 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         planningPermissionLogicalName: "ss_planningpermission",
     },
 
-    
+
     //----------------------------------------------------------------Customer Interaction Table ------------------------------------------------------
 
     customerInteractionTableFields: {
