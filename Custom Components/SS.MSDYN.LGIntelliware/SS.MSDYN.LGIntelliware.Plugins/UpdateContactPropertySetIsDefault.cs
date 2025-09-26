@@ -40,13 +40,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 //Only proceed if this contact property is set as default
                                 if (IsDefault == true)
                                 {
-                                    var contactProperty = DataverseHelper.RetrieveContactProperty(service, ContactProperty.TableName, entity.Id, new ColumnSet(true));
+                                    var contactProperty = DataverseHelper.RetrieveContactProperty(service, ContactProperty.TableName, entity.Id, new ColumnSet(ContactProperty.Contact, ContactProperty.Property));
                                     
                                     var contactId = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Contact);
-                                    var contact = DataverseHelper.RetrieveContact(service, Contact.TableName, contactId.Id, new ColumnSet(true));
+                                    var contact = DataverseHelper.RetrieveContact(service, Contact.TableName, contactId.Id, new ColumnSet(Contact.Uprn, Contact.ContactId));
                                     
                                     var propertyId = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Property);
-                                    var property = DataverseHelper.RetrieveProperty(service, Property.TableName, propertyId.Id, new ColumnSet(true));
+                                    var property = DataverseHelper.RetrieveProperty(service, Property.TableName, propertyId.Id, new ColumnSet(Property.Uprn, Property.Addresscs, Property.County, Property.Addressoscs, Property.Localityname, Property.Streetname, Property.TownName, Property.PostCode, Property.Posttown, Property.Region, Property.Latitude, Property.Longitude));
 
                                     // Update Contact with property data if uprn do not match
                                     if (property.Attributes.Contains(Property.Uprn) && contact.Attributes.Contains(Contact.Uprn)
@@ -55,7 +55,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                         DataverseHelper.UpdateContactwithPropertyData(service, Contact.TableName, contact.Id, property);
                                     }
                                     // Remove IsDefault flag from all other contact property records for this contact
-                                    var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId.Id, new ColumnSet(true));
+                                    var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId.Id, new ColumnSet(ContactProperty.IsDefault,ContactProperty.ContactPropertyId));
                                     foreach (var cp in contactProperties.Entities)
                                     {
                                         if (cp.Contains(ContactProperty.IsDefault) && cp.Id != entity.Id)

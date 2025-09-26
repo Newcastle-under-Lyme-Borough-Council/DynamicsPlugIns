@@ -40,7 +40,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 if (IsDefault == true)
                                 {
                                     var contact = entity.GetAttributeValue<EntityReference>(ContactProperty.Contact);
-                                    var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contact.Id, new ColumnSet(true));
+                                    var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contact.Id, new ColumnSet(ContactProperty.IsDefault, ContactProperty.ContactPropertyId));
                                     foreach (var cp in contactProperties.Entities)
                                     {
                                         if (cp.Contains(ContactProperty.IsDefault) && cp.Id != entity.Id)
