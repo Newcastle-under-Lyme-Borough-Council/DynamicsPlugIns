@@ -45,7 +45,12 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         agentBusinessRegisteredOutsideUK: "ss_agentisyourbusinessregisteredoutsideuk",
         agentRegistrationNumber: "ss_agentregistrationnumber",
         agentCommercialRegister: "ss_agentcommercialregister",
-        updateRequired: "ss_arethereanyupdates"
+        updateRequired: "ss_arethereanyupdates",
+        hastheRepresentationsRecieved: "ss_hastherepresentationbeenreceived",
+        grantReject: "ss_grantreject",
+        status: "statecode",
+        statusReason: "statuscode",
+        unconditionalGrant: "ss_unconditionalgrant",
     },
     //table form sections
     licenseServiceTableSections: {
@@ -109,6 +114,12 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         personal: "ss_personallicenseservicebpf",
         premises: "ss_premiseslicenseservicebpf"
     },
+
+    //Licence service table bpf stages
+    licenceServiceBPFStage: {
+        consultationPeriod: "Consultation Period",
+        verification: "Verification And Confirmation",
+    },
     //----------------------------------------------------------------Taxi Licence Table------------------------------------------------------
     //Taxi licence table fields
     taxiLicenceTableFields: {
@@ -137,7 +148,7 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         grantReject: "ss_grantreject"
     },
 
-     //Taxi licence table form tabs
+    //Taxi licence table form tabs
     taxiLicenceTableTabs: {
         applicantDetails: "tab_applicant_details",
         notificationOfConvictions: "tab_notification_of_convictions_details",
