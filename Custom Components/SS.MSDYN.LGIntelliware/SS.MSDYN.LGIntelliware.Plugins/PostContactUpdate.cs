@@ -43,7 +43,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         {
                             var contactId = entity.Id;
                             // Retrieve contact record from Dataverse
-                            var contact = DataverseHelper.RetrieveContact(service, Contact.TableName, contactId, new ColumnSet(true));
+                            var contact = DataverseHelper.RetrieveContact(service, Contact.TableName, contactId, new ColumnSet(Contact.Address1_address, Contact.County, Contact.Address, Contact.Address2, Contact.Address1_line3, Contact.City, Contact.PostCode, Contact.Stateorprovince, Contact.Country, Contact.Latitude, Contact.Longitude));
                             var uprn = entity.GetAttributeValue<string>(Contact.Uprn);
                             // Check if a property with this UPRN already exists
                             var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
@@ -57,7 +57,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             if (propertyId != Guid.Empty)
                             {
                                 var updateProperty = DataverseHelper.UpdatePropertyFromContact(service, entity, uprn, propertyId);
-                                var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(true));
+                                var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property,ContactProperty.ContactPropertyId));
                                 foreach (var item in ExistingContactProperties.Entities)
                                 {
              

@@ -63,7 +63,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                                 if (contactId != null)
                                 {
-                                    var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, new Guid(contactId), new ColumnSet(true));
+                                    var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, new Guid(contactId), new ColumnSet(ContactProperty.Property, ContactProperty.Contact));
                                     // Check if relationship already exists
                                     foreach (var item in ExistingContactProperties.Entities)
                                     {
