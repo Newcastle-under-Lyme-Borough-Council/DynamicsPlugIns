@@ -402,12 +402,9 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 var representations = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.hastheRepresentationsRecieved).getValue();
                 if (!representations) {
                     formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.grantReject).setValue(1); //Grant
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(1);
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(717800007); //Grant
                 }
                 else {
                     formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.grantReject).setValue(null);
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(0);
                     formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(717800006); //Reffered to Committee
                 }
             }
