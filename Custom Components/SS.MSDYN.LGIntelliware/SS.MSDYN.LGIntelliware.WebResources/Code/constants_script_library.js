@@ -45,7 +45,12 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         agentBusinessRegisteredOutsideUK: "ss_agentisyourbusinessregisteredoutsideuk",
         agentRegistrationNumber: "ss_agentregistrationnumber",
         agentCommercialRegister: "ss_agentcommercialregister",
-        updateRequired: "ss_arethereanyupdates"
+        updateRequired: "ss_arethereanyupdates",
+        hastheRepresentationsRecieved: "ss_hastherepresentationbeenreceived",
+        grantReject: "ss_grantreject",
+        status: "statecode",
+        statusReason: "statuscode",
+        unconditionalGrant: "ss_unconditionalgrant",
     },
     //table form sections
     licenseServiceTableSections: {
@@ -86,10 +91,10 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
     },
     //service configuration lookup values
     licenceServiceServiceConfiguration: {
-        pavementLicense: "license service - pavement",
-        clubPremises: "license service - club premises",
-        personal: "license service - personal",
-        premises: "license service - premises"
+        pavement: "licence service - pavement",
+        clubPremises: "licence service - club premises",
+        personal: "licence service - personal",
+        premises: "licence service - premises"
     },
     //header fields
     licenceServiceHeaderFields: {
@@ -97,17 +102,34 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
     },
     //form names
     licenceServiceFormNames: {
-        pavementLicense: "back office - pavement license service",
+        pavement: "back office - pavement licence service",
         clubPremises: "back office - club premises certificate",
-        personal: "back office - personal license service",
-        premises: "back office - premises license service"
+        personal: "back office - personal licence service",
+        premises: "back office - premises licence service"
     },
     //BPF names
     licenseServiceBPFNames: {
-        pavementLicense: "ss_pavementlicensebpf",
+        pavement: "ss_pavementlicensebpf",
         clubPremises: "ss_clubpremisescertificatebpf",
         personal: "ss_personallicenseservicebpf",
         premises: "ss_premiseslicenseservicebpf"
+    },
+
+    //Licence service table bpf stages
+    licenceServiceBPFStage: {
+        consultationPeriod: "Consultation Period",
+        verification: "Verification And Confirmation",
+        review: "Review"
+    },
+    //Taxi licence table statuscodes
+    LicenceServiceStatusCode: {
+        submitted: 717800005,
+        inProgress: 1,
+        awaitingInformation: 717800003,
+        rejected: 717800008,
+        granted: 717800007,
+        refferedToCommittee: 717800006
+
     },
     //----------------------------------------------------------------Taxi Licence Table------------------------------------------------------
     //Taxi licence table fields
@@ -137,7 +159,7 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         grantReject: "ss_grantreject"
     },
 
-     //Taxi licence table form tabs
+    //Taxi licence table form tabs
     taxiLicenceTableTabs: {
         applicantDetails: "tab_applicant_details",
         notificationOfConvictions: "tab_notification_of_convictions_details",
