@@ -24,6 +24,7 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
             //register a process status change event
             SS.MSDYN.LGIntelliware.WR.LicenseService.registerAddOnProcessStatusChangeEvent(executionContext);
 
+
         } catch (e) {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
@@ -45,8 +46,8 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
             if (configValue && configValue.length > 0 && configValue[0].name) {
                 var serviceName = configValue[0].name.toLowerCase();
                 // Handle Pavement License 
-                if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceServiceConfiguration.pavementLicense) {
-                    SS.MSDYN.LGIntelliware.WR.LicenseService.formSelector(formContext, SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceFormNames.pavementLicense);
+                if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceServiceConfiguration.pavement) {
+                    SS.MSDYN.LGIntelliware.WR.LicenseService.formSelector(formContext, SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceFormNames.pavement);
                 }
                 // Handle Club Premises
                 if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceServiceConfiguration.clubPremises) {
@@ -97,7 +98,7 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                     var serviceConfigurationName = serviceConfigurationLookupValue[0].name.toLowerCase();
                     // Map service configuration names to corresponding BPF names
                     const bpfMapping = {
-                        [SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceServiceConfiguration.pavementLicense]: SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceBPFNames.pavementLicense,
+                        [SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceServiceConfiguration.pavement]: SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceBPFNames.pavement,
                         [SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceServiceConfiguration.clubPremises]: SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceBPFNames.clubPremises,
                         [SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceServiceConfiguration.personal]: SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceBPFNames.personal,
                         [SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceServiceConfiguration.premises]: SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceBPFNames.premises
@@ -363,17 +364,17 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
         process.addOnProcessStatusChange(function () {
             if (process.getStatus() === SS.MSDYN.LGIntelliware.WR.Constants.bpfStatus.finished) {
                 var grantReject = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.grantReject).getValue();
-                if (grantReject === 0) { //reject
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(1);
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(717800008);
+                if (grantReject === 0) { 
+                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
+                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.rejected);
                 }
-                else if (grantReject === 1) { //grant
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(1);
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(717800007);
+                else if (grantReject === 1) { 
+                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
+                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.granted);
                 }
-                else if (grantReject === 2) { //awaiting information
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(0);
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(717800003);
+                else if (grantReject === 2) { 
+                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
+                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.awaitingInformation);
                 }
             }
             formContext.data.entity.save("save");
@@ -405,8 +406,11 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 }
                 else {
                     formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.grantReject).setValue(null);
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(717800006); //Reffered to Committee
+                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.refferedToCommittee);
                 }
+            }
+            if (processStageName === SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBPFStage.review) {
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.inProgress);
             }
         }
         catch (e) {
@@ -442,6 +446,9 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                     formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.grantReject).setValue(1); //Grant
                 }
             }
+            if (processStageName === SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBPFStage.review) {
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.inProgress);
+            }
         }
         catch (e) {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
@@ -449,4 +456,3 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
     }
 };
 
-                
