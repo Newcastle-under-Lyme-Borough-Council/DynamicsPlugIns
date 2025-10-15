@@ -477,6 +477,40 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
+
+        // Checks whether a property record exists for a given UPRN excluding specific entity record.
+        public static Guid CheckPropertyExistsExcludingSpecificEntity(this IOrganizationService service, string entityName, string uprn, ColumnSet columnSet,Guid entityId )
+        {
+            try
+            {
+                var query = new QueryExpression(entityName)
+                {
+                    ColumnSet = columnSet,
+                    Criteria = new FilterExpression
+                    {
+                        Conditions =
+                {
+                    new ConditionExpression(Property.Uprn, ConditionOperator.Equal, uprn),
+                     new ConditionExpression(Property.PropertyId, ConditionOperator.NotEqual, entityId),
+                }
+                    },
+
+                };
+
+                var records = service.RetrieveMultiple(query);
+                if (records.Entities.Count > 0)
+                {
+                    return records.Entities[0].Id;
+                }
+
+                return Guid.Empty;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("An error occurred while retrieve property: " + ex.Message + ".");
+            }
+        }
+
         //Delete property by its id
         public static void DeleteProperty(this IOrganizationService service, string entityName, Guid propertyId)
         {

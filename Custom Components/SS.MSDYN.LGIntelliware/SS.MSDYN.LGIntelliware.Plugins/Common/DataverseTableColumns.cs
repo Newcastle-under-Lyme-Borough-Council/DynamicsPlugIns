@@ -132,6 +132,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     public sealed class Property
     {
         public const string TableName = "ss_property";
+        public const string PropertyId = "ss_propertyid";
         public const string Uprn = "ss_uprn";
         public const string Contact = "ss_contact";
         public const string Addresscs = "ss_addresscs";

@@ -14,7 +14,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     public class PostContactUpdate : PluginBase
     {
         //Registers the plugin to run after a contact record is updated.
-
         public PostContactUpdate() : base(typeof(PostContactUpdate))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, Contact.TableName, Execute));
@@ -42,33 +41,39 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         if (entity != null)
                         {
                             var contactId = entity.Id;
-                            // Retrieve contact record from Dataverse
-                            var contact = DataverseHelper.RetrieveContact(service, Contact.TableName, contactId, new ColumnSet(Contact.Address1_address, Contact.County, Contact.Address, Contact.Address2, Contact.Address1_line3, Contact.City, Contact.PostCode, Contact.Stateorprovince, Contact.Country, Contact.Latitude, Contact.Longitude));
-                            var uprn = entity.GetAttributeValue<string>(Contact.Uprn);
-                            // Check if a property with this UPRN already exists
-                            var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
-
-                            if (propertyId == Guid.Empty)
+                            Entity postImage = null;
+                            // Retrieve the postImage snapshot of the Contact record after update.
+                            if (context.PostEntityImages != null &&
+                            context.PostEntityImages.Contains("PostImage") &&
+                        context.PostEntityImages["PostImage"] is Entity img)
                             {
-                                propertyId = DataverseHelper.CreateProperty(service, contact, uprn);
-                            }
+                                postImage = img;
+                                // Proceed with using postImage
+                                var uprn = postImage.GetAttributeValue<string>(Contact.Uprn);
+                                var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
 
-                            // If a valid property exists, handle the contact property relationship
-                            if (propertyId != Guid.Empty)
-                            {
-                                var updateProperty = DataverseHelper.UpdatePropertyFromContact(service, entity, uprn, propertyId);
-                                var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property,ContactProperty.ContactPropertyId));
-                                foreach (var item in ExistingContactProperties.Entities)
+                                if (propertyId == Guid.Empty)
                                 {
-             
-                                    if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
-                                    {
-                                        DataverseHelper.SetContactPropertyToDefault(service, item.Id);
-                                        return;
-                                    }
+                                    propertyId = DataverseHelper.CreateProperty(service, postImage, uprn);
                                 }
-                                // Create a new contact property relationship
-                                DataverseHelper.CreatePropertyContact(service, contactId, propertyId, true);
+
+                                // If a valid property exists, handle the contact property relationship
+                                if (propertyId != Guid.Empty)
+                                {
+                                    var updateProperty = DataverseHelper.UpdatePropertyFromContact(service, postImage, uprn, propertyId);
+                                    var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property, ContactProperty.ContactPropertyId));
+                                    foreach (var item in ExistingContactProperties.Entities)
+                                    {
+
+                                        if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
+                                        {
+                                            DataverseHelper.SetContactPropertyToDefault(service, item.Id);
+                                            return;
+                                        }
+                                    }
+                                    // Create a new contact property relationship
+                                    DataverseHelper.CreatePropertyContact(service, contactId, propertyId, true);
+                                }
                             }
                         }
                     }
