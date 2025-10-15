@@ -20,7 +20,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         {
             if (localContext == null) throw new ArgumentNullException(nameof(localContext));
             var context = localContext.PluginExecutionContext;
-            //var tracingService = localContext.TracingService;
+           //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
             if (context.Depth > 1)
             {
@@ -43,15 +43,15 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 var uprn = entity.GetAttributeValue<string>(Property.Uprn);
                                 var contactId = entity.GetAttributeValue<string>(Property.Contact);
                                 //Check if a property with the same uprn already exists
-                                var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
+                                var propertyId = DataverseHelper.CheckPropertyExistsExcludingSpecificEntity(service, Property.TableName, uprn, new ColumnSet(false),entityId);
                                 // If the newly created record is duplicate, delete it
-                                if (entityId != propertyId)
+                                if (entityId != propertyId && propertyId!=Guid.Empty)
                                 {
                                     DataverseHelper.DeleteProperty(service, Property.TableName, entityId);
                                 }
-
+                           
                                 // Update existing property with new details
-                                if (propertyId != null)
+                                if (propertyId != Guid.Empty)
                                 {
                                     Entity postImage = new Entity();
                                     if(context.PostEntityImages.Contains("PostTarget"))
@@ -75,7 +75,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                         }
                                     }
                                     //Create a new contact property relationship if it does not exist
-                                    DataverseHelper.CreatePropertyContact(service, new Guid(contactId), propertyId, false);
+                                    DataverseHelper.CreatePropertyContact(service, new Guid(contactId), entityId, false);
                                 }
                             }
                         }
