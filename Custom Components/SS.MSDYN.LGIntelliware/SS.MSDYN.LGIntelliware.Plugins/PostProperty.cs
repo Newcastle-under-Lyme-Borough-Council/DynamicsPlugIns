@@ -20,7 +20,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         {
             if (localContext == null) throw new ArgumentNullException(nameof(localContext));
             var context = localContext.PluginExecutionContext;
-           //var tracingService = localContext.TracingService;
+            //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
             if (context.Depth > 1)
             {
@@ -43,18 +43,18 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 var uprn = entity.GetAttributeValue<string>(Property.Uprn);
                                 var contactId = entity.GetAttributeValue<string>(Property.Contact);
                                 //Check if a property with the same uprn already exists
-                                var propertyId = DataverseHelper.CheckPropertyExistsExcludingSpecificEntity(service, Property.TableName, uprn, new ColumnSet(false),entityId);
+                                var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
+
                                 // If the newly created record is duplicate, delete it
-                                if (entityId != propertyId && propertyId!=Guid.Empty)
+                                if (entityId != propertyId)
                                 {
                                     DataverseHelper.DeleteProperty(service, Property.TableName, entityId);
                                 }
-                           
                                 // Update existing property with new details
-                                if (propertyId != Guid.Empty)
+                                if (propertyId != null)
                                 {
                                     Entity postImage = new Entity();
-                                    if(context.PostEntityImages.Contains("PostTarget"))
+                                    if (context.PostEntityImages.Contains("PostTarget"))
                                     {
                                         postImage = context.PostEntityImages["PostTarget"];
                                         var updateProperty = DataverseHelper.UpdatePropertyDetails(service, postImage, uprn, propertyId);
@@ -72,10 +72,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                             )
                                         {
                                             return;
-                                        }
+                                        }  
                                     }
                                     //Create a new contact property relationship if it does not exist
-                                    DataverseHelper.CreatePropertyContact(service, new Guid(contactId), entityId, false);
+                                    DataverseHelper.CreatePropertyContact(service, new Guid(contactId), propertyId, false);
                                 }
                             }
                         }

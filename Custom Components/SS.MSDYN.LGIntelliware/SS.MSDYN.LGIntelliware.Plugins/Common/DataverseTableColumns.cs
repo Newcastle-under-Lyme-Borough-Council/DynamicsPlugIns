@@ -146,6 +146,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Latitude = "ss_latitude";
         public const string Longitude = "ss_longitude";
         public const string Streetname = "ss_streetname";
+        public const string CreatedOn = "createdon";
 
     }
     #endregion
