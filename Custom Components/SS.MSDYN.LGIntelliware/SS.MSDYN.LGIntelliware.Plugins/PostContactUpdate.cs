@@ -51,7 +51,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 // Proceed with using postImage
                                 var uprn = postImage.GetAttributeValue<string>(Contact.Uprn);
                                 var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
-
                                 if (propertyId == Guid.Empty)
                                 {
                                     propertyId = DataverseHelper.CreateProperty(service, postImage, uprn);
@@ -67,6 +66,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                                         if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
                                         {
+
                                             DataverseHelper.SetContactPropertyToDefault(service, item.Id);
                                             return;
                                         }

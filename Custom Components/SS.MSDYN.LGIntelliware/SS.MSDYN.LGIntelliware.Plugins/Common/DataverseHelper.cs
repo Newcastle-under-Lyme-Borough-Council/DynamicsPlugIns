@@ -153,14 +153,14 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (!entity.Contains(ServiceRequest.ContactProperty) && entity.LogicalName.Equals(ServiceRequest.MissedBinTableName))
                 {
                     // Retrieve the default contactProperty record for the related Customer
-                    var contactProperty = RetrieveDefaultContactProperty(service,ContactProperty.TableName,entity.GetAttributeValue<EntityReference>(ServiceRequest.Customer).Id,new ColumnSet(ContactProperty.Property,ContactProperty.ContactPropertyId));
-                    if (contactProperty!= null)
+                    var contactProperty = RetrieveDefaultContactProperty(service, ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.Customer).Id, new ColumnSet(ContactProperty.Property, ContactProperty.ContactPropertyId));
+                    if (contactProperty != null)
                     {
                         var propertyId = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Property).Id;
                         var contactPropertyId = contactProperty.GetAttributeValue<Guid>(ContactProperty.ContactPropertyId);
-                        if (propertyId!=null)
+                        if (propertyId != null)
                         {
-                          var property=  RetrieveProperty(service, Property.TableName, propertyId, new ColumnSet(Property.Addresscs));
+                            var property = RetrieveProperty(service, Property.TableName, propertyId, new ColumnSet(Property.Addresscs));
                             // If the property record is found, set its address on the Incident record being created
                             if (property != null)
                             {
@@ -205,8 +205,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("An error occurred while retrieve contact: " + ex.Message + ".");
             }
         }
-       
-       
+
+
         //Retrieve contact property by its id
         public static Entity RetrieveContactProperty(this IOrganizationService service, string entityName, Guid contactPropertyId, ColumnSet columnSet)
         {
@@ -427,7 +427,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("An error occurred while updating the contact property record: " + ex.Message, ex);
             }
         }
-        
+
         // Creates a new contact property relationship record in dataverse, linking a contact to a property.
         public static Guid CreatePropertyContact(this IOrganizationService service, Guid contact, Guid propertyId, bool IsDefault)
         {
@@ -460,41 +460,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     new ConditionExpression(Property.Uprn, ConditionOperator.Equal, uprn)
                 }
                     },
-
-                };
-
-                var records = service.RetrieveMultiple(query);
-                if (records.Entities.Count > 0)
-                {
-                    return records.Entities[0].Id;
-                }
-
-                return new Guid();
-            }
-            catch (Exception ex)
+                    Orders =
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve property: " + ex.Message + ".");
-            }
-        }
-
-
-        // Checks whether a property record exists for a given UPRN excluding specific entity record.
-        public static Guid CheckPropertyExistsExcludingSpecificEntity(this IOrganizationService service, string entityName, string uprn, ColumnSet columnSet,Guid entityId )
-        {
-            try
-            {
-                var query = new QueryExpression(entityName)
-                {
-                    ColumnSet = columnSet,
-                    Criteria = new FilterExpression
-                    {
-                        Conditions =
-                {
-                    new ConditionExpression(Property.Uprn, ConditionOperator.Equal, uprn),
-                     new ConditionExpression(Property.PropertyId, ConditionOperator.NotEqual, entityId),
-                }
-                    },
-
+                new OrderExpression(Property.CreatedOn, OrderType.Ascending) // oldest first
+            },
+                    TopCount = 1 // only fetch the top 1 result
                 };
 
                 var records = service.RetrieveMultiple(query);
@@ -507,7 +477,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve property: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException($"Error checking properties: {ex.Message}", ex);
             }
         }
 
@@ -541,7 +511,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         }
                     }
                 };
-                var result= service.RetrieveMultiple(query);
+                var result = service.RetrieveMultiple(query);
                 return result.Entities.Count > 0 ? result.Entities[0] : null;
             }
             catch (Exception ex)
