@@ -137,7 +137,7 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         grantReject: "ss_grantreject"
     },
 
-     //Taxi licence table form tabs
+    //Taxi licence table form tabs
     taxiLicenceTableTabs: {
         applicantDetails: "tab_applicant_details",
         notificationOfConvictions: "tab_notification_of_convictions_details",
@@ -149,6 +149,8 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         dvlaVehicleDetails: "tab_dvla_vehicle_details",
         dbs: "tab_dbs",
         pay360: "tab_pay360",
+        underReview: "tab_under_review",
+        referredToPublicProtectionSubCommittee: "tab_referred_to_public_protection_sub_committee",
         summary: "tab_summary",
     },
 
@@ -184,6 +186,8 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         dbsReview: "DBS Review",
         paymentReview: "Payment Review",
         reviewMOTHistory: "Review MOT History",
+        underReview: "Under Review",
+        referredToPublicProtectionSubCommittee: "Referred To Public Protection Sub-Committee",
         grant: "Grant",
         reject: "Reject",
         grantOrReject: "Grant/Reject"
@@ -206,6 +210,8 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         motHistoryVerification: 717800005,
         paymentPending: 717800006,
         paid: 717800007,
+        underReview: 717800008,
+        referredToPublicProtectionSubCommittee: 717800009,
         closedORRejected: 2,
         granted: 717800002,
         ClosedOrCompleted: 717800004

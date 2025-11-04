@@ -50,7 +50,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       let value = configControl.getAttribute().getValue();
       if (value && value.length > 0 && value[0].name) {
         let serviceName = value[0].name.toLowerCase();
-      // Handle taxi driver licence configuration
+        // Handle taxi driver licence configuration
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.taxiDriverLicence) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleTaxiDriverLicence(executionContext);
 
@@ -60,18 +60,18 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handlePrivateHireOperator(executionContext);
 
         }
-      // Handle private hire vehicle configuration
+        // Handle private hire vehicle configuration
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.privateHireVehicle) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleHackneyCarriageOrPrivateHire(executionContext);
 
         }
-      // Handle hackney carriage vehicle configuration
+        // Handle hackney carriage vehicle configuration
 
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.hackneyCarriageVehicle) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleHackneyCarriageOrPrivateHire(executionContext);
 
         }
-      // Handle notification of convictions configuration
+        // Handle notification of convictions configuration
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.notificationOfConvictions) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleNotificationOfConvictions(executionContext);
 
@@ -89,6 +89,9 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       //Hide or show tabs 
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.taxiDriverLicence, true);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.mot, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.underReview, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.referredToPublicProtectionSubCommittee, true);
+
       // Disable fields that should not be editable by the user
       SS.MSDYN.LGIntelliware.WR.Common.disableFields(formContext, [
         SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.group2MedicalForm,
@@ -114,6 +117,8 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.hackneyCarriageAndPrivateHire, true);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaDriverData, false);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaVehicleDetails, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.underReview, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.referredToPublicProtectionSubCommittee, true);
       // Disable fields that should not be editable by the user
       SS.MSDYN.LGIntelliware.WR.Common.disableFields(formContext, [
         SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.group2MedicalForm,
@@ -144,6 +149,8 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator, true);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dbs, true);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.mot, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.underReview, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.referredToPublicProtectionSubCommittee, true);
       // Disable fields that should not be editable by the user
       SS.MSDYN.LGIntelliware.WR.Common.disableFields(formContext, [
         SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.premisesPublicLiabilityInsurance,
@@ -421,6 +428,10 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
             SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.pay360,
           [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.reviewMOTHistory]:
             SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.mot,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.underReview]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.underReview,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.referredToPublicProtectionSubCommittee]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.referredToPublicProtectionSubCommittee,
           [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.grant]:
             SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.summary,
           [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.reject]:
@@ -438,6 +449,14 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         else if (activeStage.getName() == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.grantOrReject) {
           formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
           formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.paid);
+        }
+        else if (activeStage.getName() == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.underReview) {
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.underReview);
+        }
+        else if (activeStage.getName() == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.referredToPublicProtectionSubCommittee) {
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.referredToPublicProtectionSubCommittee);
         }
         // Save and refresh form to reflect updates
         formContext.data.save().then(() => {
