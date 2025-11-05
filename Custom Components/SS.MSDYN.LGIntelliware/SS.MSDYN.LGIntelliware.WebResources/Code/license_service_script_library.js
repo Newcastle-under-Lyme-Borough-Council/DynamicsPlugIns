@@ -153,8 +153,18 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
             var formContext = executionContext.getFormContext();
             //BPF Stage Events
             SS.MSDYN.LGIntelliware.WR.LicenseService.registerPavementAddPreOnStageChangeEvent(formContext);
+            //lock bpf field
+            var licenseNumberFieldControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.pavementLicenceNumber);
+            var licenseNumberFieldControl1 = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.pavementLicenceNumber1);
+            if (licenseNumberFieldControl)
+                licenseNumberFieldControl.setDisabled(true);
+            if (licenseNumberFieldControl1)
+                licenseNumberFieldControl1.setDisabled(true);
+            //remove extra status values
+            formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).removeOption(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.refferedToCommittee);
+
             //field check on Agent Detail Form
-            var agent = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.areYouAnAgent).getValue();
+            var agent = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentActingOnBehalf).getValue();
             if (agent) {
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.contact).setVisible(false);
             }
@@ -184,7 +194,13 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
 
             //BPF Stage Events
             SS.MSDYN.LGIntelliware.WR.LicenseService.registerAddOnPreStageChangeEvent(formContext);
-
+            //lock bpf field
+            var licenseNumberFieldControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.clubLicenceNumber);
+            var licenseNumberFieldControl1 = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.clubLicenceNumber1);
+            if (licenseNumberFieldControl)
+                licenseNumberFieldControl.setDisabled(true);
+            if (licenseNumberFieldControl1)
+                licenseNumberFieldControl1.setDisabled(true);
             //General tab
             var agent = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentActingOnBehalf).getValue();
             var generalTab = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableTabs.general);
@@ -192,6 +208,11 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentDetails).setVisible(false);
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusiness).setVisible(false);
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantFirstName).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantLastName).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantEmail).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantMainPhone).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantOtherPhone).setVisible(false);
             } else {
                 var agentApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentApplyingAs).getValue();
                 if (agentApplyingAs === 1) { //Individual
@@ -202,9 +223,9 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 if (agentBusinessInUk) {
                     formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredOutsideUK).setVisible(false);
                     formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
-                }
-                if (!agentBusinessOutsideUk) {
+                } else if (!agentBusinessOutsideUk) {
                     formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentRegistrationNumber).setVisible(false);
                 }
             }
             var applicantApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantApplyingAs).getValue();
@@ -216,9 +237,9 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
             if (applicantBusinessInUk) {
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredOutsideUK).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
-            }
-            if (!applicantBusinessOutsideUk) {
+            } else if (!applicantBusinessOutsideUk) {
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantRegistrationNumber).setVisible(false);
             }
 
             //Application details tab
@@ -263,6 +284,17 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
             var formContext = executionContext.getFormContext();
             //BPF Stage Events
             SS.MSDYN.LGIntelliware.WR.LicenseService.registerAddOnPreStageChangeEvent(formContext);
+
+            //lock bpf field
+            var capacityFieldControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.capacity);
+            var licenseNumberFieldControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.premisesLicenceNumber);
+            var licenseNumberFieldControl1 = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.premisesLicenceNumber1);
+            if (capacityFieldControl)
+                capacityFieldControl.setDisabled(true);
+            if (licenseNumberFieldControl)
+                licenseNumberFieldControl.setDisabled(true);
+            if (licenseNumberFieldControl1)
+                licenseNumberFieldControl1.setDisabled(true);
             //General tab
             var agent = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentActingOnBehalf).getValue();
             var generalTab = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableTabs.general);
@@ -270,6 +302,11 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentDetails).setVisible(false);
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusiness).setVisible(false);
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantFirstName).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantLastName).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantEmail).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantMainPhone).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantOtherPhone).setVisible(false);
             } else {
                 var agentApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentApplyingAs).getValue();
                 if (agentApplyingAs === 1) { //Individual
@@ -280,9 +317,9 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 if (agentBusinessInUk) {
                     formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredOutsideUK).setVisible(false);
                     formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
-                }
-                if (!agentBusinessOutsideUk) {
+                } else if (!agentBusinessOutsideUk) {
                     formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentRegistrationNumber).setVisible(false);
                 }
             }
             var applicantApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantApplyingAs).getValue();
@@ -294,9 +331,9 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
             if (applicantBusinessInUk) {
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredOutsideUK).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
-            }
-            if (!applicantBusinessOutsideUk) {
+            } else if (!applicantBusinessOutsideUk) {
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantRegistrationNumber).setVisible(false);
             }
 
             //Application details tab
@@ -334,26 +371,177 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
         }
     },
 
+    hideExtraFieldsOnPersonalForm: function (executionContext) {
+        try {
+            var formContext = executionContext.getFormContext();
+
+            //BPF Stage Events
+            SS.MSDYN.LGIntelliware.WR.LicenseService.registerAddOnPersonalPreStageChangeEvent(formContext);
+            //lock bpf field
+            var licenseNumberFieldControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.personalLicenceNumber);
+            var licenseNumberFieldControl1 = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.personalLicenceNumber1);
+            if (licenseNumberFieldControl)
+                licenseNumberFieldControl.setDisabled(true);
+            if (licenseNumberFieldControl1)
+                licenseNumberFieldControl1.setDisabled(true);
+            //General tab
+            var agent = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentActingOnBehalf).getValue();
+            var generalTab = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableTabs.general);
+            if (!agent) {
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentDetails).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusiness).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantFirstName).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantLastName).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantEmail).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantMainPhone).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantOtherPhone).setVisible(false);
+            } else {
+                var agentApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentApplyingAs).getValue();
+                if (agentApplyingAs === 1) { //Individual
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusiness).setVisible(false);
+                }
+                var agentBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredInUK).getValue();
+                var agentBusinessOutsideUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredOutsideUK).getValue();
+                if (agentBusinessInUk) {
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredOutsideUK).setVisible(false);
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
+                } else if (!agentBusinessOutsideUk) {
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentRegistrationNumber).setVisible(false);
+                }
+            }
+            var applicantApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantApplyingAs).getValue();
+            if (applicantApplyingAs === 1) { //Individual
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusiness).setVisible(false);
+            }
+            var applicantBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredInUK).getValue();
+            var applicantBusinessOutsideUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredOutsideUK).getValue();
+            if (applicantBusinessInUk) {
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredOutsideUK).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
+            } else if (!applicantBusinessOutsideUk) {
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantRegistrationNumber).setVisible(false);
+            }
+            //Personal Details
+            var personalDetailsTab = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableTabs.personalDetails);
+            if (!personalDetailsTab) return;
+            var previousName = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.previousName).getValue();
+            if (!previousName) {
+                personalDetailsTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantNameHistory).setVisible(false);
+            }
+            var ordinarilyResident = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.ordinarilyResident).getValue();
+            if (!ordinarilyResident) {
+                personalDetailsTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.correspondenceAddress).setVisible(false);
+            }
+            //Forfeiture
+            var forfeitureTab = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableTabs.forfeiture);
+            if (!forfeitureTab) return;
+            var forfeitedPersonalLicense = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.forfeitedPersonalLicense).getValue();
+            if (!forfeitedPersonalLicense) {
+                forfeitureTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.forfeitureCases).setVisible(false);
+            }
+            var convictionOfOffence = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.convictionOfOffence).getValue();
+            if (!convictionOfOffence) {
+                forfeitureTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.releventOffences).setVisible(false);
+            }
+        }
+        catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
+
+    hideExtraFieldsOnLicenseProvisionForm: function (executionContext) {
+        try {
+            var formContext = executionContext.getFormContext();
+
+            var provisionTypeValue = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionTableFields.provisionType).getValue();
+            var generalTab = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionFormTabs.general);
+
+            if (provisionTypeValue !== 9 && provisionTypeValue !== 7) {//other than alcohol or similar activity provision
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionFormSections.supervisor).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionFormSections.supervisorConsent).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionTableFields.saleOfAlcohol).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionTableFields.descriptionOfEntertainment).setVisible(false);
+
+            } else if (provisionTypeValue === 9) { //Provision of Alcohol
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionTableFields.stateOfActivity).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionTableFields.descriptionOfEntertainment).setVisible(false);
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionTableFields.provisionPlace).setVisible(false);
+
+
+            } else if (provisionTypeValue === 7) {// Provision of similar activity
+                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionTableFields.saleOfAlcohol).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionFormSections.supervisor).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenceProvisionFormSections.supervisorConsent).setVisible(false);
+            }
+            SS.MSDYN.LGIntelliware.WR.LicenseService.lockAllFields(formContext);
+
+        }
+        catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
+
+    //Method to validate expiry date according to issue date
+    validateExpiryDate: function (executionContext) {
+        var formContext = executionContext.getFormContext();
+
+        // Get the Issue Date and Expiry Date attributes
+        var issueDateAttr = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.licenceIssueDate);
+        var expiryDateAttr = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.licenceExpiryDate);
+        var expiryDateBpfAttr = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.licenceExpiryDate);
+        var expiryDateBpfAttr1 = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBpfFields.licenceExpiryDate1);
+
+        // Ensure both fields exist
+        if (!issueDateAttr || !expiryDateAttr) return;
+
+        var issueDate = issueDateAttr.getValue();
+        var expiryDate = expiryDateAttr.getValue();
+
+        // If either date is empty, skip validation
+        if (!issueDate || !expiryDate) return;
+
+        // Compare the dates
+        if (expiryDate <= issueDate) {
+            expiryDateBpfAttr.setNotification("Expiry date must be after the Issue date.");
+            expiryDateBpfAttr1.setNotification("Expiry date must be after the Issue date.");
+        }
+        else {
+            expiryDateBpfAttr.clearNotification();
+            expiryDateBpfAttr1.clearNotification();
+        }
+    },
+
     //back office events through BPF
     lockUnlockFields: function (executionContext) {
         var formContext = executionContext.getFormContext();
         var updateRequired = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.updateRequired).getValue();
         if (updateRequired) {
-            formContext.data.entity.attributes.forEach(function (attribute, index) {
-                var attributeControl = formContext.getControl(attribute.getName());
-                if (attributeControl) {
-                    attributeControl.setDisabled(false);
-                }
-            });
+            SS.MSDYN.LGIntelliware.WR.LicenseService.unlockAllFields(formContext);
         } else {
-            formContext.data.entity.attributes.forEach(function (attribute, index) {
-                var attributeControl = formContext.getControl(attribute.getName());
-                if (attributeControl) {
-                    attributeControl.setDisabled(true);
-                }
-            });
+            SS.MSDYN.LGIntelliware.WR.LicenseService.lockAllFields(formContext);
         }
 
+    },
+
+    lockAllFields: function (formContext) {
+        formContext.data.entity.attributes.forEach(function (attribute, index) {
+            var attributeControl = formContext.getControl(attribute.getName());
+            if (attributeControl) {
+                attributeControl.setDisabled(true);
+            }
+        });
+    },
+
+    unlockAllFields: function (formContext) {
+        formContext.data.entity.attributes.forEach(function (attribute, index) {
+            var attributeControl = formContext.getControl(attribute.getName());
+            if (attributeControl) {
+                attributeControl.setDisabled(false);
+            }
+        });
     },
 
     //bpf completion event
@@ -364,17 +552,13 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
         process.addOnProcessStatusChange(function () {
             if (process.getStatus() === SS.MSDYN.LGIntelliware.WR.Constants.bpfStatus.finished) {
                 var grantReject = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.grantReject).getValue();
-                if (grantReject === 0) { 
+                if (grantReject === 0) {
                     formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
                     formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.rejected);
                 }
-                else if (grantReject === 1) { 
+                else if (grantReject === 1) {
                     formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
                     formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.granted);
-                }
-                else if (grantReject === 2) { 
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.status).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
-                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.awaitingInformation);
                 }
             }
             formContext.data.entity.save("save");
@@ -412,11 +596,24 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
             if (processStageName === SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBPFStage.review) {
                 formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.inProgress);
             }
+            if (processStageName === SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBPFStage.meeting) {
+                var meetingCompleted = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.meetingCompleted).getValue();
+                if (!meetingCompleted) {
+                    executionContext.getEventArgs().preventDefault();
+                    formContext.data.process.movePrevious();
+                }
+            }
+            if (processStageName === SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBPFStage.updatesRequired) {
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.updateRequired).setValue(false);
+                SS.MSDYN.LGIntelliware.WR.LicenseService.lockAllFields(formContext);
+            }
         }
         catch (e) {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
     },
+
+
 
     //Pavement License Bpf Event
     registerPavementAddPreOnStageChangeEvent: function (formContext) {
@@ -453,6 +650,46 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
         catch (e) {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
-    }
+    },
+
+    //Personal License Bpf Event
+    registerAddOnPersonalPreStageChangeEvent: function (formContext) {
+        try {
+            // Attach the pre stage change event to the current bpf instance
+            formContext.data.process.addOnPreStageChange(function (stageContext) {
+                SS.MSDYN.LGIntelliware.WR.LicenseService.onPreStageChangePersonalBpf(stageContext);
+            });
+        }
+        catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
+
+    onPreStageChangePersonalBpf: function (executionContext) {
+        try {
+            var formContext = executionContext.getFormContext();
+            var activeStage = formContext.data.process.getActiveStage();
+            var processStageName = activeStage.getName();
+            if (processStageName === SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBPFStage.reviewConvictions) {
+                var refferedToCommittee = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.refferedToCommittee).getValue();
+                if (refferedToCommittee) {
+                    formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.refferedToCommittee);
+                }
+            }
+            if (processStageName === SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBPFStage.review) {
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.statusReason).setValue(SS.MSDYN.LGIntelliware.WR.Constants.LicenceServiceStatusCode.inProgress);
+            }
+            if (processStageName === SS.MSDYN.LGIntelliware.WR.Constants.licenceServiceBPFStage.meeting) {
+                var meetingCompleted = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.meetingCompleted).getValue();
+                if (!meetingCompleted) {
+                    executionContext.getEventArgs().preventDefault();
+                    formContext.data.process.movePrevious();
+                }
+            }
+        }
+        catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
 };
 
