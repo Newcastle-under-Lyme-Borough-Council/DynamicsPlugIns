@@ -15,13 +15,12 @@ if (typeof SS.MSDYN.LGIntelliware.WR === "undefined") {
 // Namespace for constants
 SS.MSDYN.LGIntelliware.WR.Constants = {
 
-    //----------------------------------------------------------------Licence Service Table------------------------------------------------------
+    //----------------------------------------------------------------Licence Service------------------------------------------------------
     //table fields
     licenseServiceTableFields: {
         licenseServiceSchemaName: "ss_LicenseService",
         licenseServiceId: "ss_licenseserviceid",
         licenseServiceLogicalName: "ss_licenseservice",
-        areYouAnAgent: "ss_areyouanagentactingonbehalfoftheapplicant",
         agentActingOnBehalf: "ss_agentactingonbehalfoftheapplicant",
         contact: "ss_contact",
         newLicenseOrExisting: "ss_isthisanewlicenseorrenewinganexisting",
@@ -45,7 +44,25 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         agentBusinessRegisteredOutsideUK: "ss_agentisyourbusinessregisteredoutsideuk",
         agentRegistrationNumber: "ss_agentregistrationnumber",
         agentCommercialRegister: "ss_agentcommercialregister",
-        updateRequired: "ss_arethereanyupdates"
+        updateRequired: "ss_arethereanyupdates",
+        hastheRepresentationsRecieved: "ss_hastherepresentationbeenreceived",
+        grantReject: "ss_grantreject",
+        status: "statecode",
+        statusReason: "statuscode",
+        unconditionalGrant: "ss_unconditionalgrant",
+        meetingCompleted: "ss_meetingcompleted",
+        applicantFirstName: "ss_applicantfirstname",
+        applicantLastName: "ss_applicantlastname",
+        applicantEmail: "ss_applicantemail",
+        applicantMainPhone: "ss_applicanttelephonenumber",
+        applicantOtherPhone: "ss_othertelephonenumber",
+        licenceIssueDate: "ss_issuedate",
+        licenceExpiryDate: "ss_expirydate",
+        previousName: "ss_haveyouhadanypreviousormaidennames",
+        ordinarilyResident: "ss_isyourordinaryaddressyourcorrespondaddress",
+        forfeitedPersonalLicense: "ss_wasanypersonallicenceforfeitedinpast5years",
+        convictionOfOffence: "ss_convictedofanyrelevantorforeignoffence",
+        refferedToCommittee: "ss_doesthecaseneedtobereferredtothecommittee"
     },
     //table form sections
     licenseServiceTableSections: {
@@ -70,6 +87,11 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         osMapReference: "tab_PremisesDetails_section_OSMapReference",
         addressDescription: "tab_PremisesDetails_section_AddressDescription",
         postalAddressOfPremises: "tab_PremisesDetails_section_PostalAddressOfPremises",
+        //personal
+        applicantNameHistory: "tab_PersonalDetail_section_applicantnamehistory",
+        correspondenceAddress: "tab_personaldetail_section_CorrespondenceAddress",
+        forfeitureCases: "tab_ForfeitureOfPersonalLicense_section_ForfeitureCases",
+        releventOffences: "tab_ForfeitureOfPersonalLicense_section_RelevantorForeignOffences"
     },
     //table form tabs
     licenseServiceTableTabs: {
@@ -82,14 +104,17 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         //club premises
         general: "tab_General",
         applicationDetails: "tab_ApplicationDetails",
-        clubHours: "tab_ClubHours"
+        clubHours: "tab_ClubHours",
+        //personal
+        personalDetails: "tab_PersonalDetail",
+        forfeiture: "tab_ForfeitureOfPersonalLicense"
     },
     //service configuration lookup values
     licenceServiceServiceConfiguration: {
-        pavementLicense: "license service - pavement",
-        clubPremises: "license service - club premises",
-        personal: "license service - personal",
-        premises: "license service - premises"
+        pavement: "licence service - pavement",
+        clubPremises: "licence service - club premises",
+        personal: "licence service - personal",
+        premises: "licence service - premises"
     },
     //header fields
     licenceServiceHeaderFields: {
@@ -97,17 +122,77 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
     },
     //form names
     licenceServiceFormNames: {
-        pavementLicense: "back office - pavement license service",
+        pavement: "back office - pavement licence service",
         clubPremises: "back office - club premises certificate",
-        personal: "back office - personal license service",
-        premises: "back office - premises license service"
+        personal: "back office - personal licence service",
+        premises: "back office - premises licence service"
     },
     //BPF names
     licenseServiceBPFNames: {
-        pavementLicense: "ss_pavementlicensebpf",
+        pavement: "ss_pavementlicensebpf",
         clubPremises: "ss_clubpremisescertificatebpf",
         personal: "ss_personallicenseservicebpf",
         premises: "ss_premiseslicenseservicebpf"
+    },
+
+    //Licence service table bpf stages
+    licenceServiceBPFStage: {
+        consultationPeriod: "Consultation Period",
+        verification: "Verification And Confirmation",
+        review: "Review",
+        meeting: "Meeting",
+        grantReject: "Grant/Rejected",
+        passApplicationToCommittee: "Pass Application To Committee",
+        reviewConvictions: "Review Convictions",
+        updatesRequired: "Updates Required"
+    },
+    //licnece service bpf fields
+    licenceServiceBpfFields: {
+        capacity: "header_process_ss_capacityareyouapplyingfor",
+        pavementLicenceNumber: "header_process_ss_pavementlicensenumber",
+        pavementLicenceNumber1: "header_process_ss_pavementlicensenumber_1",
+        premisesLicenceNumber: "header_process_ss_premiseslicensenumber",
+        premisesLicenceNumber1: "header_process_ss_premiseslicensenumber_1",
+        personalLicenceNumber: "header_process_ss_personallicensenumber",
+        clubLicenceNumber: "header_process_ss_clublicensenumber",
+        clubLicenceNumber1: "header_process_ss_clublicensenumber_1",
+        personalLicenceNumber: "header_process_ss_personallicensenumber",
+        personalLicenceNumber1: "header_process_ss_personallicensenumber_1",
+        licenceIssueDate: "header_process_ss_issuedate",
+        licenceExpiryDate: "header_process_ss_expirydate",
+        licenceIssueDate1: "header_process_ss_issuedate_1",
+        licenceExpiryDate1: "header_process_ss_expirydate_1",
+        refferedToCommittee: "header_process_ss_doesthecaseneedtobereferredtothecommittee",
+        meetingCompleted: "header_process_ss_meetingcompleted"
+        
+    },
+    //Taxi licence table statuscodes
+    LicenceServiceStatusCode: {
+        submitted: 717800005,
+        inProgress: 1,
+        awaitingInformation: 717800003,
+        rejected: 717800008,
+        granted: 717800007,
+        refferedToCommittee: 717800006
+
+    },
+
+    //License Provision table fields
+    licenceProvisionTableFields: {
+        provisionType: "ss_provisiontype",
+        saleOfAlcohol: "ss_willthesaleofalcoholbeforconsumption",
+        descriptionOfEntertainment: "ss_descriptionofentertainment",
+        stateOfActivity: "ss_statetypeofactivity",
+        provisionPlace: "ss_provisionplaces",
+    },
+    //license provision form sections
+    licenceProvisionFormSections: {
+        supervisor: "tab_General_section_Supervisor",
+        supervisorConsent: "tab_General_section_SupervisorConsent"
+    },
+    //license provision form tabs
+    licenceProvisionFormTabs: {
+        general: "tab_General"
     },
     //----------------------------------------------------------------Taxi Licence Table------------------------------------------------------
     //Taxi licence table fields
