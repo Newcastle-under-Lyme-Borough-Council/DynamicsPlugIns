@@ -26,10 +26,53 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.registerAddOnStageChangeEvent(executionContext);
       //Badgenumber column validation 
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.badgeNumberValidation(executionContext);
+      //Meeting Date column validation 
+      SS.MSDYN.LGIntelliware.WR.TaxiLicence.meetingDateValidation(executionContext);
       //Handle business process flow status change
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleBpfCompletionStatusChange(executionContext);
       //Lock business process flow fields
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.lockBPFFields(executionContext);
+      //Set meeting time format
+      const formContext = executionContext.getFormContext();
+      const meetingTimeControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.meetingTime);
+      if (meetingTimeControl) {
+        const meetingTimeAttribute = meetingTimeControl.getAttribute();
+        // Run once on load
+        SS.MSDYN.LGIntelliware.WR.TaxiLicence.SetMeetingTimeFormat(meetingTimeControl, meetingTimeAttribute);
+        // Attach onchange handler correctly
+        meetingTimeAttribute.addOnChange(function () {
+          SS.MSDYN.LGIntelliware.WR.TaxiLicence.SetMeetingTimeFormat(meetingTimeControl, meetingTimeAttribute);
+        });
+      }
+
+      //Show hide reason for decling meeting
+      const availabilityOfMeetingControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.kindlyConfirmYourAvailabilityForTheMeeting);
+      const reasonForDecliningMeetingControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.reasonForDecliningMeeting);
+      if (availabilityOfMeetingControl && reasonForDecliningMeetingControl) {
+        const availabilityOfMeetingAttribute = availabilityOfMeetingControl.getAttribute();
+        // Run once on load
+        SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideReasonForDecliningMeeting(availabilityOfMeetingAttribute, reasonForDecliningMeetingControl);
+        // Attach onchange handler correctly
+        availabilityOfMeetingAttribute.addOnChange(function () {
+          SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideReasonForDecliningMeeting(availabilityOfMeetingAttribute, reasonForDecliningMeetingControl);
+        });
+      }
+
+      //Show hide rppsc stage notification
+      SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideRPPSCStageNotification(executionContext);
+      //Show hide reason for grant
+      const grantWithWarningOrRefuseControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.grantWithWarningOrRefuse);
+      const reasonForGrantControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.reasonForGrant);
+      if (grantWithWarningOrRefuseControl && reasonForGrantControl) {
+        const grantWithWarningAttribute = grantWithWarningOrRefuseControl.getAttribute();
+        // Run once on load
+        SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideReasonForGrant(grantWithWarningAttribute, reasonForGrantControl);
+        // Attach onchange handler correctly
+        grantWithWarningAttribute.addOnChange(function () {
+          SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideReasonForGrant(grantWithWarningAttribute, reasonForGrantControl);
+        });
+      }
+
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
@@ -50,7 +93,7 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       let value = configControl.getAttribute().getValue();
       if (value && value.length > 0 && value[0].name) {
         let serviceName = value[0].name.toLowerCase();
-      // Handle taxi driver licence configuration
+        // Handle taxi driver licence configuration
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.taxiDriverLicence) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleTaxiDriverLicence(executionContext);
 
@@ -60,18 +103,18 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handlePrivateHireOperator(executionContext);
 
         }
-      // Handle private hire vehicle configuration
+        // Handle private hire vehicle configuration
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.privateHireVehicle) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleHackneyCarriageOrPrivateHire(executionContext);
 
         }
-      // Handle hackney carriage vehicle configuration
+        // Handle hackney carriage vehicle configuration
 
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.hackneyCarriageVehicle) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleHackneyCarriageOrPrivateHire(executionContext);
 
         }
-      // Handle notification of convictions configuration
+        // Handle notification of convictions configuration
         if (serviceName == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.notificationOfConvictions) {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.handleNotificationOfConvictions(executionContext);
 
@@ -89,6 +132,9 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       //Hide or show tabs 
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.taxiDriverLicence, true);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.mot, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.underReview, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.referredToPublicProtectionSubCommittee, true);
+
       // Disable fields that should not be editable by the user
       SS.MSDYN.LGIntelliware.WR.Common.disableFields(formContext, [
         SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.group2MedicalForm,
@@ -114,6 +160,8 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.hackneyCarriageAndPrivateHire, true);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaDriverData, false);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dvlaVehicleDetails, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.underReview, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.referredToPublicProtectionSubCommittee, true);
       // Disable fields that should not be editable by the user
       SS.MSDYN.LGIntelliware.WR.Common.disableFields(formContext, [
         SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.group2MedicalForm,
@@ -144,6 +192,8 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.privateHireOperator, true);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.dbs, true);
       SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.mot, false);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.underReview, true);
+      SS.MSDYN.LGIntelliware.WR.Common.showHideTab(executionContext, SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.referredToPublicProtectionSubCommittee, true);
       // Disable fields that should not be editable by the user
       SS.MSDYN.LGIntelliware.WR.Common.disableFields(formContext, [
         SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.premisesPublicLiabilityInsurance,
@@ -365,6 +415,10 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       formContext.data.process.addOnStageChange(function (stageContext) {
         SS.MSDYN.LGIntelliware.WR.TaxiLicence.tabFocusOnBPFStageChange(stageContext);
       });
+
+      formContext.data.process.addOnStageChange(function (stageContext) {
+        SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideRPPSCStageNotification(executionContext);
+      });
     }
     catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
@@ -421,6 +475,10 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
             SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.pay360,
           [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.reviewMOTHistory]:
             SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.mot,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.underReview]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.underReview,
+          [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.referredToPublicProtectionSubCommittee]:
+            SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.referredToPublicProtectionSubCommittee,
           [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.grant]:
             SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableTabs.summary,
           [SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.reject]:
@@ -438,6 +496,14 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
         else if (activeStage.getName() == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.grantOrReject) {
           formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
           formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.paid);
+        }
+        else if (activeStage.getName() == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.underReview) {
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.underReview);
+        }
+        else if (activeStage.getName() == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.referredToPublicProtectionSubCommittee) {
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.active);
+          formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.referredToPublicProtectionSubCommittee);
         }
         // Save and refresh form to reflect updates
         formContext.data.save().then(() => {
@@ -478,6 +544,41 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
+  // Validation on meeting date column
+  meetingDateValidation: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      let meetingDateControl = formContext.getControl(
+        SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.meetingDate
+      );
+
+      if (meetingDateControl) {
+        let meetingDateAttr = meetingDateControl.getAttribute();
+        meetingDateAttr.addOnChange(function () {
+          let value = meetingDateAttr.getValue();
+          let today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          if (value) {
+            let meetingDateOnly = new Date(value);
+            meetingDateOnly.setHours(0, 0, 0, 0);
+
+            if (meetingDateOnly < today) {
+              meetingDateControl.setNotification(
+                SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableFieldErrorMessage.meetingDateNotificationMessage
+              );
+            } else {
+              meetingDateControl.clearNotification();
+            }
+          } else {
+            meetingDateControl.clearNotification();
+          }
+        });
+      }
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
   //Lock bpf fields 
   lockBPFFields: function (executionContext) {
     try {
@@ -510,15 +611,40 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
             if (serviceConfigurationName === SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceServiceConfiguration.notificationOfConvictions) {
               formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
               formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.ClosedOrCompleted);
+              return;
             } else {
               // Handle other service configurations based on grant/reject decision
               let grantReject = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.grantReject)?.getValue();
               if (grantReject === 0) {
                 formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
                 formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.closedORRejected);
+                return;
               } else if (grantReject === 1) {
                 formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
                 formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.granted);
+                return;
+              }
+              let grantRejectRPPSC = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.grantRejectRPPSC)?.getValue();
+              if (grantRejectRPPSC === 0) {
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.granted);
+                return;
+              }
+              else if (grantRejectRPPSC === 1) {
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.closedORRejected);
+                return;
+              }
+              let GranthWarningORRefuse = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.GrantWithWarningORRefuse)?.getValue();
+              if (GranthWarningORRefuse === 0) {
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.GrantWithWarning);
+                return;
+              }
+              else if (GranthWarningORRefuse === 1) {
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.stateCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.stateCode.inactive);
+                formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.statusCode).setValue(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceStatusCode.Refuse);
+                return;
               }
             }
             formContext.data.entity.save("save");
@@ -528,5 +654,157 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
+  },
+  SetMeetingTimeFormat: function (meetingTimeControl, meetingTimeAttribute) {
+    try {
+      // Regular expression for 12-hour time format
+      const regex12Hour = /^(0?[1-9]|1[0-2]):[0-5][0-9](am|pm)$/i;
+      const meetingTimeValue = meetingTimeAttribute ? meetingTimeAttribute.getValue() : null;
+
+      if (meetingTimeValue && !regex12Hour.test(meetingTimeValue)) {
+        meetingTimeControl.setNotification(
+          SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableFieldErrorMessage.meetingTimeFormatText,
+          SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableFieldErrorMessage.meetingTimeNotificationControl
+        );
+      } else {
+        meetingTimeControl.clearNotification(SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableFieldErrorMessage.meetingTimeNotificationControl);
+      }
+
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+  ShowHideRibbonLZ0Button: function (primaryControl) {
+    try {
+      const formContext = primaryControl;
+      const process = formContext.data.process;
+      if (!process) return false;
+      const activeStage = process.getActiveStage();
+      const meetingTimeControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.meetingTime);
+      const meetingDateControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.meetingDate);
+
+      if (activeStage && meetingTimeControl && meetingDateControl) {
+        const activeStageName = activeStage.getName();
+        const meetingTimeValue = meetingTimeControl.getAttribute()?.getValue();
+        const meetingDateValue = meetingDateControl.getAttribute()?.getValue();
+
+        if (
+          activeStageName === SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.referredToPublicProtectionSubCommittee &&
+          meetingTimeValue != null &&
+          meetingDateValue != null
+        ) {
+          return true;
+        }
+        else {
+          return false;
+        }
+      }
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+  sendLZ0LetterButtonForm: function (primaryControl) {
+    try {
+      let formContext = primaryControl;
+      // Confirmation dialog text and configuration
+      let confirmStrings = { text: SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableDialogueConfiguration.sendLZ0LetterText, title: SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableDialogueConfiguration.sendLZ0LetterTitle };
+      let confirmOptions = { height: SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableDialogueConfiguration.sendLZ0LetterHeight, width: SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableDialogueConfiguration.sendLZ0LetterWidth };
+      // Open confirmation dialog
+      Xrm.Navigation.openConfirmDialog(confirmStrings, confirmOptions).then(
+        function (success) {
+          if (success.confirmed) {
+            // User confirmed Show progress indicator
+            SS.MSDYN.LGIntelliware.WR.Common.showProgressIndicator();
+            let entityId = formContext.data.entity.getId().replace("{", "").replace("}", "");
+            // Execute bartec municipal: check service request status custom action
+            let execute_ss_SendLZ0Letter_Request = {
+              // Parameters
+              entity: { entityType: SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableFields.taxiLicenceLogicalName, id: entityId },
+              // Metadata for custom action call
+              getMetadata: function () {
+                return {
+                  boundParameter: SS.MSDYN.LGIntelliware.WR.Constants.customActionParameter.boundParameter,
+                  parameterTypes: {
+                    entity: { typeName: SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableCustomAction.typeName, structuralProperty: SS.MSDYN.LGIntelliware.WR.Constants.customActionParameter.structuralProperty }
+                  },
+                  operationType: SS.MSDYN.LGIntelliware.WR.Constants.customActionParameter.operationType, operationName: SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceTableCustomAction.taxiLicenceSendLZ0Letter
+                };
+              }
+            };
+            // Execute the custom action using Web API
+            Xrm.WebApi.execute(execute_ss_SendLZ0Letter_Request).then(
+              function success(response) {
+                if (response.ok) {
+                  SS.MSDYN.LGIntelliware.WR.Common.hideProgressIndicator();
+                }
+              }
+            ).catch(function (e) {
+              // Hide progress and show error if action fails
+              SS.MSDYN.LGIntelliware.WR.Common.hideProgressIndicator();
+              SS.MSDYN.LGIntelliware.WR.Common.showError(e.message, false);
+            });
+          }
+        }
+      );
+    }
+    catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+
+  showHideReasonForDecliningMeeting: function (availabilityOfMeetingAttribute, reasonForDecliningMeetingControl) {
+    try {
+
+      const availabilityValue = availabilityOfMeetingAttribute.getValue();
+      if (availabilityValue == SS.MSDYN.LGIntelliware.WR.Constants.radioOptionSet.yes || availabilityValue == null) {
+        SS.MSDYN.LGIntelliware.WR.Common.showHideField(reasonForDecliningMeetingControl, false);
+      } else {
+        SS.MSDYN.LGIntelliware.WR.Common.showHideField(reasonForDecliningMeetingControl, true);
+      }
+
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+  showHideRPPSCStageNotification: function (executionContext) {
+    try {
+      let formContext = executionContext.getFormContext();
+      let process = formContext.data.process;
+      if (!process) {
+        formContext.ui.clearFormNotification(SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableFormMessage.rppscNotificationId);
+        return;
+      }
+      if (formContext.data.process.getActiveStage().getName() == SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBPFStage.referredToPublicProtectionSubCommittee) {
+        // Show notification only for this specific stage
+        formContext.ui.setFormNotification(
+          SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableFormMessage.rppscStageMessage,
+          SS.MSDYN.LGIntelliware.WR.Constants.formNotificationLevel.info,
+          SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableFormMessage.rppscNotificationId
+        );
+      } else {
+        formContext.ui.clearFormNotification(SS.MSDYN.LGIntelliware.WR.Constants.TaxiLicenceTableFormMessage.rppscNotificationId);
+      }
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  },
+  showHideReasonForGrant: function (grantWithWarningAttribute, reasonForGrantControl) {
+    try {
+      const grantOrRefuseValue = grantWithWarningAttribute.getValue();
+      if (grantOrRefuseValue == SS.MSDYN.LGIntelliware.WR.Constants.radioOptionSet.no) {
+        SS.MSDYN.LGIntelliware.WR.Common.showHideField(reasonForGrantControl, true);
+        reasonForGrantControl.getAttribute().setRequiredLevel("required");
+      } else {
+        SS.MSDYN.LGIntelliware.WR.Common.showHideField(reasonForGrantControl, false);
+        reasonForGrantControl.getAttribute().setRequiredLevel("none");
+        const reasonAttribute = reasonForGrantControl.getAttribute();
+        if (reasonAttribute && reasonAttribute.getValue() !== null) {
+          reasonAttribute.setValue(null);
+        }
+      }
+    } catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
   }
+
 };

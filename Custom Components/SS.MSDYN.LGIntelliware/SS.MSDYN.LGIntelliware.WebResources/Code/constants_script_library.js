@@ -164,7 +164,7 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         licenceExpiryDate1: "header_process_ss_expirydate_1",
         refferedToCommittee: "header_process_ss_doesthecaseneedtobereferredtothecommittee",
         meetingCompleted: "header_process_ss_meetingcompleted"
-        
+
     },
     //Taxi licence table statuscodes
     LicenceServiceStatusCode: {
@@ -219,7 +219,11 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         additionalQuestionsApplyingAs: "ss_additionalquestionsareyouapplyingas",
         stateCode: "statecode",
         statusCode: "statuscode",
-        grantReject: "ss_grantreject"
+        grantReject: "ss_grantreject",
+        grantRejectRPPSC: "ss_grantrejectrppsc",
+        GrantWithWarningORRefuse: "ss_grantwithwarningrefuse",
+        kindlyConfirmYourAvailabilityForTheMeeting: "ss_kindlyconfirmyouravailabilityforthemeeting",
+        reasonForDecliningMeeting: "ss_reasonfordecliningmeeting"
     },
 
     //Taxi licence table form tabs
@@ -234,6 +238,8 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         dvlaVehicleDetails: "tab_dvla_vehicle_details",
         dbs: "tab_dbs",
         pay360: "tab_pay360",
+        underReview: "tab_under_review",
+        referredToPublicProtectionSubCommittee: "tab_referred_to_public_protection_sub_committee",
         summary: "tab_summary",
     },
 
@@ -269,16 +275,22 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         dbsReview: "DBS Review",
         paymentReview: "Payment Review",
         reviewMOTHistory: "Review MOT History",
+        underReview: "Under Review",
+        referredToPublicProtectionSubCommittee: "Referred To Public Protection Sub-Committee",
         grant: "Grant",
         reject: "Reject",
-        grantOrReject: "Grant/Reject"
+        grantOrReject: "Grant / Reject / Under Review"
     },
 
     //Taxi licence bpf fields
     taxiLicenceBpfFields: {
         headerBadgeNumber: "header_process_ss_newbadgenumber",
         paid: "header_process_ss_paid",
-        whatAreYouNotifying: "header_process_ss_whatareyounotifyingusoff"
+        whatAreYouNotifying: "header_process_ss_whatareyounotifyingusoff",
+        meetingTime: "header_process_ss_meetingtime",
+        meetingDate: "header_process_ss_meetingdate",
+        reasonForGrant:"header_process_ss_reasonforgrantlicence",
+        grantWithWarningOrRefuse:"header_process_ss_grantwithwarningrefuse"
     },
 
     //Taxi licence form header fields
@@ -291,9 +303,15 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         motHistoryVerification: 717800005,
         paymentPending: 717800006,
         paid: 717800007,
+        underReview: 717800008,
+        referredToPublicProtectionSubCommittee: 717800009,
         closedORRejected: 2,
         granted: 717800002,
-        ClosedOrCompleted: 717800004
+        ClosedOrCompleted: 717800004,
+        grantWithWarning: 717800012,
+        Refuse: 717800011,
+        GrantWithWarning: 717800012,
+        Refuse: 717800011
 
     },
 
@@ -304,6 +322,32 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         privateHireVehicle: "taxi licence - private hire vehicle",
         privateHireOperator: "taxi licence - private hire operator",
         notificationOfConvictions: "taxi licence - notification of convictions and offences"
+    },
+
+    //Taxi licence table field message
+    TaxiLicenceTableFieldErrorMessage: {
+        meetingTimeFormatText: "Please enter time in HH:MMam/pm format (12-hour)",
+        meetingTimeNotificationControl: "meeting_time_format_error",
+        meetingDateNotificationMessage: "Meeting date should be today or a future date.",
+    },
+    //TaxiLicence table dialogue configurations 
+    TaxiLicenceTableDialogueConfiguration: {
+        sendLZ0LetterText: "Do you want to send LZ0 letter? You can't undo this action.",
+        sendLZ0LetterTitle: "Confirm Send LZ0 Letter",
+        sendLZ0LetterHeight: 200,
+        sendLZ0LetterWidth: 450,
+    },
+
+    //TaxiLicence table form level messages  
+    TaxiLicenceTableFormMessage: {
+        rppscStageMessage: "Please add meeting date and time and save to send LZ0 letter using the Send LZ0 Letter button.",
+        rppscNotificationId: "rppscStageNotifificationId"
+    },
+
+    //TaxiLicence custom action
+    taxiLicenceTableCustomAction: {
+        taxiLicenceSendLZ0Letter: "ss_TaxiLicenceSendLZ0Letter",
+        typeName: "mscrm.ss_taxilicence"
     },
 
     //----------------------------------------------------------------MissedBin Table------------------------------------------------------
@@ -407,5 +451,17 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
     //---------------------------------------------------------------- Work Flow Table ------------------------------------------------------
     workFlowTableFields: {
         stateCode: "statecode"
+    },
+
+    //---------------------------------------------------------------- Form Notification Level ------------------------------------------------------
+    formNotificationLevel: {
+        info: "INFO"
+    },
+
+    //---------------------------------------------------------------- Radio options set values ------------------------------------------------------
+    radioOptionSet: {
+        yes:1,
+        no:0
     }
+    
 };

@@ -268,7 +268,15 @@ SS.MSDYN.LGIntelliware.WR.Common = {
         } catch (e) {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
-    }
+    },
+    //Show Hide field control in form
+    showHideField: function (fieldControl, visible) {
+        try {
+            fieldControl.setVisible(visible);
+        } catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+    },
 
 }
 
