@@ -71,9 +71,12 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         //Club Premises Form
         applicantDetails: "tab_General_section_ApplicantDetails",
         applicantBusiness: "tab_General_section_ApplicantBusiness",
+        applicantBusinessAddress:"tab_General_section_BusinessAddress",
+        applicantBusinessAddressLookup: "tab_general_section_AddressLookup",
         agentDetails: "tab_General_section_AgentDetails",
         agentBusiness: "tab_General_section_AgentBusiness",
         agentBusinessAddress: "tab_General_section_AgentBusinessAddress",
+        agentBusinessAddressLookup: "tab_general_section_BusinessAddressLookup",
         postalAddressOfClubPremises: "tab_ApplicationDetails_section_PostalAddressOfPremises",
         clubHoursMonday: "tab_ClubHours_section_Monday",
         clubHoursTuesday: "tab_ClubHours_section_Tuesday",
