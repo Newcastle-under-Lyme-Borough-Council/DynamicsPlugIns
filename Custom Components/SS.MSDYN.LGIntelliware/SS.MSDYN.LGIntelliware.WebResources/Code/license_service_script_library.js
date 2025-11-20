@@ -208,6 +208,7 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentDetails).setVisible(false);
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusiness).setVisible(false);
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantFirstName).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantLastName).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantEmail).setVisible(false);
@@ -215,32 +216,42 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantOtherPhone).setVisible(false);
             } else {
                 var agentApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentApplyingAs).getValue();
-                if (agentApplyingAs === 1) { //Individual
+                if (agentApplyingAs === 717800001) { //Individual
                     generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusiness).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(true);
+                } else {
+                    var agentBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredInUK).getValue();
+                    if (agentBusinessInUk) {
+                        formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(true);
+                    } else {
+                        formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(true);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(false);
+                    }
                 }
-                var agentBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredInUK).getValue();
-                var agentBusinessOutsideUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredOutsideUK).getValue();
-                if (agentBusinessInUk) {
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredOutsideUK).setVisible(false);
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
-                } else if (!agentBusinessOutsideUk) {
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentRegistrationNumber).setVisible(false);
-                }
+
             }
             var applicantApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantApplyingAs).getValue();
             if (applicantApplyingAs === 1) { //Individual
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusiness).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddress).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddressLookup).setVisible(true);
+            } else {
+                var applicantBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredInUK).getValue();
+                if (applicantBusinessInUk) {
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddress).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddressLookup).setVisible(true);
+                } else {
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddress).setVisible(true);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddressLookup).setVisible(false);
+                }
             }
-            var applicantBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredInUK).getValue();
-            var applicantBusinessOutsideUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredOutsideUK).getValue();
-            if (applicantBusinessInUk) {
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredOutsideUK).setVisible(false);
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
-            } else if (!applicantBusinessOutsideUk) {
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantRegistrationNumber).setVisible(false);
-            }
+            
 
             //Application details tab
             var postalAddressType = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.postalAddressType).getValue();
@@ -302,6 +313,7 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentDetails).setVisible(false);
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusiness).setVisible(false);
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantFirstName).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantLastName).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantEmail).setVisible(false);
@@ -309,34 +321,42 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantOtherPhone).setVisible(false);
             } else {
                 var agentApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentApplyingAs).getValue();
-                if (agentApplyingAs === 1) { //Individual
+                if (agentApplyingAs === 717800001) { //Individual
                     generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusiness).setVisible(false);
-                }
-                var agentBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredInUK).getValue();
-                var agentBusinessOutsideUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredOutsideUK).getValue();
-                if (agentBusinessInUk) {
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredOutsideUK).setVisible(false);
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
-                } else if (!agentBusinessOutsideUk) {
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentRegistrationNumber).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(true);
+                } else {
+                    var agentBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredInUK).getValue();
+                    if (agentBusinessInUk) {
+                        formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(true);
+                    } else {
+                        formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(true);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(false);
+                    }
                 }
             }
             var applicantApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantApplyingAs).getValue();
             if (applicantApplyingAs === 1) { //Individual
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusiness).setVisible(false);
-            }
-            var applicantBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredInUK).getValue();
-            var applicantBusinessOutsideUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredOutsideUK).getValue();
-            if (applicantBusinessInUk) {
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredOutsideUK).setVisible(false);
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
-            } else if (!applicantBusinessOutsideUk) {
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantRegistrationNumber).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddress).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddressLookup).setVisible(true);
+            } else {
+                var applicantBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredInUK).getValue();
+                if (applicantBusinessInUk) {
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddress).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddressLookup).setVisible(true);
+                } else {
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddress).setVisible(true);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddressLookup).setVisible(false);
+                }
             }
 
-            //Application details tab
+            //Premises details tab
             var postalAddressType = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.postalAddressType).getValue();
             var premisesDetailsTab = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableTabs.premisesDetails);
             switch (postalAddressType) {
@@ -391,6 +411,7 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentDetails).setVisible(false);
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusiness).setVisible(false);
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantFirstName).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantLastName).setVisible(false);
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantEmail).setVisible(false);
@@ -398,31 +419,39 @@ SS.MSDYN.LGIntelliware.WR.LicenseService = {
                 formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantOtherPhone).setVisible(false);
             } else {
                 var agentApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentApplyingAs).getValue();
-                if (agentApplyingAs === 1) { //Individual
+                if (agentApplyingAs === 717800001) { //Individual
                     generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusiness).setVisible(false);
-                }
-                var agentBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredInUK).getValue();
-                var agentBusinessOutsideUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredOutsideUK).getValue();
-                if (agentBusinessInUk) {
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredOutsideUK).setVisible(false);
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
-                } else if (!agentBusinessOutsideUk) {
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
-                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentRegistrationNumber).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(true);
+                } else {
+                    var agentBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentBusinessRegisteredInUK).getValue();
+                    if (agentBusinessInUk) {
+                        formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(false);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(true);
+                    } else {
+                        formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.agentCommercialRegister).setVisible(false);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddress).setVisible(true);
+                        generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.agentBusinessAddressLookup).setVisible(false);
+                    }
                 }
             }
             var applicantApplyingAs = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantApplyingAs).getValue();
             if (applicantApplyingAs === 1) { //Individual
                 generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusiness).setVisible(false);
-            }
-            var applicantBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredInUK).getValue();
-            var applicantBusinessOutsideUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredOutsideUK).getValue();
-            if (applicantBusinessInUk) {
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredOutsideUK).setVisible(false);
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
-            } else if (!applicantBusinessOutsideUk) {
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
-                formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantRegistrationNumber).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddress).setVisible(false);
+                generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddressLookup).setVisible(true);
+            } else {
+                var applicantBusinessInUk = formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantBusinessRegisteredInUK).getValue();
+                if (applicantBusinessInUk) {
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddress).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddressLookup).setVisible(true);
+                } else {
+                    formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableFields.applicantCommercialRegister).setVisible(false);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddress).setVisible(true);
+                    generalTab.sections.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableSections.applicantBusinessAddressLookup).setVisible(false);
+                }
             }
             //Personal Details
             var personalDetailsTab = formContext.ui.tabs.get(SS.MSDYN.LGIntelliware.WR.Constants.licenseServiceTableTabs.personalDetails);
