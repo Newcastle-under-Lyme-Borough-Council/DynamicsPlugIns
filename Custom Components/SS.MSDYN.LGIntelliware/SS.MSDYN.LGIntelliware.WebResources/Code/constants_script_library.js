@@ -422,6 +422,29 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         serviceConfigurationValue: "_ss_serviceconfiguration_value"
     },
 
+ //----------------------------------------------------------------Bartec Events  Table------------------------------------------------------
+    //Taxi licence table fields
+    bartecEventsTableFields: {
+     bartecEventsSchemaName: "ss_bartecevents",
+     mainEvent:"ss_associatedevent",
+     mainEventName:"ss_associatedeventname",
+     associatedEventType:"ss_associatedeventtype"
+    },
+
+
+    //Bartec events form name
+    bartecEventsFormName: {
+        subEventsForm:"Bartec Sub Events"
+    },
+
+     //----------------------------------------------------------------System Form Table------------------------------------------------------
+    systemFormTableFields: {
+     systemFormLogicalName:"systemform",
+     formId:"formid",
+     name:"name",
+     objectTypeCode:"objecttypecode",
+     type:"type"
+    },
 
     //----------------------------------------------------------------Custom Action ------------------------------------------------------
     customActionParameter: {
@@ -437,6 +460,9 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         create: 1
     },
 
+formlevel:{
+    information:2
+},
     //---------------------------------------------------------------- Status column ------------------------------------------------------
     stateCode: {
         active: 0,
