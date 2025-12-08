@@ -278,5 +278,34 @@ SS.MSDYN.LGIntelliware.WR.Common = {
         }
     },
 
+    
+  //Retrieves the Business Process Flow (BPF) ID by its unique name.
+  getBPFIdByName: function (bpfName, callback) {
+    try {
+      // Build the web api query to fetch the workflow with the specified unique name and active state
+      let query = `?$select=workflowid&$filter=uniquename eq '${bpfName}' and ${SS.MSDYN.LGIntelliware.WR.Constants.workFlowTableFields.stateCode} eq ${SS.MSDYN.LGIntelliware.WR.Constants.workFlowTableStateCode.active}`;
+      // Execute the web api request to retrieve multiple records from the workflow entity
+      Xrm.WebApi.retrieveMultipleRecords("workflow", query).then(
+        function success(results) {
+          // Check if any workflow records were returned
+          if (results.entities.length > 0) {
+            // Get the workflow ID of the first matching workflow
+            let workflowId = results.entities[0].workflowid;
+            callback(workflowId);
+          } else {
+            callback(null);
+          }
+        },
+        function (e) {
+          callback(null);
+          SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
+      );
+    }
+    catch (e) {
+      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+    }
+  }
+
 }
 

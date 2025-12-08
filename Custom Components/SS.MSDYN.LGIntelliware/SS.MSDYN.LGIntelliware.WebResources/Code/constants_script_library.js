@@ -71,7 +71,7 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         //Club Premises Form
         applicantDetails: "tab_General_section_ApplicantDetails",
         applicantBusiness: "tab_General_section_ApplicantBusiness",
-        applicantBusinessAddress:"tab_General_section_BusinessAddress",
+        applicantBusinessAddress: "tab_General_section_BusinessAddress",
         applicantBusinessAddressLookup: "tab_general_section_AddressLookup",
         agentDetails: "tab_General_section_AgentDetails",
         agentBusiness: "tab_General_section_AgentBusiness",
@@ -292,8 +292,8 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         whatAreYouNotifying: "header_process_ss_whatareyounotifyingusoff",
         meetingTime: "header_process_ss_meetingtime",
         meetingDate: "header_process_ss_meetingdate",
-        reasonForGrant:"header_process_ss_reasonforgrantlicence",
-        grantWithWarningOrRefuse:"header_process_ss_grantwithwarningrefuse"
+        reasonForGrant: "header_process_ss_reasonforgrantlicence",
+        grantWithWarningOrRefuse: "header_process_ss_grantwithwarningrefuse"
     },
 
     //Taxi licence form header fields
@@ -366,7 +366,22 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         missedBinSchemaName: "ss_missedbins",
         missedBinId: "ss_missedbinid",
         missedBinLogicalName: "ss_missedbin",
+        disputeEscalate: "ss_disputeescalate",
+        stateCode: "statecode",
+        statusCode: "statuscode",
+        crew:"ss_crew",
+        case:"ss_incidentid"
 
+    },
+
+    //Missedbin choice fields
+    missedBinChoiceFields: {
+        dispute: 0,
+        escalate: 1,
+        newCollectionRequired:1,
+        newCollectionNoRequired:0,
+        hasTheCaseBeenResolved:1,
+        hasTheCaseNotResolved:0
     },
     //Missedbin table dialogue configurations 
     missedBinTableDialogueConfiguration: {
@@ -376,6 +391,49 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         bartecMunicipalCheckServiceRequestStatusWidth: 450,
     },
 
+     //Missed bin table bpf names
+    missedBinBPFNames: {
+        missedBinDispute: "ss_missedbindisputeprocess",
+        missedBinEscalate: "ss_missedbinescalationprocess",
+       
+    },
+      //Missed bin bpf fields
+    missedBinBpfFields: {
+        newCollectionRequired: "ss_newcollectionrequired",
+        hasTheCaseBeenResolved:"ss_hasthecasebeenresolved"
+     
+    },
+
+    //Missed bin table statuscodes
+    missedBinStatusCode: {
+         noCollectionRequired: 717800008,
+         newCollectionRequired:717800009,
+         awaitingAssignment:717800007,
+         availableEscalation:717800001,
+         investigatingDispute:717800004,
+         awaitingResolution:717800010,
+         closedCompleted:717800000,
+         resolved:717800006
+    },
+    //Missed bin table bpf stages
+    missedBinBPFStage: {
+        assignAgent: "Assign Agent",
+        resolveCase: "Resolve Case",
+        emailCustomer:"Email Customer",
+        resolveEscalation:"Resolve Escalation"
+    },
+
+    //---------------------------------------------------------------Case Table --------------------------------------------------------
+   caseTableFields: {
+        caseLogicalName: "incident",
+        crewSchemaName:"ss_Crew",
+        crewLogicalName:"ss_crew",
+    },
+
+    //---------------------------------------------------------------Crew Table --------------------------------------------------------
+   crewTableFields: {
+     crewEntitySetName: "ss_crews"
+    },
     //---------------------------------------------------------------Holiday Table -------------------------------------------------------
     bankHolidayTableFields: {
         date: "ss_date"
@@ -422,28 +480,28 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         serviceConfigurationValue: "_ss_serviceconfiguration_value"
     },
 
- //----------------------------------------------------------------Bartec Events  Table------------------------------------------------------
+    //----------------------------------------------------------------Bartec Events  Table------------------------------------------------------
     //Taxi licence table fields
     bartecEventsTableFields: {
-     bartecEventsSchemaName: "ss_bartecevents",
-     mainEvent:"ss_associatedevent",
-     mainEventName:"ss_associatedeventname",
-     associatedEventType:"ss_associatedeventtype"
+        bartecEventsSchemaName: "ss_bartecevents",
+        mainEvent: "ss_associatedevent",
+        mainEventName: "ss_associatedeventname",
+        associatedEventType: "ss_associatedeventtype"
     },
 
 
     //Bartec events form name
     bartecEventsFormName: {
-        subEventsForm:"Bartec Sub Events"
+        subEventsForm: "Bartec Sub Events"
     },
 
-     //----------------------------------------------------------------System Form Table------------------------------------------------------
+    //----------------------------------------------------------------System Form Table------------------------------------------------------
     systemFormTableFields: {
-     systemFormLogicalName:"systemform",
-     formId:"formid",
-     name:"name",
-     objectTypeCode:"objecttypecode",
-     type:"type"
+        systemFormLogicalName: "systemform",
+        formId: "formid",
+        name: "name",
+        objectTypeCode: "objecttypecode",
+        type: "type"
     },
 
     //----------------------------------------------------------------Custom Action ------------------------------------------------------
@@ -460,9 +518,9 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         create: 1
     },
 
-formlevel:{
-    information:2
-},
+    formlevel: {
+        information: 2
+    },
     //---------------------------------------------------------------- Status column ------------------------------------------------------
     stateCode: {
         active: 0,
@@ -489,8 +547,8 @@ formlevel:{
 
     //---------------------------------------------------------------- Radio options set values ------------------------------------------------------
     radioOptionSet: {
-        yes:1,
-        no:0
+        yes: 1,
+        no: 0
     }
-    
+
 };
