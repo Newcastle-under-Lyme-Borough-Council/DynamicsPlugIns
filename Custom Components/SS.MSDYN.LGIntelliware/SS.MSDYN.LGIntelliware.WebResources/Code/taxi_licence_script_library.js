@@ -57,22 +57,8 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
           SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideReasonForDecliningMeeting(availabilityOfMeetingAttribute, reasonForDecliningMeetingControl);
         });
       }
-
       //Show hide rppsc stage notification
       SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideRPPSCStageNotification(executionContext);
-      //Show hide reason for grant
-      const grantWithWarningOrRefuseControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.grantWithWarningOrRefuse);
-      const reasonForGrantControl = formContext.getControl(SS.MSDYN.LGIntelliware.WR.Constants.taxiLicenceBpfFields.reasonForGrant);
-      if (grantWithWarningOrRefuseControl && reasonForGrantControl) {
-        const grantWithWarningAttribute = grantWithWarningOrRefuseControl.getAttribute();
-        // Run once on load
-        SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideReasonForGrant(grantWithWarningAttribute, reasonForGrantControl);
-        // Attach onchange handler correctly
-        grantWithWarningAttribute.addOnChange(function () {
-          SS.MSDYN.LGIntelliware.WR.TaxiLicence.showHideReasonForGrant(grantWithWarningAttribute, reasonForGrantControl);
-        });
-      }
-
     } catch (e) {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
@@ -794,23 +780,4 @@ SS.MSDYN.LGIntelliware.WR.TaxiLicence = {
       SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
     }
   },
-  showHideReasonForGrant: function (grantWithWarningAttribute, reasonForGrantControl) {
-    try {
-      const grantOrRefuseValue = grantWithWarningAttribute.getValue();
-      if (grantOrRefuseValue == SS.MSDYN.LGIntelliware.WR.Constants.radioOptionSet.no) {
-        SS.MSDYN.LGIntelliware.WR.Common.showHideField(reasonForGrantControl, true);
-        reasonForGrantControl.getAttribute().setRequiredLevel("required");
-      } else {
-        SS.MSDYN.LGIntelliware.WR.Common.showHideField(reasonForGrantControl, false);
-        reasonForGrantControl.getAttribute().setRequiredLevel("none");
-        const reasonAttribute = reasonForGrantControl.getAttribute();
-        if (reasonAttribute && reasonAttribute.getValue() !== null) {
-          reasonAttribute.setValue(null);
-        }
-      }
-    } catch (e) {
-      SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
-    }
-  }
-
 };
