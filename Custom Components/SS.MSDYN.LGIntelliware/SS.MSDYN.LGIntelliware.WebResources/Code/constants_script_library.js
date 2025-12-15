@@ -282,7 +282,7 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         referredToPublicProtectionSubCommittee: "Referred To Public Protection Sub-Committee",
         grant: "Grant",
         reject: "Reject",
-        grantOrReject: "Grant / Reject / Under Review"
+        grantOrReject: "Grant / Reject / Under Review",
     },
 
     //Taxi licence bpf fields
@@ -312,7 +312,6 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         granted: 717800002,
         ClosedOrCompleted: 717800004,
         grantWithWarning: 717800012,
-        Refuse: 717800011,
         GrantWithWarning: 717800012,
         Refuse: 717800011
 
@@ -438,6 +437,12 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
     bankHolidayTableFields: {
         date: "ss_date"
     },
+ //---------------------------------------------------------------Email Table -------------------------------------------------------
+    emailTableFields: {
+        regarding: "regardingobjectid",
+        contact:"_ss_customer_value",
+        to:"to"
+    },
 
     //Bank holiday table field error message
     bankHolidayTableFieldErrorMessage: {
@@ -446,6 +451,7 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
 
     //---------------------------------------------------------------Contact Table -------------------------------------------------------
     contactTableFields: {
+        contactLogicalName:"contact",
         mobilePhone: "mobilephone"
     },
     //Contact table field error message
