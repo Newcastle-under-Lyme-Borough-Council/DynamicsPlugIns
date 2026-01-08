@@ -119,7 +119,9 @@ namespace SS.MSDYN.LGIntelliware.Actions
                         else if (response.status == "success")
                         {
                             output.status = response.status;
-                            UpdateTransactionsRecord(" ", transaction[PaymentTransaction.PaymentTransactionId].ToString(), " ", StatusCode.Success.GetHashCode(), service);
+                            var transactionEntity = UpdateTransactionsRecord(" ", transaction[PaymentTransaction.PaymentTransactionId].ToString(), " ", StatusCode.Success.GetHashCode(), service);
+                            //Update service record
+                            UpdateServicePaidColumn(transactionEntity, service);
                             outputString = JsonConvert.SerializeObject(output);
                             context.OutputParameters["outputString"] = outputString;
                             return;
@@ -276,9 +278,9 @@ namespace SS.MSDYN.LGIntelliware.Actions
             service.Create(record);
             return;
         }
-        static void UpdateTransactionsRecord(string transactionId, string recordGuid, string paymentLink, int statusReason, IOrganizationService service)
+        static Entity UpdateTransactionsRecord(string transactionId, string recordGuid, string paymentLink, int statusReason, IOrganizationService service)
         {
-            Entity transaction = service.Retrieve(PaymentTransaction.TableName, new Guid(recordGuid), new ColumnSet(PaymentTransaction.TransactionId));
+            Entity transaction = service.Retrieve(PaymentTransaction.TableName, new Guid(recordGuid), new ColumnSet(PaymentTransaction.TransactionId, PaymentTransaction.Service));
             if (transactionId != " ")
                 transaction[PaymentTransaction.TransactionId] = transactionId.ToString();
             if (paymentLink != " ")
@@ -287,8 +289,35 @@ namespace SS.MSDYN.LGIntelliware.Actions
 
             // Udate the record
             service.Update(transaction);
-            return;
+            return transaction;
         }
+
+        static void UpdateServicePaidColumn(Entity transaction, IOrganizationService service)
+        {
+            if (!transaction.Contains(PaymentTransaction.Service))
+                return;
+
+            EntityReference serviceRef = transaction[PaymentTransaction.Service] as EntityReference;
+            if (serviceRef == null)
+                return;
+
+            // Check logical name
+            if (serviceRef.LogicalName ==TaxiLicence.TableName)
+            {
+                Entity serviceEntity = new Entity(serviceRef.LogicalName)
+                {
+                    Id = serviceRef.Id
+                };
+
+                // Update toggle (Paid = Yes)
+                serviceEntity[PaymentTransaction.Paid] = true;
+
+                service.Update(serviceEntity);
+            }
+        }
+
+
+
         static async Task<string> CheckPaymentStatus(string paymentGUID, string contactID, string environment, string auth)
         {
             // Create URL
