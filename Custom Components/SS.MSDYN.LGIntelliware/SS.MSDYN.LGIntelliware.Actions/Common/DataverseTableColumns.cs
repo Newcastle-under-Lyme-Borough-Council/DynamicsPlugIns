@@ -45,7 +45,8 @@ namespace SS.MSDYN.LGIntelliware.Actions
         public const string TransactionId = "ss_transactionid";
         public const string PaymentLink = "ss_paymentlink";
         public const string StatusReason = "statuscode";
-
+        public const string Service = "ss_serviceid";
+        public const string Paid = "ss_paid";
     }
     #endregion
 
@@ -72,4 +73,16 @@ namespace SS.MSDYN.LGIntelliware.Actions
         Failed = 717800002
     }
     #endregion
+
+    #region Sealed Class: Payment Transaction ColumnNames
+    /// <summary>
+    /// Sealed class for Taxi Licence  table column names.
+    /// </summary>
+    public sealed class TaxiLicence
+    {
+        public const string TableName = "ss_taxilicence";
+        
+    }
+    #endregion
+
 }
