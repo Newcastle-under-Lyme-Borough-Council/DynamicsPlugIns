@@ -283,7 +283,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                 transaction[PaymentTransaction.TransactionId] = transactionId.ToString();
             if (paymentLink != " ")
                 transaction[PaymentTransaction.PaymentLink] = paymentLink.ToString();
-            transaction[PaymentTransaction.StatusReason] = statusReason;
+            transaction[PaymentTransaction.StatusReason] = new OptionSetValue(statusReason);
 
             // Udate the record
             service.Update(transaction);
