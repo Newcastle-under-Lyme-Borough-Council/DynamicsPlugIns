@@ -90,11 +90,22 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     entityToCreate.Attributes.Add(Incident.CaseTitle, entity.Attributes[ServiceRequest.ReferenceNumber] + " - " + serviceConfiguration.Attributes[ServiceConfiguration.Name] + " - " + " Service Request ");
                 }
 
+
+                if ((serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != null) && (entity.Attributes.ContainsKey(ServiceRequest.GardenWasteReferenceNumber) && entity.Attributes[ServiceRequest.GardenWasteReferenceNumber] != null))
+                {
+                    entityToCreate.Attributes.Add(Incident.CaseTitle, entity.Attributes[ServiceRequest.GardenWasteReferenceNumber] + " - " + serviceConfiguration.Attributes[ServiceConfiguration.Name] + " - " + " Service Request ");
+                }
+
                 entityToCreate.Attributes.Add(Incident.CaseType, new OptionSetValue(IncidentType.Request.GetHashCode()));
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.Customer) && entity.Attributes[ServiceRequest.Customer] != null)
                 {
                     entityToCreate.Attributes.Add(Incident.Customer, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.Customer).Id));
+                }
+
+                if (entity.Attributes.ContainsKey(ServiceRequest.GardenWasteContact) && entity.Attributes[ServiceRequest.GardenWasteContact] != null)
+                {
+                    entityToCreate.Attributes.Add(Incident.Customer, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.GardenWasteContact).Id));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.Description) && entity.Attributes[ServiceRequest.Description] != null)
@@ -125,6 +136,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (entity.Attributes.ContainsKey(ServiceRequest.ReferenceNumber) && entity.Attributes[ServiceRequest.ReferenceNumber] != null)
                 {
                     entityToCreate.Attributes.Add(Incident.CaseNumber, entity.GetAttributeValue<string>(ServiceRequest.ReferenceNumber));
+                }
+
+                if (entity.Attributes.ContainsKey(ServiceRequest.GardenWasteReferenceNumber) && entity.Attributes[ServiceRequest.GardenWasteReferenceNumber] != null)
+                {
+                    entityToCreate.Attributes.Add(Incident.CaseNumber, entity.GetAttributeValue<string>(ServiceRequest.GardenWasteReferenceNumber));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.SourceType) && entity.Attributes[ServiceRequest.SourceType] != null)

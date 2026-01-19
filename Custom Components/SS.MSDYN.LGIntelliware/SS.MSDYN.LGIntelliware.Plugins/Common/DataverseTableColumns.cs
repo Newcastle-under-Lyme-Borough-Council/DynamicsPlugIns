@@ -22,7 +22,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string TaxiLicenceTableName = "ss_taxilicence";
         public const string TaxiLicenceTableAlias = "ss_taxilicence_alias";
         public const string TaxiLicence = "ss_taxilicenceid";
+        public const string GardenWasteTableName = "jcc_gardenwaste1";
+        public const string GardenWasteTableAlias = "jcc_gardenwaste1_alias";
+        public const string GardenWaste = "jcc_gardenwaste1id";
         public const string ReferenceNumber = "ss_referencenumber";
+        public const string GardenWasteReferenceNumber = "jcc_gardenwasterequest";
+        public const string GardenWasteContact = "jcc_contact";
         public const string Description = "ss_description";
         public const string Owner = "ownerid";
         public const string SourceType = "ss_sourcetype";
