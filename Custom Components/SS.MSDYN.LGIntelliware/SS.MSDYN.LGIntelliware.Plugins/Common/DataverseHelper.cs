@@ -165,6 +165,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                     entityToCreate.Attributes.Add(Incident.Property, entity.GetAttributeValue<string>(ServiceRequest.Property));
                 }
+
+                if (entity.Attributes.ContainsKey(ServiceRequest.PropertyUprn) && entity.Attributes[ServiceRequest.PropertyUprn] != null)
+                {
+                    entityToCreate.Attributes.Add(Incident.PropertyUprn, new EntityReference(Property.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.PropertyUprn).Id));
+                }
                 // Check if the current entity does not already contain a contact property and if the entity is of type missedbin
                 if (!entity.Contains(ServiceRequest.ContactProperty) && entity.LogicalName.Equals(ServiceRequest.MissedBinTableName))
                 {
@@ -181,6 +186,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             if (property != null)
                             {
                                 entityToCreate.Attributes.Add(Incident.Property, property.GetAttributeValue<string>(Property.Addresscs));
+                                entityToCreate.Attributes.Add(Incident.PropertyUprn, new EntityReference(Property.TableName, propertyId));
+
                             }
                         }
 
