@@ -37,6 +37,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Case = "ss_incidentid";
         public const string ContactProperty = "ss_contactproperty";
         public const string Property = "ss_property";
+        public const string PropertyUprn = "ss_propertyuprn";
+
     }
     #endregion
 
@@ -91,6 +93,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Origin = "caseorigincode";
         public const string ContactProperty = "ss_contactproperty";
         public const string Property = "ss_property";
+        public const string PropertyUprn = "ss_propertyuprn";
+
     }
     #endregion
 
