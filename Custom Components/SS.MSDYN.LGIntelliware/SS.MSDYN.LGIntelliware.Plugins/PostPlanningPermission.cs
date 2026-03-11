@@ -30,9 +30,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         {
             if (localContext == null) throw new ArgumentNullException(nameof(localContext));
             var context = localContext.PluginExecutionContext;
-           // var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
-
+            // Prevent infinite loops by limiting depth
+            if (context.Depth > 1)
+            {
+                return;
+            }
             try
             {
                 // Check if context message name is 'Create' ...
@@ -47,7 +50,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             // Check if entity reference is of type planning permission...
                             if (entity.LogicalName.Equals(ServiceRequest.PlanningPermissionTableName))
                             {
-                                if (entity.Attributes.ContainsKey(ServiceRequest.ServiceConfiguration) && entity.Attributes[ServiceRequest.ServiceConfiguration] != null)
+                                if (entity.Attributes.Contains(ServiceRequest.ServiceConfiguration) &&
+                                 ((EntityReference)entity.Attributes[ServiceRequest.ServiceConfiguration]).Id != Guid.Empty)
                                 {
                                     var serviceConfigurationId = entity.GetAttributeValue<EntityReference>(ServiceRequest.ServiceConfiguration).Id;
                                     var serviceConfigurations = DataverseHelper.RetrieveServiceConfiguration(service, ServiceConfiguration.TableName, serviceConfigurationId, new ColumnSet(ServiceConfiguration.Subject, ServiceConfiguration.Name));
@@ -92,11 +96,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (FaultException<OrganizationServiceFault> ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing PostPlanningPermission: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing PostPlanningPermission: " + ex + ".");
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An exception occured executing PostPlanningPermission: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An exception occured executing PostPlanningPermission: " + ex + ".");
             }
 
         }

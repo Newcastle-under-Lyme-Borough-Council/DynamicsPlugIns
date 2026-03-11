@@ -137,7 +137,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
             return webRequest;
         }
 
-        private static XmlDocument CreateSoapEnvelope(string uniqueID, string timmm, string tttt, string pay360SCPID, string pay360SiteID, string pay360HMACID, string portalURL, string PaymentTransactionID, string fundCode, string vATCode, string price, string serviceName, string requestID)
+        private static XmlDocument CreateSoapEnvelope(string uniqueID, string timmm, string tttt, string pay360SCPID, string pay360SiteID, string pay360HMACID, string portalURL, string paymentTransactionID, string fundCode, string vATCode, string price, string serviceName, string requestID)
         {
 
 
@@ -166,8 +166,8 @@ namespace SS.MSDYN.LGIntelliware.Actions
     <scpbase:requestType>payOnly</scpbase:requestType>
     <scpbase:requestId>" + requestID + @"</scpbase:requestId>
     <scpbase:routing>
-        <scpbase:returnUrl><![CDATA[" + portalURL + @"/PaymentSuccess?Id=" + PaymentTransactionID + @"]]></scpbase:returnUrl>
-        <scpbase:backUrl><![CDATA[" + portalURL + @"/PaymentFailure?Id=" + PaymentTransactionID + @"]]></scpbase:backUrl>
+        <scpbase:returnUrl><![CDATA[" + portalURL + @"/PaymentSuccess?Id=" + paymentTransactionID + @"]]></scpbase:returnUrl>
+        <scpbase:backUrl><![CDATA[" + portalURL + @"/PaymentFailure?Id=" + paymentTransactionID + @"]]></scpbase:backUrl>
         <scpbase:siteId>" + pay360SiteID + @"</scpbase:siteId>
         <scpbase:scpId>" + pay360SCPID + @"</scpbase:scpId>
     </scpbase:routing>

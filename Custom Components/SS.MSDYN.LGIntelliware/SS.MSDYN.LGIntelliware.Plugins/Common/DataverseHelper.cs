@@ -80,30 +80,26 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             {
                 var entityToCreate = new Entity(Incident.TableName);
                 // For each  attribute check if it exists and then set it on the new Incident record.
-                if (serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != null)
+                if (serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && (Guid) serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != Guid.Empty)
                 {
                     entityToCreate.Attributes.Add(Incident.Service, new EntityReference(ServiceConfiguration.TableName, serviceConfiguration.GetAttributeValue<Guid>(ServiceConfiguration.ServiceConfigurationid)));
                 }
-
-                if ((serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != null) && (entity.Attributes.ContainsKey(ServiceRequest.ReferenceNumber) && entity.Attributes[ServiceRequest.ReferenceNumber] != null))
+                if ((serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && (Guid)serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != Guid.Empty) && (entity.Attributes.ContainsKey(ServiceRequest.ReferenceNumber) && entity.Attributes[ServiceRequest.ReferenceNumber] != null))
                 {
                     entityToCreate.Attributes.Add(Incident.CaseTitle, entity.Attributes[ServiceRequest.ReferenceNumber] + " - " + serviceConfiguration.Attributes[ServiceConfiguration.Name] + " - " + " Service Request ");
                 }
-
-
-                if ((serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != null) && (entity.Attributes.ContainsKey(ServiceRequest.GardenWasteReferenceNumber) && entity.Attributes[ServiceRequest.GardenWasteReferenceNumber] != null))
+                if ((serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && (Guid)serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != Guid.Empty) && (entity.Attributes.ContainsKey(ServiceRequest.GardenWasteReferenceNumber) && entity.Attributes[ServiceRequest.GardenWasteReferenceNumber] != null))
                 {
                     entityToCreate.Attributes.Add(Incident.CaseTitle, entity.Attributes[ServiceRequest.GardenWasteReferenceNumber] + " - " + serviceConfiguration.Attributes[ServiceConfiguration.Name] + " - " + " Service Request ");
                 }
 
                 entityToCreate.Attributes.Add(Incident.CaseType, new OptionSetValue(IncidentType.Request.GetHashCode()));
-
-                if (entity.Attributes.ContainsKey(ServiceRequest.Customer) && entity.Attributes[ServiceRequest.Customer] != null)
+                if (entity.Attributes.ContainsKey(ServiceRequest.Customer) && ((EntityReference)entity.Attributes[ServiceRequest.Customer]).Id != Guid.Empty)
                 {
                     entityToCreate.Attributes.Add(Incident.Customer, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.Customer).Id));
                 }
 
-                if (entity.Attributes.ContainsKey(ServiceRequest.GardenWasteContact) && entity.Attributes[ServiceRequest.GardenWasteContact] != null)
+                if (entity.Attributes.ContainsKey(ServiceRequest.GardenWasteContact) && ((EntityReference)entity.Attributes[ServiceRequest.GardenWasteContact]).Id != Guid.Empty)
                 {
                     entityToCreate.Attributes.Add(Incident.Customer, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.GardenWasteContact).Id));
                 }
@@ -113,22 +109,21 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     entityToCreate.Attributes.Add(Incident.Description, entity.GetAttributeValue<string>(ServiceRequest.Description));
                 }
 
-                if (entity.Attributes.ContainsKey(ServiceRequest.Owner) && entity.Attributes[ServiceRequest.Owner] != null)
+                if (entity.Attributes.ContainsKey(ServiceRequest.Owner) && ((EntityReference) entity.Attributes[ServiceRequest.Owner]).Id != Guid.Empty)
                 {
                     entityToCreate.Attributes.Add(Incident.Owner, new EntityReference(SystemUser.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.Owner).Id));
                 }
 
                 entityToCreate.Attributes.Add(Incident.Priority, new OptionSetValue(IncidentPriority.Normal.GetHashCode()));
 
-                if (entity.Attributes.ContainsKey(ServiceRequest.ReportedBy) && entity.Attributes[ServiceRequest.ReportedBy] != null)
+                if (entity.Attributes.ContainsKey(ServiceRequest.ReportedBy) && ((EntityReference)entity.Attributes[ServiceRequest.ReportedBy]).Id != Guid.Empty)
                 {
                     entityToCreate.Attributes.Add(Incident.ReportedBy, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ReportedBy).Id));
                 }
 
                 entityToCreate.Attributes.Add(Incident.ServiceRequest, new EntityReference(entity.LogicalName, entity.Id));
 
-
-                if (subject.Attributes.ContainsKey(Subject.SubjectId) && subject.Attributes[Subject.SubjectId] != null)
+                if (subject.Attributes.ContainsKey(Subject.SubjectId) && ((Guid) subject.Attributes[Subject.SubjectId]) !=Guid.Empty)
                 {
                     entityToCreate.Attributes.Add(Incident.Subject, new EntityReference(Subject.TableName, subject.GetAttributeValue<Guid>(Subject.SubjectId)));
                 }
@@ -156,7 +151,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         entityToCreate.Attributes.Add(Incident.Origin, new OptionSetValue(IncidentOrigin.Portal.GetHashCode()));
                 }
 
-                if (entity.Attributes.ContainsKey(ServiceRequest.ContactProperty) && entity.Attributes[ServiceRequest.ContactProperty] != null)
+                if (entity.Attributes.ContainsKey(ServiceRequest.ContactProperty) && ((EntityReference)entity.Attributes[ServiceRequest.ContactProperty]).Id!= Guid.Empty)
                 {
                     entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ContactProperty).Id));
                 }
@@ -166,7 +161,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     entityToCreate.Attributes.Add(Incident.Property, entity.GetAttributeValue<string>(ServiceRequest.Property));
                 }
 
-                if (entity.Attributes.ContainsKey(ServiceRequest.PropertyUprn) && entity.Attributes[ServiceRequest.PropertyUprn] != null)
+                if (entity.Attributes.ContainsKey(ServiceRequest.PropertyUprn) && ((EntityReference)entity.Attributes[ServiceRequest.PropertyUprn]).Id != Guid.Empty)
                 {
                     entityToCreate.Attributes.Add(Incident.PropertyUprn, new EntityReference(Property.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.PropertyUprn).Id));
                 }
@@ -179,7 +174,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     {
                         var propertyId = contactProperty.GetAttributeValue<EntityReference>(ContactProperty.Property).Id;
                         var contactPropertyId = contactProperty.GetAttributeValue<Guid>(ContactProperty.ContactPropertyId);
-                        if (propertyId != null)
+                        if (propertyId != Guid.Empty)
                         {
                             var property = RetrieveProperty(service, Property.TableName, propertyId, new ColumnSet(Property.Addresscs));
                             // If the property record is found, set its address on the Incident record being created

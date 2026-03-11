@@ -1,7 +1,6 @@
 ﻿using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Sdk;
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Contexts;
@@ -22,7 +21,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         {
             if (localContext == null) throw new ArgumentNullException(nameof(localContext));
             var context = localContext.PluginExecutionContext;
-            //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
             // Prevent infinite loops by limiting depth
             if (context.Depth > 1)
@@ -60,8 +58,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 if (propertyId != Guid.Empty)
                                 {
                                     var updateProperty = DataverseHelper.UpdatePropertyFromContact(service, postImage, uprn, propertyId);
-                                    var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property, ContactProperty.ContactPropertyId));
-                                    foreach (var item in ExistingContactProperties.Entities)
+                                    var existingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property, ContactProperty.ContactPropertyId));
+                                    foreach (var item in existingContactProperties.Entities)
                                     {
 
                                         if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
@@ -81,7 +79,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An exception occured executing PostContactUpdate: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An exception occured executing PostContactUpdate: " + ex + ".");
             }
 
         }
