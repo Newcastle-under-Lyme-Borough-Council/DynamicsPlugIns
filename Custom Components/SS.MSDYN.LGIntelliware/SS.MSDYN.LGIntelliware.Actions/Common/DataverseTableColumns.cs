@@ -45,7 +45,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
         public const string TransactionId = "ss_transactionid";
         public const string PaymentLink = "ss_paymentlink";
         public const string StatusReason = "statuscode";
-        public const string Service = "ss_serviceid";
         public const string Paid = "ss_paid";
     }
     #endregion

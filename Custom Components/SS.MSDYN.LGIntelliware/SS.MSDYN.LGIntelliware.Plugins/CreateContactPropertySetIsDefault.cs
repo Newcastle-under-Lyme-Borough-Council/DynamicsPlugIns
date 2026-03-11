@@ -20,9 +20,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         {
             if (localContext == null) throw new ArgumentNullException(nameof(localContext));
             var context = localContext.PluginExecutionContext;
-            //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
-
+            // Prevent infinite loops by limiting depth
+            if (context.Depth > 2)
+            {
+                return;
+            }
             try
             {
                 // Check if context message name is 'Create' ...
@@ -36,8 +39,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         {
                             if (entity.LogicalName.Equals(ContactProperty.TableName))
                             {
-                                var IsDefault = entity.GetAttributeValue<bool>(ContactProperty.IsDefault);
-                                if (IsDefault == true)
+                                var isDefault = entity.GetAttributeValue<bool>(ContactProperty.IsDefault);
+                                if (isDefault == true)
                                 {
                                     var contact = entity.GetAttributeValue<EntityReference>(ContactProperty.Contact);
                                     var contactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contact.Id, new ColumnSet(ContactProperty.IsDefault, ContactProperty.ContactPropertyId));
@@ -59,11 +62,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (FaultException<OrganizationServiceFault> ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing UpdateContactPropertySetIsDefault: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing CreateContactPropertySetIsDefault: " + ex + ".");
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An exception occured executing UpdateContactPropertySetIsDefault: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An exception occured executing CreateContactPropertySetIsDefault: " + ex + ".");
             }
 
         }

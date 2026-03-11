@@ -20,9 +20,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         {
             if (localContext == null) throw new ArgumentNullException(nameof(localContext));
             var context = localContext.PluginExecutionContext;
-            //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
-
+            // Prevent infinite loops by limiting depth
+            if (context.Depth > 2)
+            {
+                return;
+            }
             try
             {
                 // Check if context message name is 'Update' ...
@@ -74,7 +77,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An exception occured executing UpdateContactPropertySetIsDefault: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An exception occured executing UpdateContactPropertySetIsDefault: " + ex + ".");
             }
 
         }

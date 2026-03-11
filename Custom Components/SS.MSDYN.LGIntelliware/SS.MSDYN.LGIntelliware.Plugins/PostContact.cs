@@ -21,8 +21,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         {
             if (localContext == null) throw new ArgumentNullException(nameof(localContext));
             var context = localContext.PluginExecutionContext;
-            //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
+            // Prevent infinite loops by limiting depth
             if (context.Depth > 1)
             {
                 return;
@@ -54,9 +54,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 {
                                     var updateProperty = DataverseHelper.UpdatePropertyFromContact(service,entity,uprn,propertyId);
                                     // Retrieve all contact properties linked to this contact
-                                    var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property,ContactProperty.ContactPropertyId));
+                                    var existingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property,ContactProperty.ContactPropertyId));
                                     // Check if the property is already linked to the contact
-                                    foreach (var item in ExistingContactProperties.Entities)
+                                    foreach (var item in existingContactProperties.Entities)
                                     {
                                         if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
                                         {
@@ -74,7 +74,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An exception occured executing PostContact: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An exception occured executing PostContact: " + ex + ".");
             }
 
         }

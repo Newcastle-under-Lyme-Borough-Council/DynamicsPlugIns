@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
     public class PostProperty : PluginBase
-    {
+    {  
         //Registers the plugin to run after a property record is created.
         public PostProperty() : base(typeof(PostProperty))
         {
@@ -20,8 +20,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         {
             if (localContext == null) throw new ArgumentNullException(nameof(localContext));
             var context = localContext.PluginExecutionContext;
-            //var tracingService = localContext.TracingService;
             var service = localContext.OrganizationService;
+            // Prevent infinite loops by limiting depth
             if (context.Depth > 1)
             {
                 return;
@@ -51,7 +51,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                     DataverseHelper.DeleteProperty(service, Property.TableName, entityId);
                                 }
                                 // Update existing property with new details
-                                if (propertyId != null)
+                                if (propertyId != Guid.Empty)
                                 {
                                     Entity postImage = new Entity();
                                     if (context.PostEntityImages.Contains("PostTarget"))
@@ -63,9 +63,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                                 if (contactId != null)
                                 {
-                                    var ExistingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, new Guid(contactId), new ColumnSet(ContactProperty.Property, ContactProperty.Contact));
+                                    var existingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, new Guid(contactId), new ColumnSet(ContactProperty.Property, ContactProperty.Contact));
                                     // Check if relationship already exists
-                                    foreach (var item in ExistingContactProperties.Entities)
+                                    foreach (var item in existingContactProperties.Entities)
                                     {
                                         if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId
                                             && item.Attributes.Contains(ContactProperty.Contact) && ((EntityReference)(item.Attributes[ContactProperty.Contact])).Id == new Guid(contactId)
@@ -85,7 +85,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An exception occured executing PostProperty: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An exception occured executing PostProperty: " + ex + ".");
             }
 
         }

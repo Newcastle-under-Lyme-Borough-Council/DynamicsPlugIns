@@ -44,8 +44,12 @@ namespace SS.MSDYN.LGIntelliware.Actions
             IPluginExecutionContext context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
             IOrganizationServiceFactory factory = (IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory));
             IOrganizationService service = factory.CreateOrganizationService(context.UserId);
-            OrganizationServiceContext orgContext = new OrganizationServiceContext(service);
             ITracingService tracingService = (ITracingService)serviceProvider.GetService(typeof(ITracingService));
+            // Prevent infinite loops by limiting depth
+            if (context.Depth > 1)
+            {
+                return;
+            }
             try
             {
                 tracingService.Trace("Plugin Called");
@@ -71,7 +75,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
 
                 tracingService.Trace("Payment Json: " + paymentJson.dynamicsContactId);
                 // Generate microsoft authentication
-                string authResult = MakeAuthenticationRequest().GetAwaiter().GetResult();
+                string authResult = MakeAuthenticationRequest(tracingService).GetAwaiter().GetResult();
 
                 // Convert into correct Json to process response
                 AuthResponse authJson = JsonConvert.DeserializeObject<AuthResponse>(authResult);
@@ -83,6 +87,9 @@ namespace SS.MSDYN.LGIntelliware.Actions
                     tracingService.Trace("product gets");
                     SingleProductResponse productJson = JsonConvert.DeserializeObject<SingleProductResponse>(productCost);
                     tracingService.Trace("sss" + productJson);
+                    productJson.product.amount = productJson.product.amount * product.quantity;
+                    productJson.product.quantity = product.quantity;
+
                     output.products.Add(productJson.product);
                 }
                 tracingService.Trace("out of foreach!");
@@ -95,7 +102,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                     // Get payment status of transaction if one is found
                     if (transaction != null)
                     {
-                        string result = CheckPaymentStatus(transaction[PaymentTransaction.TransactionId].ToString(), caseJson.ContactID, paymentJson.environment, authJson.access_token).GetAwaiter().GetResult();
+                        string result = CheckPaymentStatus(transaction[PaymentTransaction.TransactionId].ToString(), caseJson.ContactID, paymentJson.environment, authJson.access_token,tracingService).GetAwaiter().GetResult();
 
                         PaymentResponse response = JsonConvert.DeserializeObject<PaymentResponse>(result);
                         tracingService.Trace("Payment STATUS checked" + response.status);
@@ -105,7 +112,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                             output.errorMessage = response.messages;
 
                             // for regenrating payment link
-                            string newPaymentLink = GetPaymentLink(authJson.access_token, inputString).GetAwaiter().GetResult();
+                            string newPaymentLink = GetPaymentLink(authJson.access_token, inputString,tracingService).GetAwaiter().GetResult();
                             // convert response to Json object
                             PaymentResponse newPayment = JsonConvert.DeserializeObject<PaymentResponse>(newPaymentLink);
                             // Set output values
@@ -136,7 +143,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                         }
                     }
                     // Call payment result and pass authentication token
-                    string paymentResult = GetPaymentLink(authJson.access_token, inputString).GetAwaiter().GetResult();
+                    string paymentResult = GetPaymentLink(authJson.access_token, inputString,tracingService).GetAwaiter().GetResult();
                     tracingService.Trace("Payment Link created!");
                     // convert response to Json object
                     PaymentResponse payment = JsonConvert.DeserializeObject<PaymentResponse>(paymentResult);
@@ -145,7 +152,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                     output.paymentLink = payment.paymentLinkUrl;
                     if (output.status == null)
                         output.status = "Payment Required";
-
+                    //CreateTransactionsRecord(payment.amount*paymentJson.productList.First().quantity, caseJson.CaseID, paymentJson.identityObjectId, paymentJson.identityObjectEntity, payment.paymentGuidId, payment.paymentLinkUrl, service);
                     CreateTransactionsRecord(payment.amount, caseJson.CaseID, paymentJson.identityObjectId, paymentJson.identityObjectEntity, payment.paymentGuidId, payment.paymentLinkUrl, service);
 
                 }
@@ -157,7 +164,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An exception occured executing Payment Integration: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("An exception occured executing Payment Integration: " + ex + ".");
             }
 
         }
@@ -177,7 +184,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
             // Error handling
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"PAYMENT ERROR ({(int)response.StatusCode}): {result}");
+                tracingService.Trace($"PAYMENT ERROR ({(int)response.StatusCode}): {result}");
                 return null;
             }
 
@@ -186,7 +193,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
         }
 
         // Function to generate a payment link using the request body as the criteria
-        static async Task<string> GetPaymentLink(string authorization, string requestBody)
+        static async Task<string> GetPaymentLink(string authorization, string requestBody,ITracingService tracingService)
         {
             if (string.IsNullOrEmpty(authorization))
                 return "No valid access token provided.";
@@ -199,7 +206,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
             client.DefaultRequestHeaders.Clear();
             client.DefaultRequestHeaders.Add("Authorization", "Bearer " + authorization);
 
-            Console.WriteLine("Sending POST request...");
+          tracingService.Trace("Sending POST request...");
 
             // Send the authentication request
             string url = baseUrl + paymentLinkEndpoint;
@@ -209,7 +216,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
             // error handling
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"PAYMENT ERROR ({(int)response.StatusCode}): {result}");
+                tracingService.Trace($"PAYMENT ERROR ({(int)response.StatusCode}): {result}");
                 return null;
             }
 
@@ -227,7 +234,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                 ColumnSet = new ColumnSet(PaymentTransaction.PaymentTransactionId, PaymentTransaction.TransactionId, PaymentTransaction.PaymentLink)
             };
 
-            query.Criteria.AddCondition(PaymentTransaction.Case, ConditionOperator.Equal, new Guid(caseID));
+            query.Criteria.AddCondition(PaymentTransaction.ServiceRequestId, ConditionOperator.Equal, new Guid(caseID));
 
             var result = service.RetrieveMultiple(query);
 
@@ -271,7 +278,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
         {
             Entity record = new Entity(PaymentTransaction.TableName);
             record[PaymentTransaction.Amount] = new Money((decimal)amount); // Currency
-            record[PaymentTransaction.Case] = new EntityReference(Case.TableName, new Guid(caseId)); // Lookup
+           // record[PaymentTransaction.Case] = new EntityReference(Case.TableName, new Guid(caseId)); // Lookup
             record[PaymentTransaction.ServiceRequestId] = new EntityReference(identityObjectEntity, new Guid(identityObjectId)); // Lookup
             record[PaymentTransaction.TransactionId] = transactionId; // Text
             record[PaymentTransaction.PaymentLink] = paymentLink; // Text
@@ -280,7 +287,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
         }
         static Entity UpdateTransactionsRecord(string transactionId, string recordGuid, string paymentLink, int statusReason, IOrganizationService service)
         {
-            Entity transaction = service.Retrieve(PaymentTransaction.TableName, new Guid(recordGuid), new ColumnSet(PaymentTransaction.TransactionId, PaymentTransaction.Service));
+            Entity transaction = service.Retrieve(PaymentTransaction.TableName, new Guid(recordGuid), new ColumnSet(PaymentTransaction.TransactionId, PaymentTransaction.ServiceRequestId));
             if (transactionId != " ")
                 transaction[PaymentTransaction.TransactionId] = transactionId.ToString();
             if (paymentLink != " ")
@@ -294,10 +301,10 @@ namespace SS.MSDYN.LGIntelliware.Actions
 
         static void UpdateServicePaidColumn(Entity transaction, IOrganizationService service)
         {
-            if (!transaction.Contains(PaymentTransaction.Service))
+            if (!transaction.Contains(PaymentTransaction.ServiceRequestId))
                 return;
 
-            EntityReference serviceRef = transaction[PaymentTransaction.Service] as EntityReference;
+            EntityReference serviceRef = transaction[PaymentTransaction.ServiceRequestId] as EntityReference;
             if (serviceRef == null)
                 return;
 
@@ -318,7 +325,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
 
 
 
-        static async Task<string> CheckPaymentStatus(string paymentGUID, string contactID, string environment, string auth)
+        static async Task<string> CheckPaymentStatus(string paymentGUID, string contactID, string environment, string auth,ITracingService tracingService)
         {
             // Create URL
             string url = $"{baseUrl}{paymentStatusEndpoint}?dynamicsContactID={contactID}&paymentGuidId={paymentGUID}&environment={environment}";
@@ -332,7 +339,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
             // Error handling
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"PAYMENT ERROR ({(int)response.StatusCode}): {result}");
+                tracingService.Trace($"PAYMENT ERROR ({(int)response.StatusCode}): {result}");
                 return null;
             }
 
@@ -341,7 +348,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
         }
 
         // Function to get authorisation from Microsoft for the other requests
-        static async Task<string> MakeAuthenticationRequest()
+        static async Task<string> MakeAuthenticationRequest(ITracingService tracingService)
         {
             // Content to send as x-www-form-urlencoded to Microsoft authentication
             var form = new FormUrlEncodedContent(new[]
@@ -352,7 +359,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                     new KeyValuePair<string, string>("client_secret", ClientSecret) // Secret shouldn't be hardcoded in
                 });
 
-            Console.WriteLine("Sending POST request...");
+           tracingService.Trace("Sending POST request...");
 
             // Send the authentication request
             HttpResponseMessage response = await client.PostAsync(tokenURL, form);
@@ -361,7 +368,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
             // Error handling
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"PAYMENT ERROR ({(int)response.StatusCode}): {result}");
+                tracingService.Trace($"PAYMENT ERROR ({(int)response.StatusCode}): {result}");
                 return null;
             }
 
