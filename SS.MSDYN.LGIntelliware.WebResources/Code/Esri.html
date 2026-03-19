@@ -1,0 +1,153 @@
+﻿<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esri Map</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.12.0/proj4.js"></script>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.26/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.26/"></script>
+    <script src="ClientGlobalContext.js.aspx" type="text/javascript"></script>
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        .esri-component.esri-attribution.esri-widget {
+            display: none;
+        }
+    </style>
+    <meta>
+    <meta>
+    <meta>
+</head>
+<body onfocusout="parent.setEmailRange();" style="overflow-wrap: break-word">
+    <div id="viewDiv"></div>
+
+    <script>
+      var initialNorthing;
+      var initialEasting;
+      var map, view, graphic;
+      var longitude, latitude;
+
+      var northingControl = parent.Xrm.Page.getAttribute("ss_northing");
+      var eastingControl = parent.Xrm.Page.getAttribute("ss_easting");
+      initialNorthing = northingControl.getValue();
+      initialEasting = eastingControl.getValue();
+
+      proj4.defs(
+        "EPSG:27700",
+        "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +datum=WGS84 +units=m +no_defs"
+      );
+
+      // Define WGS84 (EPSG:4326) projection
+      proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
+
+      // Create a transformation function
+      const bngToWgs84 = proj4("EPSG:27700", "EPSG:4326");
+
+      // Convert to latitude and longitude
+      if (initialNorthing && initialEasting) {
+        const [long, lat] = bngToWgs84.forward([
+          initialEasting,
+          initialNorthing,
+        ]);
+        longitude = long;
+        latitude = lat;
+      }
+
+      require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/geometry/Point",
+        "esri/symbols/PictureMarkerSymbol",
+        "esri/Graphic",
+        "esri/symbols/SimpleMarkerSymbol",
+      ], function (
+        Map,
+        MapView,
+        Point,
+        PictureMarkerSymbol,
+        Graphic,
+        SimpleMarkerSymbol
+      ) {
+        map = new Map({
+          basemap: "streets-navigation-vector",
+        });
+
+        view = new MapView({
+          container: "viewDiv",
+          map: map,
+          center: [longitude, latitude], // Initial Northing, Easting
+          zoom: 16,
+        });
+
+        var initialPoint = new Point({
+          x: longitude,
+          y: latitude,
+        });
+
+        // Create a symbol for the point
+        const symbol = new SimpleMarkerSymbol({
+          color: "#007ac2",
+          size: "18px",
+          outline: {
+            color: "#efefef",
+            width: "2.1px",
+          },
+        });
+
+        graphic = new Graphic({
+          geometry: initialPoint,
+          symbol: symbol,
+        });
+
+        view.graphics.add(graphic);
+        function logNorthingOnChange() {
+          if (northingControl && eastingControl) {
+            northingControl.addOnChange(function () {
+              var northing = northingControl.getValue();
+              var easting = eastingControl.getValue();
+              const [long, lat] = bngToWgs84.forward([easting, northing]);
+              longitude = long;
+              latitude = lat;
+
+              updateMapView(longitude, latitude);
+            });
+          }
+        }
+
+        // Call the function to add the event listener
+        logNorthingOnChange();
+
+        function updateMapView(longitude, latitude) {
+          try {
+            if (view && graphic) {
+              if (!isNaN(longitude) && !isNaN(latitude)) {
+                view.center = [longitude, latitude];
+                view.zoom = 16;
+
+                graphic.geometry = new Point({
+                  x: longitude,
+                  y: latitude,
+                });
+              } else {
+                console.error("Invalid northing or easting values.");
+              }
+            } else {
+              console.error("View or graphic not initialized.");
+            }
+          } catch (error) {
+            console.error("Error updating map view:", error);
+          }
+        }
+      });
+      // Define updateMapView function inside the require callback
+    </script>
+
+</body>
+</html>
