@@ -1,0 +1,2 @@
+C:\Users\ddjc\source\repos\DynamicsPlugIns\SS.MSDYN.LGIntelliware.Plugins\obj\Debug\SS.MSDYN.LGIntelliware.Plugins.csproj.AssemblyReference.cache
+C:\Users\ddjc\source\repos\DynamicsPlugIns\SS.MSDYN.LGIntelliware.Plugins\obj\Debug\SS.MSDYN.LGIntelliware.Plugins.csproj.CoreCompileInputs.cache
