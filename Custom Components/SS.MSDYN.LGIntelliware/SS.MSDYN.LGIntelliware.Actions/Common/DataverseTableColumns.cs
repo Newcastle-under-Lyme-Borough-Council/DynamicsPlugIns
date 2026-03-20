@@ -80,7 +80,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
     public sealed class TaxiLicence
     {
         public const string TableName = "ss_taxilicence";
-        
     }
     #endregion
 

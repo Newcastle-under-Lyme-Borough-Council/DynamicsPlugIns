@@ -45,7 +45,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveServiceConfiguration: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveServiceConfiguration: " + ex + ".");
             }
         }
 
@@ -69,7 +69,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveSubject: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveSubject: " + ex + ".");
             }
         }
 
@@ -182,19 +182,16 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             {
                                 entityToCreate.Attributes.Add(Incident.Property, property.GetAttributeValue<string>(Property.Addresscs));
                                 entityToCreate.Attributes.Add(Incident.PropertyUprn, new EntityReference(Property.TableName, propertyId));
-
                             }
                         }
-
                         entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, contactPropertyId));
                     }
-
                 }
                 return service.Create(entityToCreate); ;
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing CreateIncident: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing CreateIncident: " + ex + ".");
             }
         }
 
@@ -207,7 +204,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing Update: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing Update: " + ex + ".");
             }
         }
 
@@ -220,10 +217,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveContact: " + ex + ".");
             }
         }
-
 
         //Retrieve contact property by its id
         public static Entity RetrieveContactProperty(this IOrganizationService service, string entityName, Guid contactPropertyId, ColumnSet columnSet)
@@ -235,7 +231,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact property: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveContactProperty: " + ex + ".");
             }
         }
 
@@ -283,7 +279,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact properties: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveContactProperties: " + ex + ".");
             }
         }
 
@@ -297,7 +293,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve property: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveProperty: " + ex + ".");
             }
         }
 
@@ -319,12 +315,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 entityToCreate[Property.Region] = contact.GetAttributeValue<string>(Contact.Country);
                 entityToCreate[Property.Latitude] = contact.GetAttributeValue<double>(Contact.Latitude);
                 entityToCreate[Property.Longitude] = contact.GetAttributeValue<double>(Contact.Longitude);
-
                 return service.Create(entityToCreate);
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table property: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing CreateProperty: " + ex + ".");
             }
         }
 
@@ -354,7 +349,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while updating records in table ` property`: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing UpdatePropertyFromContact: " + ex + ".");
             }
         }
         //Updates a property record using new values from the same Property record
@@ -378,35 +373,39 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 entityToUpdate[Property.Latitude] = property.GetAttributeValue<double?>(Property.Latitude);
                 entityToUpdate[Property.Longitude] = property.GetAttributeValue<double?>(Property.Longitude);
                 service.Update(entityToUpdate);
-
                 return propertyId;
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while updating records in table ` property`: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing UpdatePropertyDetails: " + ex + ".");
             }
         }
 
         // Updates a contact record with property details from a given property entity.
         public static void UpdateContactwithPropertyData(IOrganizationService service, string tableName, Guid Contactid, Entity property)
         {
-            var entityToCreate = new Entity(Contact.TableName, Contactid);
-            entityToCreate[Contact.Uprn] = property.GetAttributeValue<string>(Property.Uprn);
-            entityToCreate[Contact.Address1_address] = property.GetAttributeValue<string>(Property.Addresscs);
-            entityToCreate[Contact.County] = property.GetAttributeValue<string>(Property.County);
-            entityToCreate[Contact.Address] = property.GetAttributeValue<string>(Property.Addressoscs);
-            entityToCreate[Contact.Address2] = property.GetAttributeValue<string>(Property.Localityname);
-            entityToCreate[Contact.Address1_line3] = property.GetAttributeValue<string>(Property.Streetname);
-            entityToCreate[Contact.City] = property.GetAttributeValue<string>(Property.TownName);
-            entityToCreate[Contact.PostCode] = property.GetAttributeValue<string>(Property.PostCode);
-            entityToCreate[Contact.Stateorprovince] = property.GetAttributeValue<string>(Property.Posttown);
-            entityToCreate[Contact.Country] = property.GetAttributeValue<string>(Property.Region);
-            entityToCreate[Contact.Latitude] = property.GetAttributeValue<double>(Property.Latitude);
-            entityToCreate[Contact.Longitude] = property.GetAttributeValue<double>(Property.Longitude);
-
-            service.Update(entityToCreate);
+            try
+            {
+                var entityToCreate = new Entity(Contact.TableName, Contactid);
+                entityToCreate[Contact.Uprn] = property.GetAttributeValue<string>(Property.Uprn);
+                entityToCreate[Contact.Address1_address] = property.GetAttributeValue<string>(Property.Addresscs);
+                entityToCreate[Contact.County] = property.GetAttributeValue<string>(Property.County);
+                entityToCreate[Contact.Address] = property.GetAttributeValue<string>(Property.Addressoscs);
+                entityToCreate[Contact.Address2] = property.GetAttributeValue<string>(Property.Localityname);
+                entityToCreate[Contact.Address1_line3] = property.GetAttributeValue<string>(Property.Streetname);
+                entityToCreate[Contact.City] = property.GetAttributeValue<string>(Property.TownName);
+                entityToCreate[Contact.PostCode] = property.GetAttributeValue<string>(Property.PostCode);
+                entityToCreate[Contact.Stateorprovince] = property.GetAttributeValue<string>(Property.Posttown);
+                entityToCreate[Contact.Country] = property.GetAttributeValue<string>(Property.Region);
+                entityToCreate[Contact.Latitude] = property.GetAttributeValue<double>(Property.Latitude);
+                entityToCreate[Contact.Longitude] = property.GetAttributeValue<double>(Property.Longitude);
+                service.Update(entityToCreate);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("Fault exception occured executing UpdateContactwithPropertyData: " + ex + ".");
+            }
         }
-
 
         //Remove the default flag from a specific contact property record.
         public static void RemoveOtherContactPropertyfromDefault(this IOrganizationService service, Guid contactPropertyId)
@@ -423,7 +422,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while removing contact property from default : " + ex.Message, ex);
+                throw new InvalidPluginExecutionException("Fault exception occured executing RemoveOtherContactPropertyfromDefault: " + ex + ".");
             }
         }
 
@@ -442,7 +441,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while updating the contact property record: " + ex.Message, ex);
+                throw new InvalidPluginExecutionException("Fault exception occured executing SetContactPropertyToDefault: " + ex + ".");
             }
         }
 
@@ -459,7 +458,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table contact property: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing CreatePropertyContact: " + ex + ".");
             }
         }
 
@@ -495,7 +494,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException($"Error checking properties: {ex.Message}", ex);
+                throw new InvalidPluginExecutionException("Fault exception occured executing CheckPropertiesExist: " + ex + ".");
             }
         }
 
@@ -508,7 +507,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occurred executing DeleteProperty: " + ex.Message + ".", ex);
+                throw new InvalidPluginExecutionException("Fault exception occured executing DeleteProperty: " + ex + ".");
             }
         }
 
@@ -534,7 +533,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveDefaultContactProperty: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveDefaultContactProperty: " + ex + ".");
             }
         }
     }

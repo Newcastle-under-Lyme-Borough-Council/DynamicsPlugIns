@@ -94,7 +94,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string ContactProperty = "ss_contactproperty";
         public const string Property = "ss_property";
         public const string PropertyUprn = "ss_propertyuprn";
-
     }
     #endregion
 
@@ -156,7 +155,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Longitude = "ss_longitude";
         public const string Streetname = "ss_streetname";
         public const string CreatedOn = "createdon";
-
     }
     #endregion
 

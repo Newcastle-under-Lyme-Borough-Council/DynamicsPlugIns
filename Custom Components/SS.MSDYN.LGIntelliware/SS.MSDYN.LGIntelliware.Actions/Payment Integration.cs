@@ -22,7 +22,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
 
         // Prepare client for api
         private static readonly HttpClient client = new HttpClient();
-
         // Prepare endpoints and urls
         private static string tokenURL = "";
         private static string baseUrl = "";
@@ -32,7 +31,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
         private static string ClientId = "";
         private static string ClientSecret = "";
         private static string Environment = "";
-
 
         // Main represents where the plugin would call the main code
         // Expects 2 values
@@ -84,13 +82,19 @@ namespace SS.MSDYN.LGIntelliware.Actions
                 {
                     tracingService.Trace("Entered foreach");
                     string productCost = GetProduct(product.code, authJson.access_token, tracingService).GetAwaiter().GetResult();
-                    tracingService.Trace("product gets");
-                    SingleProductResponse productJson = JsonConvert.DeserializeObject<SingleProductResponse>(productCost);
-                    tracingService.Trace("sss" + productJson);
-                    productJson.product.amount = productJson.product.amount * product.quantity;
-                    productJson.product.quantity = product.quantity;
-
-                    output.products.Add(productJson.product);
+                    if (!string.IsNullOrWhiteSpace(productCost))
+                    {
+                        tracingService.Trace("product gets");
+                        SingleProductResponse productJson = JsonConvert.DeserializeObject<SingleProductResponse>(productCost);
+                        tracingService.Trace("sss" + productJson);
+                        productJson.product.amount = productJson.product.amount * product.quantity;
+                        productJson.product.quantity = product.quantity;
+                        output.products.Add(productJson.product);
+                    }
+                    else
+                    {
+                        throw new InvalidPluginExecutionException("Product cost not found for code: " + product.code);
+                    }
                 }
                 tracingService.Trace("out of foreach!");
                 if (api == "get-payment")
@@ -154,9 +158,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                         output.status = "Payment Required";
                     //CreateTransactionsRecord(payment.amount*paymentJson.productList.First().quantity, caseJson.CaseID, paymentJson.identityObjectId, paymentJson.identityObjectEntity, payment.paymentGuidId, payment.paymentLinkUrl, service);
                     CreateTransactionsRecord(payment.amount, caseJson.CaseID, paymentJson.identityObjectId, paymentJson.identityObjectEntity, payment.paymentGuidId, payment.paymentLinkUrl, service);
-
                 }
-
                 outputString = JsonConvert.SerializeObject(output);
                 context.OutputParameters["outputString"] = outputString;
                 tracingService.Trace("Final!");
@@ -191,7 +193,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
             // request received  
             return result;
         }
-
         // Function to generate a payment link using the request body as the criteria
         static async Task<string> GetPaymentLink(string authorization, string requestBody,ITracingService tracingService)
         {
@@ -224,7 +225,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
             // Add transaction to transaction table
             return result;
         }
-
         // function to check the transactions table for the case and try to get the most recent entry
         static Entity CheckTransactionsTable(string caseID, IOrganizationService service)
         {
@@ -298,7 +298,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
             service.Update(transaction);
             return transaction;
         }
-
         static void UpdateServicePaidColumn(Entity transaction, IOrganizationService service)
         {
             if (!transaction.Contains(PaymentTransaction.ServiceRequestId))
@@ -322,9 +321,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
                 service.Update(serviceEntity);
             }
         }
-
-
-
         static async Task<string> CheckPaymentStatus(string paymentGUID, string contactID, string environment, string auth,ITracingService tracingService)
         {
             // Create URL
@@ -346,7 +342,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
             // request received  
             return result;
         }
-
         // Function to get authorisation from Microsoft for the other requests
         static async Task<string> MakeAuthenticationRequest(ITracingService tracingService)
         {
@@ -385,7 +380,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
         public int ext_expires_in { get; set; }
         public string access_token { get; set; }
     }
-
     public class PaymentRequest
     {
         public string dynamicsContactId { get; set; }
@@ -400,7 +394,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
         public string uprn { get; set; }
         public string environment { get; set; }
     }
-
     public class Product
     {
         public string code { get; set; }
@@ -409,13 +402,11 @@ namespace SS.MSDYN.LGIntelliware.Actions
         public double amount { get; set; }
         public int quantity { get; set; }
     }
-
     public class CaseInfo
     {
         public string ContactID { get; set; }
         public string CaseID { get; set; }
     }
-
     public class PaymentResponse
     {
         public bool success { get; set; }
@@ -434,15 +425,12 @@ namespace SS.MSDYN.LGIntelliware.Actions
         public List<ProductResponse> products { get; set; }
         public string environment { get; set; }
     }
-
     public class SingleProductResponse
     {
         public bool success { get; set; }
         public List<string> messages { get; set; }
         public Product product { get; set; }
     }
-
-
     public class ProductResponse
     {
         public string code { get; set; }
@@ -451,7 +439,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
         public double amount { get; set; }
         public int quantity { get; set; }
     }
-
     public class OutputJson
     {
         public string status { get; set; } // Payment Required, Payment Failed, Successful Payment

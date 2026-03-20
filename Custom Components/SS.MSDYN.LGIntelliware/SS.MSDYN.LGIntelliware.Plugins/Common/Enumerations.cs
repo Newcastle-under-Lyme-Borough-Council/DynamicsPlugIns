@@ -60,7 +60,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         Email = 2,
         Web = 3,
         Portal = 4,
-
     }
 
     /// <summary>
