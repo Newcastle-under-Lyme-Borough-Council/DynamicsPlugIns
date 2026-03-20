@@ -19,6 +19,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string PlanningPermissionTableName = "ss_planningpermission";
         public const string PlanningPermissionTableAlias = "ss_planningpermission_alias";
         public const string PlanningPermission = "ss_planningpermissionid";
+        public const string OrderRecyclingContainerTableName = "crb98_orderrecyclingcontainer";
+        public const string OrderRecyclingContainerTableAlias = "crb98_orderrecyclingcontainer_alias";
         public const string TaxiLicenceTableName = "ss_taxilicence";
         public const string TaxiLicenceTableAlias = "ss_taxilicence_alias";
         public const string TaxiLicence = "ss_taxilicenceid";
