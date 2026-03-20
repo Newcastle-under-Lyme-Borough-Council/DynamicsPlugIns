@@ -100,10 +100,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\DataverseTableColumns.cs" />
-    <Compile Include="Common\QueryResponse.cs" />
-    <Compile Include="Common\Response.cs" />
-    <Compile Include="Pay360InvokeResponse.cs" />
-    <Compile Include="Pay360InvokeRequest.cs" />
     <Compile Include="Payment Integration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

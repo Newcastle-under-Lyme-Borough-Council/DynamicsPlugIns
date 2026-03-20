@@ -16,7 +16,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         /// </summary>
 
         //Registers the plugin to run after a taxi licence record is created.
-
         public PostTaxiLicence() : base(typeof(PostTaxiLicence))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ServiceRequest.TaxiLicenceTableName, Execute));

@@ -43,34 +43,41 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             // Retrieve the postImage snapshot of the Contact record after update.
                             if (context.PostEntityImages != null &&
                             context.PostEntityImages.Contains("PostImage") &&
-                        context.PostEntityImages["PostImage"] is Entity img)
+                            context.PostEntityImages["PostImage"] is Entity img)
                             {
                                 postImage = img;
                                 // Proceed with using postImage
                                 var uprn = postImage.GetAttributeValue<string>(Contact.Uprn);
-                                var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
-                                if (propertyId == Guid.Empty)
+                                if (uprn != null)
                                 {
-                                    propertyId = DataverseHelper.CreateProperty(service, postImage, uprn);
-                                }
-
-                                // If a valid property exists, handle the contact property relationship
-                                if (propertyId != Guid.Empty)
-                                {
-                                    var updateProperty = DataverseHelper.UpdatePropertyFromContact(service, postImage, uprn, propertyId);
-                                    var existingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property, ContactProperty.ContactPropertyId));
-                                    foreach (var item in existingContactProperties.Entities)
+                                    var propertyId = DataverseHelper.CheckPropertiesExist(service, Property.TableName, uprn, new ColumnSet(false));
+                                    if (propertyId == Guid.Empty)
                                     {
+                                        propertyId = DataverseHelper.CreateProperty(service, postImage, uprn);
+                                    }
 
-                                        if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
+                                    // If a valid property exists, handle the contact property relationship
+                                    if (propertyId != Guid.Empty)
+                                    {
+                                        DataverseHelper.UpdatePropertyFromContact(service, postImage, uprn, propertyId);
+                                        var existingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property, ContactProperty.ContactPropertyId));
+                                        foreach (var item in existingContactProperties.Entities)
                                         {
 
-                                            DataverseHelper.SetContactPropertyToDefault(service, item.Id);
-                                            return;
+                                            if (item.Attributes.Contains(ContactProperty.Property) && ((EntityReference)(item.Attributes[ContactProperty.Property])).Id == propertyId)
+                                            {
+
+                                                DataverseHelper.SetContactPropertyToDefault(service, item.Id);
+                                                return;
+                                            }
                                         }
+                                        // Create a new contact property relationship
+                                        DataverseHelper.CreatePropertyContact(service, contactId, propertyId, true);
                                     }
-                                    // Create a new contact property relationship
-                                    DataverseHelper.CreatePropertyContact(service, contactId, propertyId, true);
+                                }
+                                else
+                                {
+                                    throw new InvalidPluginExecutionException("There is no uprn associated with the selected property.");
                                 }
                             }
                         }
