@@ -65,14 +65,14 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                             if (subjects != null && subjects.Entities != null && subjects.Entities.Count > 0)
                                             {
                                                 var subject = subjects.Entities[0];
-                                                // Create Incident (case) for garden waste
-                                                var incidentId = DataverseHelper.CreateIncident(service, entity, serviceConfiguration, subject);
+                                                // Create Case for garden waste
+                                                var caseId = DataverseHelper.CreateCase(service, entity, serviceConfiguration, subject);
 
                                                 Entity entityToUpdate = new Entity(entity.LogicalName)
                                                 {
                                                     Id = entity.Id
                                                 };
-                                                entityToUpdate.Attributes.Add(ServiceRequest.Case, new EntityReference(Incident.TableName, incidentId));
+                                                entityToUpdate.Attributes.Add(ServiceRequest.Case, new EntityReference(Case.TableName, caseId));
                                                 DataverseHelper.Update(service, entityToUpdate);
                                             }
                                             else

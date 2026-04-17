@@ -71,26 +71,26 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     }
     #endregion
 
-    #region Sealed Class: IncidentTableColumnNames
+    #region Sealed Class: CaseTableColumnNames
     /// <summary>
-    /// Sealed class for incident table column names.
+    /// Sealed class for Case table column names.
     /// </summary>
-    public sealed class Incident
+    public sealed class Case
     {
-        public const string TableName = "incident";
+        public const string TableName = "ss_incident";
         public const string TableAlias = "ss_incident_alias";
         public const string Service = "ss_serviceconfigurationid";
-        public const string CaseTitle = "title";
-        public const string CaseType = "casetypecode";
-        public const string Customer = "customerid";
-        public const string Description = "description";
+        public const string CaseTitle = "ss_title";
+        public const string CaseType = "ss_casetype";
+        public const string Customer = "ss_customerid";
+        public const string Description = "ss_externalsystemdescription";
         public const string Owner = "ownerid";
-        public const string Priority = "prioritycode";
+        public const string Priority = "ss_casepriority";
         public const string ReportedBy = "ss_onbehalfofsomeoneid";
         public const string ServiceRequest = "ss_servicerequestid";
-        public const string Subject = "subjectid";
-        public const string CaseNumber = "ticketnumber";
-        public const string Origin = "caseorigincode";
+        public const string Subject = "ss_subjectid";
+        public const string CaseNumber = "ss_casenumber";
+        public const string Origin = "ss_origin";
         public const string ContactProperty = "ss_contactproperty";
         public const string Property = "ss_property";
         public const string PropertyUprn = "ss_propertyuprn";
