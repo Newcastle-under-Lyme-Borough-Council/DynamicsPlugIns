@@ -17,9 +17,24 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         private Collection<Tuple<int, string, string, Action<LocalPluginContext>>> _registeredEvents;
 
         /// <summary>
+        /// Gets the unsecure configuration string passed during plugin registration.
+        /// </summary>
+        protected string UnsecureConfiguration { get; }
+
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PluginBase"/> class.
         /// </summary>
         internal PluginBase(Type childClassName) { ChildClassName = childClassName.ToString(); }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PluginBase"/> class with unsecure configuration.
+        /// </summary>
+        internal PluginBase(Type childClassName, string unsecureConfiguration)
+            : this(childClassName)
+        {
+            UnsecureConfiguration = unsecureConfiguration;
+        }
 
         /// <summary>
         /// Gets the List of events that the plug-in should fire for. Each List
