@@ -49,17 +49,6 @@ namespace SS.MSDYN.LGIntelliware.Actions
     }
     #endregion
 
-    #region Sealed Class: Case ColumnNames
-    /// <summary>
-    /// Sealed class for Payment Transaction table column names.
-    /// </summary>
-    public sealed class Case
-    {
-        public const string TableName = "incident";
-
-    }
-    #endregion
-
     #region Enum: Payment Transactions
     /// <summary>
     /// Enumeration for Status Code.

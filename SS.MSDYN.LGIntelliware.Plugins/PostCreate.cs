@@ -89,13 +89,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                             {
                                                 var subject = subjects.Entities[0];
                                                 // Create an Incident (case) for the missed bin
-                                                var incidentId = DataverseHelper.CreateIncidentGeneric(service, entity, serviceConfiguration, subject, Config,localContext.TracingService);
+                                                var incidentId = DataverseHelper.CreateCaseGeneric(service, entity, serviceConfiguration, subject, Config,localContext.TracingService);
 
                                                 Entity entityToUpdate = new Entity(entity.LogicalName)
                                                 {
                                                     Id = entity.Id
                                                 };
-                                                entityToUpdate.Attributes.Add(ServiceRequest.Case, new EntityReference(Incident.TableName, incidentId));
+                                                entityToUpdate.Attributes.Add(ServiceRequest.Case, new EntityReference(Case.TableName, incidentId));
                                                 DataverseHelper.Update(service, entityToUpdate);
                                             }
                                             else

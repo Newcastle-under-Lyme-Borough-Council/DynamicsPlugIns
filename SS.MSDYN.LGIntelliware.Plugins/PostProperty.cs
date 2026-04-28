@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
     public class PostProperty : PluginBase
-    {  
+    {
         //Registers the plugin to run after a property record is created.
         public PostProperty() : base(typeof(PostProperty))
         {
@@ -72,7 +72,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                             )
                                         {
                                             return;
-                                        }  
+                                        }
                                     }
                                     //Create a new contact property relationship if it does not exist
                                     DataverseHelper.CreatePropertyContact(service, new Guid(contactId), propertyId, false);

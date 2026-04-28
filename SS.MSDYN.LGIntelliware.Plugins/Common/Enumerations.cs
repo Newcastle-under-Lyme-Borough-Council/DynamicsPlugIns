@@ -36,31 +36,30 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     }
 
     /// <summary>
-    /// Enumeration for incident priority.
+    /// Enumeration for Case priority.
     /// </summary>
-    public enum IncidentPriority
+    public enum CasePriority
     {
-       Normal = 2
+        Normal = 2
     }
 
     /// <summary>
-    /// Enumeration for incident type.
+    /// Enumeration for Case type.
     /// </summary>
-    public enum IncidentType
+    public enum CaseType
     {
         Request = 3
     }
 
     /// <summary>
-    /// Enumeration for incident origin.
+    /// Enumeration for Case origin.
     /// </summary>
-    public enum IncidentOrigin
+    public enum CaseOrigin
     {
         Phone = 1,
         Email = 2,
         Web = 3,
         Portal = 4,
-
     }
 
     /// <summary>

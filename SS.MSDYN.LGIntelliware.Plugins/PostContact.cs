@@ -52,9 +52,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                                 if (propertyId != Guid.Empty)
                                 {
-                                    var updateProperty = DataverseHelper.UpdatePropertyFromContact(service,entity,uprn,propertyId);
+                                    var updateProperty = DataverseHelper.UpdatePropertyFromContact(service, entity, uprn, propertyId);
                                     // Retrieve all contact properties linked to this contact
-                                    var existingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property,ContactProperty.ContactPropertyId));
+                                    var existingContactProperties = DataverseHelper.RetrieveContactProperties(service, ContactProperty.TableName, contactId, new ColumnSet(ContactProperty.Property, ContactProperty.ContactPropertyId));
                                     // Check if the property is already linked to the contact
                                     foreach (var item in existingContactProperties.Entities)
                                     {

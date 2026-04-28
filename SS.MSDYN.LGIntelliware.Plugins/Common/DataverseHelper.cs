@@ -1,19 +1,20 @@
-﻿using Microsoft.Xrm.Sdk.Query;
-using Microsoft.Xrm.Sdk;
+﻿using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Query;
+using SS.MSDYN.LGIntelliware.Plugins.Common;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.IdentityModel.Metadata;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
+using System.Runtime.Remoting.Services;
+using System.Security.AccessControl;
+using System.ServiceModel.Channels;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Xrm.Sdk.Messages;
-using System.Collections;
-using System.Runtime.Remoting.Services;
 using System.Web.UI.WebControls;
-using System.IdentityModel.Metadata;
-using System.Runtime.Remoting.Contexts;
-using System.Diagnostics.Contracts;
-using System.ServiceModel.Channels;
-using SS.MSDYN.LGIntelliware.Plugins.Common;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
@@ -46,7 +47,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveServiceConfiguration: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveServiceConfiguration: " + ex + ".");
             }
         }
 
@@ -70,101 +71,101 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveSubject: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveSubject: " + ex + ".");
             }
         }
 
-        //Create a new incident (case) in dataverse
-        public static Guid CreateIncident(this IOrganizationService service, Entity entity, Entity serviceConfiguration, Entity subject)
+        //Create a new Case in dataverse
+        public static Guid CreateCase(this IOrganizationService service, Entity entity, Entity serviceConfiguration, Entity subject)
         {
             try
-            {             
-                var entityToCreate = new Entity(Incident.TableName);
-                // For each  attribute check if it exists and then set it on the new Incident record.
+            {
+                var entityToCreate = new Entity(Case.TableName);
+                // For each attribute check if it exists and then set it on the new Case record.
                 if (serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && (Guid)serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.Service, new EntityReference(ServiceConfiguration.TableName, serviceConfiguration.GetAttributeValue<Guid>(ServiceConfiguration.ServiceConfigurationid)));
+                    entityToCreate.Attributes.Add(Case.Service, new EntityReference(ServiceConfiguration.TableName, serviceConfiguration.GetAttributeValue<Guid>(ServiceConfiguration.ServiceConfigurationid)));
                 }
                 if ((serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && (Guid)serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != Guid.Empty) && (entity.Attributes.ContainsKey(ServiceRequest.ReferenceNumber) && entity.Attributes[ServiceRequest.ReferenceNumber] != null))
                 {
-                    entityToCreate.Attributes.Add(Incident.CaseTitle, entity.Attributes[ServiceRequest.ReferenceNumber] + " - " + serviceConfiguration.Attributes[ServiceConfiguration.Name] + " - " + " Service Request ");
+                    entityToCreate.Attributes.Add(Case.CaseTitle, entity.Attributes[ServiceRequest.ReferenceNumber] + " - " + serviceConfiguration.Attributes[ServiceConfiguration.Name] + " - " + " Service Request ");
                 }
                 if ((serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && (Guid)serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != Guid.Empty) && (entity.Attributes.ContainsKey(ServiceRequest.GardenWasteReferenceNumber) && entity.Attributes[ServiceRequest.GardenWasteReferenceNumber] != null))
                 {
-                    entityToCreate.Attributes.Add(Incident.CaseTitle, entity.Attributes[ServiceRequest.GardenWasteReferenceNumber] + " - " + serviceConfiguration.Attributes[ServiceConfiguration.Name] + " - " + " Service Request ");
+                    entityToCreate.Attributes.Add(Case.CaseTitle, entity.Attributes[ServiceRequest.GardenWasteReferenceNumber] + " - " + serviceConfiguration.Attributes[ServiceConfiguration.Name] + " - " + " Service Request ");
                 }
 
-                entityToCreate.Attributes.Add(Incident.CaseType, new OptionSetValue(IncidentType.Request.GetHashCode()));
+                entityToCreate.Attributes.Add(Case.CaseType, new OptionSetValue(CaseType.Request.GetHashCode()));
                 if (entity.Attributes.ContainsKey(ServiceRequest.Customer) && ((EntityReference)entity.Attributes[ServiceRequest.Customer]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.Customer, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.Customer).Id));
+                    entityToCreate.Attributes.Add(Case.Customer, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.Customer).Id));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.GardenWasteContact) && ((EntityReference)entity.Attributes[ServiceRequest.GardenWasteContact]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.Customer, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.GardenWasteContact).Id));
+                    entityToCreate.Attributes.Add(Case.Customer, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.GardenWasteContact).Id));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.Description) && entity.Attributes[ServiceRequest.Description] != null)
                 {
-                    entityToCreate.Attributes.Add(Incident.Description, entity.GetAttributeValue<string>(ServiceRequest.Description));
+                    entityToCreate.Attributes.Add(Case.Description, entity.GetAttributeValue<string>(ServiceRequest.Description));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.Owner) && ((EntityReference)entity.Attributes[ServiceRequest.Owner]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.Owner, new EntityReference(SystemUser.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.Owner).Id));
+                    entityToCreate.Attributes.Add(Case.Owner, new EntityReference(SystemUser.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.Owner).Id));
                 }
 
-                entityToCreate.Attributes.Add(Incident.Priority, new OptionSetValue(IncidentPriority.Normal.GetHashCode()));
+                entityToCreate.Attributes.Add(Case.Priority, new OptionSetValue(CasePriority.Normal.GetHashCode()));
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.ReportedBy) && ((EntityReference)entity.Attributes[ServiceRequest.ReportedBy]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.ReportedBy, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ReportedBy).Id));
+                    entityToCreate.Attributes.Add(Case.ReportedBy, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ReportedBy).Id));
                 }
 
-                entityToCreate.Attributes.Add(Incident.ServiceRequest, new EntityReference(entity.LogicalName, entity.Id));
+                entityToCreate.Attributes.Add(Case.ServiceRequest, new EntityReference(entity.LogicalName, entity.Id));
 
                 if (subject.Attributes.ContainsKey(Subject.SubjectId) && ((Guid)subject.Attributes[Subject.SubjectId]) != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.Subject, new EntityReference(Subject.TableName, subject.GetAttributeValue<Guid>(Subject.SubjectId)));
+                    entityToCreate.Attributes.Add(Case.Subject, new EntityReference(Subject.TableName, subject.GetAttributeValue<Guid>(Subject.SubjectId)));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.ReferenceNumber) && entity.Attributes[ServiceRequest.ReferenceNumber] != null)
                 {
-                    entityToCreate.Attributes.Add(Incident.CaseNumber, entity.GetAttributeValue<string>(ServiceRequest.ReferenceNumber));
+                    entityToCreate.Attributes.Add(Case.CaseNumber, entity.GetAttributeValue<string>(ServiceRequest.ReferenceNumber));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.GardenWasteReferenceNumber) && entity.Attributes[ServiceRequest.GardenWasteReferenceNumber] != null)
                 {
-                    entityToCreate.Attributes.Add(Incident.CaseNumber, entity.GetAttributeValue<string>(ServiceRequest.GardenWasteReferenceNumber));
+                    entityToCreate.Attributes.Add(Case.CaseNumber, entity.GetAttributeValue<string>(ServiceRequest.GardenWasteReferenceNumber));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.SourceType) && entity.Attributes[ServiceRequest.SourceType] != null)
                 {
                     var missedBinSourceType = entity.GetAttributeValue<OptionSetValue>(ServiceRequest.SourceType).Value;
                     if (missedBinSourceType == ServiceRequestSourceType.Phone.GetHashCode())
-                        entityToCreate.Attributes.Add(Incident.Origin, new OptionSetValue(IncidentOrigin.Phone.GetHashCode()));
+                        entityToCreate.Attributes.Add(Case.Origin, new OptionSetValue(CaseOrigin.Phone.GetHashCode()));
                     else if (missedBinSourceType == ServiceRequestSourceType.Web.GetHashCode())
-                        entityToCreate.Attributes.Add(Incident.Origin, new OptionSetValue(IncidentOrigin.Web.GetHashCode()));
+                        entityToCreate.Attributes.Add(Case.Origin, new OptionSetValue(CaseOrigin.Web.GetHashCode()));
                     else if (missedBinSourceType == ServiceRequestSourceType.Email.GetHashCode())
-                        entityToCreate.Attributes.Add(Incident.Origin, new OptionSetValue(IncidentOrigin.Email.GetHashCode()));
+                        entityToCreate.Attributes.Add(Case.Origin, new OptionSetValue(CaseOrigin.Email.GetHashCode()));
                     else if (missedBinSourceType == ServiceRequestSourceType.Portal.GetHashCode())
-                        entityToCreate.Attributes.Add(Incident.Origin, new OptionSetValue(IncidentOrigin.Portal.GetHashCode()));
+                        entityToCreate.Attributes.Add(Case.Origin, new OptionSetValue(CaseOrigin.Portal.GetHashCode()));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.ContactProperty) && ((EntityReference)entity.Attributes[ServiceRequest.ContactProperty]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ContactProperty).Id));
+                    entityToCreate.Attributes.Add(Case.ContactProperty, new EntityReference(ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ContactProperty).Id));
                 }
                 if (entity.Attributes.ContainsKey(ServiceRequest.Property) && entity.Attributes[ServiceRequest.Property] != null)
                 {
 
-                    entityToCreate.Attributes.Add(Incident.Property, entity.GetAttributeValue<string>(ServiceRequest.Property));
+                    entityToCreate.Attributes.Add(Case.Property, entity.GetAttributeValue<string>(ServiceRequest.Property));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.PropertyUprn) && ((EntityReference)entity.Attributes[ServiceRequest.PropertyUprn]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.PropertyUprn, new EntityReference(Property.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.PropertyUprn).Id));
+                    entityToCreate.Attributes.Add(Case.PropertyUprn, new EntityReference(Property.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.PropertyUprn).Id));
                 }
                 // Check if the current entity does not already contain a contact property and if the entity is of type missedbin
                 if (!entity.Contains(ServiceRequest.ContactProperty) && entity.LogicalName.Equals(ServiceRequest.MissedBinTableName))
@@ -178,30 +179,25 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         if (propertyId != Guid.Empty)
                         {
                             var property = RetrieveProperty(service, Property.TableName, propertyId, new ColumnSet(Property.Addresscs));
-                            // If the property record is found, set its address on the Incident record being created
+                            // If the property record is found, set its address on the Case record being created
                             if (property != null)
                             {
-                                entityToCreate.Attributes.Add(Incident.Property, property.GetAttributeValue<string>(Property.Addresscs));
-                                entityToCreate.Attributes.Add(Incident.PropertyUprn, new EntityReference(Property.TableName, propertyId));
-
+                                entityToCreate.Attributes.Add(Case.Property, property.GetAttributeValue<string>(Property.Addresscs));
+                                entityToCreate.Attributes.Add(Case.PropertyUprn, new EntityReference(Property.TableName, propertyId));
                             }
                         }
-
-                        entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, contactPropertyId));
+                        entityToCreate.Attributes.Add(Case.ContactProperty, new EntityReference(ContactProperty.TableName, contactPropertyId));
                     }
-
                 }
                 return service.Create(entityToCreate); ;
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing CreateIncident: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing CreateCase: " + ex + ".");
             }
         }
 
-
-
-            public static Guid CreateIncidentGeneric(this IOrganizationService service, Entity entity, Entity serviceConfiguration, Entity subject, PluginConfig config, ITracingService tracingService)
+        public static Guid CreateCaseGeneric(this IOrganizationService service, Entity entity, Entity serviceConfiguration, Entity subject, PluginConfig config, ITracingService tracingService)
         {
             try
             {
@@ -209,86 +205,86 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 //{
                 //    tracingService.Trace(f.Key + "-" + f.Value);
                 //}
-                var entityToCreate = new Entity(Incident.TableName);
-                // For each  attribute check if it exists and then set it on the new Incident record.
+                var entityToCreate = new Entity(Case.TableName);
+                // For each  attribute check if it exists and then set it on the new Case record.
                 if (serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && (Guid)serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.Service, new EntityReference(ServiceConfiguration.TableName, serviceConfiguration.GetAttributeValue<Guid>(ServiceConfiguration.ServiceConfigurationid)));
+                    entityToCreate.Attributes.Add(Case.Service, new EntityReference(ServiceConfiguration.TableName, serviceConfiguration.GetAttributeValue<Guid>(ServiceConfiguration.ServiceConfigurationid)));
                 }
 
                 if ((serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.ServiceConfigurationid) && (Guid)serviceConfiguration.Attributes[ServiceConfiguration.ServiceConfigurationid] != Guid.Empty) && (entity.Attributes.ContainsKey(config.ReferenceNumberColumnLogicalName) && entity.Attributes[config.ReferenceNumberColumnLogicalName] != null))
                 {
-                    entityToCreate.Attributes.Add(Incident.CaseTitle, entity.Attributes[config.ReferenceNumberColumnLogicalName] + " - " + serviceConfiguration.Attributes[ServiceConfiguration.Name] + " - " + " Service Request ");
+                    entityToCreate.Attributes.Add(Case.CaseTitle, entity.Attributes[config.ReferenceNumberColumnLogicalName] + " - " + serviceConfiguration.Attributes[ServiceConfiguration.Name] + " - " + " Service Request ");
                 }
 
-                entityToCreate.Attributes.Add(Incident.CaseType, new OptionSetValue(IncidentType.Request.GetHashCode()));
+                entityToCreate.Attributes.Add(Case.CaseType, new OptionSetValue(CaseType.Request.GetHashCode()));
                 bool test = entity.Attributes.ContainsKey(config.ContactColumnLogicalName);
                 if (entity.Attributes.ContainsKey(config.ContactColumnLogicalName) && ((EntityReference)entity.Attributes[config.ContactColumnLogicalName]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.Customer, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(config.ContactColumnLogicalName).Id));
+                    entityToCreate.Attributes.Add(Case.Customer, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(config.ContactColumnLogicalName).Id));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.Description) && entity.Attributes[ServiceRequest.Description] != null)
                 {
-                    entityToCreate.Attributes.Add(Incident.Description, entity.GetAttributeValue<string>(ServiceRequest.Description));
+                    entityToCreate.Attributes.Add(Case.Description, entity.GetAttributeValue<string>(ServiceRequest.Description));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.Owner) && ((EntityReference)entity.Attributes[ServiceRequest.Owner]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.Owner, new EntityReference(SystemUser.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.Owner).Id));
+                    entityToCreate.Attributes.Add(Case.Owner, new EntityReference(SystemUser.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.Owner).Id));
                 }
-                entityToCreate.Attributes.Add(Incident.Priority, new OptionSetValue(IncidentPriority.Normal.GetHashCode()));
+                entityToCreate.Attributes.Add(Case.Priority, new OptionSetValue(CasePriority.Normal.GetHashCode()));
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.ReportedBy) && ((EntityReference)entity.Attributes[ServiceRequest.ReportedBy]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.ReportedBy, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ReportedBy).Id));
+                    entityToCreate.Attributes.Add(Case.ReportedBy, new EntityReference(Contact.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ReportedBy).Id));
                 }
 
-                entityToCreate.Attributes.Add(Incident.ServiceRequest, new EntityReference(entity.LogicalName, entity.Id));
+                entityToCreate.Attributes.Add(Case.ServiceRequest, new EntityReference(entity.LogicalName, entity.Id));
 
                 if (subject.Attributes.ContainsKey(Subject.SubjectId) && ((Guid)subject.Attributes[Subject.SubjectId]) != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.Subject, new EntityReference(Subject.TableName, subject.GetAttributeValue<Guid>(Subject.SubjectId)));
+                    entityToCreate.Attributes.Add(Case.Subject, new EntityReference(Subject.TableName, subject.GetAttributeValue<Guid>(Subject.SubjectId)));
                 }
 
                 if (entity.Attributes.ContainsKey(config.ReferenceNumberColumnLogicalName) && entity.Attributes[config.ReferenceNumberColumnLogicalName] != null)
                 {
-                    entityToCreate.Attributes.Add(Incident.CaseNumber, entity.GetAttributeValue<string>(config.ReferenceNumberColumnLogicalName));
+                    entityToCreate.Attributes.Add(Case.CaseNumber, entity.GetAttributeValue<string>(config.ReferenceNumberColumnLogicalName));
                 }
                 if (entity.Attributes.ContainsKey(ServiceRequest.SourceType) && entity.Attributes[ServiceRequest.SourceType] != null)
                 {
                     var missedBinSourceType = entity.GetAttributeValue<OptionSetValue>(ServiceRequest.SourceType).Value;
 
-                    switch(missedBinSourceType)
+                    switch (missedBinSourceType)
                     {
                         case (int)ServiceRequestSourceType.Phone:
-                            entityToCreate.Attributes.Add(Incident.Origin, new OptionSetValue(IncidentOrigin.Phone.GetHashCode()));
+                            entityToCreate.Attributes.Add(Case.Origin, new OptionSetValue(CaseOrigin.Phone.GetHashCode()));
                             break;
                         case (int)ServiceRequestSourceType.Web:
-                            entityToCreate.Attributes.Add(Incident.Origin, new OptionSetValue(IncidentOrigin.Web.GetHashCode()));
+                            entityToCreate.Attributes.Add(Case.Origin, new OptionSetValue(CaseOrigin.Web.GetHashCode()));
                             break;
                         case (int)ServiceRequestSourceType.Email:
-                            entityToCreate.Attributes.Add(Incident.Origin, new OptionSetValue(IncidentOrigin.Email.GetHashCode()));
+                            entityToCreate.Attributes.Add(Case.Origin, new OptionSetValue(CaseOrigin.Email.GetHashCode()));
                             break;
                         case (int)ServiceRequestSourceType.Portal:
-                            entityToCreate.Attributes.Add(Incident.Origin, new OptionSetValue(IncidentOrigin.Portal.GetHashCode()));
+                            entityToCreate.Attributes.Add(Case.Origin, new OptionSetValue(CaseOrigin.Portal.GetHashCode()));
                             break;
                     }
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.ContactProperty) && ((EntityReference)entity.Attributes[ServiceRequest.ContactProperty]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ContactProperty).Id));
+                    entityToCreate.Attributes.Add(Case.ContactProperty, new EntityReference(ContactProperty.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.ContactProperty).Id));
                 }
                 if (entity.Attributes.ContainsKey(ServiceRequest.Property) && entity.Attributes[ServiceRequest.Property] != null)
                 {
 
-                    entityToCreate.Attributes.Add(Incident.Property, entity.GetAttributeValue<string>(ServiceRequest.Property));
+                    entityToCreate.Attributes.Add(Case.Property, entity.GetAttributeValue<string>(ServiceRequest.Property));
                 }
 
                 if (entity.Attributes.ContainsKey(ServiceRequest.PropertyUprn) && ((EntityReference)entity.Attributes[ServiceRequest.PropertyUprn]).Id != Guid.Empty)
                 {
-                    entityToCreate.Attributes.Add(Incident.PropertyUprn, new EntityReference(Property.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.PropertyUprn).Id));
+                    entityToCreate.Attributes.Add(Case.PropertyUprn, new EntityReference(Property.TableName, entity.GetAttributeValue<EntityReference>(ServiceRequest.PropertyUprn).Id));
                 }
                 // Check if the current entity does not already contain a contact property and if the entity is of type missedbin
                 if (!entity.Contains(ServiceRequest.ContactProperty) && entity.LogicalName.Equals(ServiceRequest.MissedBinTableName))
@@ -302,27 +298,27 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         if (propertyId != Guid.Empty)
                         {
                             var property = RetrieveProperty(service, Property.TableName, propertyId, new ColumnSet(Property.Addresscs));
-                            // If the property record is found, set its address on the Incident record being created
+                            // If the property record is found, set its address on the Case record being created
                             if (property != null)
                             {
-                                entityToCreate.Attributes.Add(Incident.Property, property.GetAttributeValue<string>(Property.Addresscs));
-                                entityToCreate.Attributes.Add(Incident.PropertyUprn, new EntityReference(Property.TableName, propertyId));
+                                entityToCreate.Attributes.Add(Case.Property, property.GetAttributeValue<string>(Property.Addresscs));
+                                entityToCreate.Attributes.Add(Case.PropertyUprn, new EntityReference(Property.TableName, propertyId));
 
                             }
                         }
 
-                        entityToCreate.Attributes.Add(Incident.ContactProperty, new EntityReference(ContactProperty.TableName, contactPropertyId));
+                        entityToCreate.Attributes.Add(Case.ContactProperty, new EntityReference(ContactProperty.TableName, contactPropertyId));
                     }
 
                 }
                 tracingService.Trace("HelperHere4");
-                
+
                 tracingService.Trace("HelperHere5");
                 return service.Create(entityToCreate);
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing CreateIncident: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing CreateCase: " + ex.Message + ".");
             }
         }
 
@@ -335,7 +331,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing Update: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing Update: " + ex + ".");
             }
         }
 
@@ -348,10 +344,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveContact: " + ex + ".");
             }
         }
-
 
         //Retrieve contact property by its id
         public static Entity RetrieveContactProperty(this IOrganizationService service, string entityName, Guid contactPropertyId, ColumnSet columnSet)
@@ -363,7 +358,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact property: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveContactProperty: " + ex + ".");
             }
         }
 
@@ -411,10 +406,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve contact properties: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveContactProperties: " + ex + ".");
             }
         }
-
         //Retrieve property by its id
         public static Entity RetrieveProperty(this IOrganizationService service, string entityName, Guid propertyId, ColumnSet columnSet)
         {
@@ -425,7 +419,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while retrieve property: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveProperty: " + ex + ".");
             }
         }
 
@@ -447,12 +441,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 entityToCreate[Property.Region] = contact.GetAttributeValue<string>(Contact.Country);
                 entityToCreate[Property.Latitude] = contact.GetAttributeValue<double>(Contact.Latitude);
                 entityToCreate[Property.Longitude] = contact.GetAttributeValue<double>(Contact.Longitude);
-
                 return service.Create(entityToCreate);
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table property: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing CreateProperty: " + ex + ".");
             }
         }
 
@@ -482,7 +475,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while updating records in table ` property`: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing UpdatePropertyFromContact: " + ex + ".");
             }
         }
         //Updates a property record using new values from the same Property record
@@ -506,35 +499,38 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 entityToUpdate[Property.Latitude] = property.GetAttributeValue<double?>(Property.Latitude);
                 entityToUpdate[Property.Longitude] = property.GetAttributeValue<double?>(Property.Longitude);
                 service.Update(entityToUpdate);
-
                 return propertyId;
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while updating records in table ` property`: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing UpdatePropertyDetails: " + ex + ".");
             }
         }
-
         // Updates a contact record with property details from a given property entity.
         public static void UpdateContactwithPropertyData(IOrganizationService service, string tableName, Guid Contactid, Entity property)
         {
-            var entityToCreate = new Entity(Contact.TableName, Contactid);
-            entityToCreate[Contact.Uprn] = property.GetAttributeValue<string>(Property.Uprn);
-            entityToCreate[Contact.Address1_address] = property.GetAttributeValue<string>(Property.Addresscs);
-            entityToCreate[Contact.County] = property.GetAttributeValue<string>(Property.County);
-            entityToCreate[Contact.Address] = property.GetAttributeValue<string>(Property.Addressoscs);
-            entityToCreate[Contact.Address2] = property.GetAttributeValue<string>(Property.Localityname);
-            entityToCreate[Contact.Address1_line3] = property.GetAttributeValue<string>(Property.Streetname);
-            entityToCreate[Contact.City] = property.GetAttributeValue<string>(Property.TownName);
-            entityToCreate[Contact.PostCode] = property.GetAttributeValue<string>(Property.PostCode);
-            entityToCreate[Contact.Stateorprovince] = property.GetAttributeValue<string>(Property.Posttown);
-            entityToCreate[Contact.Country] = property.GetAttributeValue<string>(Property.Region);
-            entityToCreate[Contact.Latitude] = property.GetAttributeValue<double>(Property.Latitude);
-            entityToCreate[Contact.Longitude] = property.GetAttributeValue<double>(Property.Longitude);
-
-            service.Update(entityToCreate);
+            try
+            {
+                var entityToCreate = new Entity(Contact.TableName, Contactid);
+                entityToCreate[Contact.Uprn] = property.GetAttributeValue<string>(Property.Uprn);
+                entityToCreate[Contact.Address1_address] = property.GetAttributeValue<string>(Property.Addresscs);
+                entityToCreate[Contact.County] = property.GetAttributeValue<string>(Property.County);
+                entityToCreate[Contact.Address] = property.GetAttributeValue<string>(Property.Addressoscs);
+                entityToCreate[Contact.Address2] = property.GetAttributeValue<string>(Property.Localityname);
+                entityToCreate[Contact.Address1_line3] = property.GetAttributeValue<string>(Property.Streetname);
+                entityToCreate[Contact.City] = property.GetAttributeValue<string>(Property.TownName);
+                entityToCreate[Contact.PostCode] = property.GetAttributeValue<string>(Property.PostCode);
+                entityToCreate[Contact.Stateorprovince] = property.GetAttributeValue<string>(Property.Posttown);
+                entityToCreate[Contact.Country] = property.GetAttributeValue<string>(Property.Region);
+                entityToCreate[Contact.Latitude] = property.GetAttributeValue<double>(Property.Latitude);
+                entityToCreate[Contact.Longitude] = property.GetAttributeValue<double>(Property.Longitude);
+                service.Update(entityToCreate);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("Fault exception occured executing UpdateContactwithPropertyData: " + ex + ".");
+            }
         }
-
 
         //Remove the default flag from a specific contact property record.
         public static void RemoveOtherContactPropertyfromDefault(this IOrganizationService service, Guid contactPropertyId)
@@ -551,10 +547,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while removing contact property from default : " + ex.Message, ex);
+                throw new InvalidPluginExecutionException("Fault exception occured executing RemoveOtherContactPropertyfromDefault: " + ex + ".");
             }
         }
-
         //Set contact property as default
         public static void SetContactPropertyToDefault(this IOrganizationService service, Guid contactPropertyId)
         {
@@ -570,10 +565,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while updating the contact property record: " + ex.Message, ex);
+                throw new InvalidPluginExecutionException("Fault exception occured executing SetContactPropertyToDefault: " + ex + ".");
             }
         }
-
         // Creates a new contact property relationship record in dataverse, linking a contact to a property.
         public static Guid CreatePropertyContact(this IOrganizationService service, Guid contact, Guid propertyId, bool IsDefault)
         {
@@ -587,10 +581,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An error occurred while creating records in table contact property: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing CreatePropertyContact: " + ex + ".");
             }
         }
-
         // Checks whether a property record exists for a given UPRN.
         public static Guid CheckPropertiesExist(this IOrganizationService service, string entityName, string uprn, ColumnSet columnSet)
         {
@@ -610,7 +603,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             {
                 new OrderExpression(Property.CreatedOn, OrderType.Ascending) // oldest first
             },
-                    TopCount = 1 // only fetch the top 1 result
+                    TopCount = 1 // only fetch the top 1 Case
                 };
 
                 var records = service.RetrieveMultiple(query);
@@ -623,10 +616,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException($"Error checking properties: {ex.Message}", ex);
+                throw new InvalidPluginExecutionException("Fault exception occured executing CheckPropertiesExist: " + ex + ".");
             }
         }
-
         //Delete property by its id
         public static void DeleteProperty(this IOrganizationService service, string entityName, Guid propertyId)
         {
@@ -636,7 +628,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occurred executing DeleteProperty: " + ex.Message + ".", ex);
+                throw new InvalidPluginExecutionException("Fault exception occured executing DeleteProperty: " + ex + ".");
             }
         }
 
@@ -662,7 +654,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveDefaultContactProperty: " + ex.Message + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveDefaultContactProperty: " + ex + ".");
             }
         }
     }

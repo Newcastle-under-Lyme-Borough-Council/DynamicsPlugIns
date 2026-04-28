@@ -16,7 +16,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         /// </summary>
 
         //Registers the plugin to run after a planning permission record is created.
-
         public PostPlanningPermission() : base(typeof(PostPlanningPermission))
         {
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, ServiceRequest.PlanningPermissionTableName, Execute));
@@ -65,13 +64,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                             if (subjects != null && subjects.Entities != null && subjects.Entities.Count > 0)
                                             {
                                                 var subject = subjects.Entities[0];
-                                                var incidentId = DataverseHelper.CreateIncident(service, entity, serviceConfiguration, subject);
+                                                var CaseId = DataverseHelper.CreateCase(service, entity, serviceConfiguration, subject);
 
                                                 Entity entityToUpdate = new Entity(entity.LogicalName)
                                                 {
                                                     Id = entity.Id
                                                 };
-                                                entityToUpdate.Attributes.Add(ServiceRequest.Case, new EntityReference(Incident.TableName, incidentId));
+                                                entityToUpdate.Attributes.Add(ServiceRequest.Case, new EntityReference(Case.TableName, CaseId));
                                                 DataverseHelper.Update(service, entityToUpdate);
                                             }
                                             else
@@ -102,7 +101,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             {
                 throw new InvalidPluginExecutionException("An exception occured executing PostPlanningPermission: " + ex + ".");
             }
-
         }
     }
 }
