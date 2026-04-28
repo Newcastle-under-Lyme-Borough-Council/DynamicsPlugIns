@@ -9,7 +9,7 @@ using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Policy;
-using System.Security.Principal; 
+using System.Security.Principal;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -106,7 +106,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                     // Get payment status of transaction if one is found
                     if (transaction != null)
                     {
-                        string result = CheckPaymentStatus(transaction[PaymentTransaction.TransactionId].ToString(), caseJson.ContactID, paymentJson.environment, authJson.access_token,tracingService).GetAwaiter().GetResult();
+                        string result = CheckPaymentStatus(transaction[PaymentTransaction.TransactionId].ToString(), caseJson.ContactID, paymentJson.environment, authJson.access_token, tracingService).GetAwaiter().GetResult();
 
                         PaymentResponse response = JsonConvert.DeserializeObject<PaymentResponse>(result);
                         tracingService.Trace("Payment STATUS checked" + response.status);
@@ -116,13 +116,13 @@ namespace SS.MSDYN.LGIntelliware.Actions
                             output.errorMessage = response.messages;
 
                             // for regenrating payment link
-                            string newPaymentLink = GetPaymentLink(authJson.access_token, inputString,tracingService).GetAwaiter().GetResult();
+                            string newPaymentLink = GetPaymentLink(authJson.access_token, inputString, tracingService).GetAwaiter().GetResult();
                             // convert response to Json object
                             PaymentResponse newPayment = JsonConvert.DeserializeObject<PaymentResponse>(newPaymentLink);
                             // Set output values
                             output.paymentLink = newPayment.paymentLinkUrl;
                             //update the transaction id in the back office record
-                            UpdateTransactionsRecord(newPayment.paymentGuidId, transaction[PaymentTransaction.PaymentTransactionId].ToString(), newPayment.paymentLinkUrl, StatusCode.Failed.GetHashCode(), service);
+                            UpdateTransactionsRecord(newPayment.paymentGuidId, transaction[PaymentTransaction.PaymentTransactionId].ToString(), newPayment.amount, newPayment.paymentLinkUrl, StatusCode.Failed.GetHashCode(), service);
                             outputString = JsonConvert.SerializeObject(output);
                             context.OutputParameters["outputString"] = outputString;
                             return;
@@ -130,7 +130,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                         else if (response.status == "success")
                         {
                             output.status = response.status;
-                            var transactionEntity = UpdateTransactionsRecord(" ", transaction[PaymentTransaction.PaymentTransactionId].ToString(), " ", StatusCode.Success.GetHashCode(), service);
+                            var transactionEntity = UpdateTransactionsRecord(" ", transaction[PaymentTransaction.PaymentTransactionId].ToString(), 0, " ", StatusCode.Success.GetHashCode(), service);
                             //Update service record
                             UpdateServicePaidColumn(transactionEntity, service);
                             outputString = JsonConvert.SerializeObject(output);
@@ -140,14 +140,34 @@ namespace SS.MSDYN.LGIntelliware.Actions
                         else
                         {
                             output.status = "pending";
-                            output.paymentLink = transaction[PaymentTransaction.PaymentLink].ToString();
-                            outputString = JsonConvert.SerializeObject(output);
-                            context.OutputParameters["outputString"] = outputString;
-                            return;
+                            // for regenrating payment link
+                            string newPaymentLink = GetPaymentLink(authJson.access_token, inputString, tracingService).GetAwaiter().GetResult();
+                            // convert response to Json object
+                            PaymentResponse newPayment = JsonConvert.DeserializeObject<PaymentResponse>(newPaymentLink);
+                            Money transactionAmount = (Money)transaction[PaymentTransaction.Amount];
+                            decimal paymentAmount = Math.Round(Convert.ToDecimal(newPayment.amount), 2, MidpointRounding.AwayFromZero);
+                            if (transactionAmount.Value == paymentAmount)
+                            {
+                                output.paymentLink = transaction[PaymentTransaction.PaymentLink].ToString();
+                                outputString = JsonConvert.SerializeObject(output);
+                                context.OutputParameters["outputString"] = outputString;
+                                return;
+                            }
+                            else
+                            {
+                                // Set output values
+                                output.paymentLink = newPayment.paymentLinkUrl;
+                                //update the transaction id in the back office record
+                                UpdateTransactionsRecord(newPayment.paymentGuidId, transaction[PaymentTransaction.PaymentTransactionId].ToString(), newPayment.amount, newPayment.paymentLinkUrl, StatusCode.Pending.GetHashCode(), service);
+                                outputString = JsonConvert.SerializeObject(output);
+                                context.OutputParameters["outputString"] = outputString;
+                                return;
+                            }
+                                
                         }
                     }
                     // Call payment result and pass authentication token
-                    string paymentResult = GetPaymentLink(authJson.access_token, inputString,tracingService).GetAwaiter().GetResult();
+                    string paymentResult = GetPaymentLink(authJson.access_token, inputString, tracingService).GetAwaiter().GetResult();
                     tracingService.Trace("Payment Link created!");
                     // convert response to Json object
                     PaymentResponse payment = JsonConvert.DeserializeObject<PaymentResponse>(paymentResult);
@@ -194,7 +214,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
             return result;
         }
         // Function to generate a payment link using the request body as the criteria
-        static async Task<string> GetPaymentLink(string authorization, string requestBody,ITracingService tracingService)
+        static async Task<string> GetPaymentLink(string authorization, string requestBody, ITracingService tracingService)
         {
             if (string.IsNullOrEmpty(authorization))
                 return "No valid access token provided.";
@@ -207,7 +227,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
             client.DefaultRequestHeaders.Clear();
             client.DefaultRequestHeaders.Add("Authorization", "Bearer " + authorization);
 
-          tracingService.Trace("Sending POST request...");
+            tracingService.Trace("Sending POST request...");
 
             // Send the authentication request
             string url = baseUrl + paymentLinkEndpoint;
@@ -231,7 +251,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
             // Add the code to check the transactions table for the recent entry here
             var query = new QueryExpression(PaymentTransaction.TableName)
             {
-                ColumnSet = new ColumnSet(PaymentTransaction.PaymentTransactionId, PaymentTransaction.TransactionId, PaymentTransaction.PaymentLink)
+                ColumnSet = new ColumnSet(PaymentTransaction.PaymentTransactionId, PaymentTransaction.TransactionId, PaymentTransaction.PaymentLink, PaymentTransaction.Amount)
             };
 
             query.Criteria.AddCondition(PaymentTransaction.ServiceRequestId, ConditionOperator.Equal, new Guid(caseID));
@@ -278,21 +298,23 @@ namespace SS.MSDYN.LGIntelliware.Actions
         {
             Entity record = new Entity(PaymentTransaction.TableName);
             record[PaymentTransaction.Amount] = new Money((decimal)amount); // Currency
-           // record[PaymentTransaction.Case] = new EntityReference(Case.TableName, new Guid(caseId)); // Lookup
+                                                                            // record[PaymentTransaction.Case] = new EntityReference(Case.TableName, new Guid(caseId)); // Lookup
             record[PaymentTransaction.ServiceRequestId] = new EntityReference(identityObjectEntity, new Guid(identityObjectId)); // Lookup
             record[PaymentTransaction.TransactionId] = transactionId; // Text
             record[PaymentTransaction.PaymentLink] = paymentLink; // Text
             service.Create(record);
             return;
         }
-        static Entity UpdateTransactionsRecord(string transactionId, string recordGuid, string paymentLink, int statusReason, IOrganizationService service)
+        static Entity UpdateTransactionsRecord(string transactionId, string recordGuid, double amount, string paymentLink, int statusReason, IOrganizationService service)
         {
-            Entity transaction = service.Retrieve(PaymentTransaction.TableName, new Guid(recordGuid), new ColumnSet(PaymentTransaction.TransactionId, PaymentTransaction.ServiceRequestId));
+            Entity transaction = service.Retrieve(PaymentTransaction.TableName, new Guid(recordGuid), new ColumnSet(PaymentTransaction.TransactionId, PaymentTransaction.ServiceRequestId, PaymentTransaction.Amount));
             if (transactionId != " ")
                 transaction[PaymentTransaction.TransactionId] = transactionId.ToString();
             if (paymentLink != " ")
                 transaction[PaymentTransaction.PaymentLink] = paymentLink.ToString();
             transaction[PaymentTransaction.StatusReason] = new OptionSetValue(statusReason);
+            if (amount != 0)
+                transaction[PaymentTransaction.Amount] = new Money((decimal)amount);
 
             // Udate the record
             service.Update(transaction);
@@ -308,7 +330,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                 return;
 
             // Check logical name
-            if (serviceRef.LogicalName ==TaxiLicence.TableName)
+            if (serviceRef.LogicalName == TaxiLicence.TableName)
             {
                 Entity serviceEntity = new Entity(serviceRef.LogicalName)
                 {
@@ -321,7 +343,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                 service.Update(serviceEntity);
             }
         }
-        static async Task<string> CheckPaymentStatus(string paymentGUID, string contactID, string environment, string auth,ITracingService tracingService)
+        static async Task<string> CheckPaymentStatus(string paymentGUID, string contactID, string environment, string auth, ITracingService tracingService)
         {
             // Create URL
             string url = $"{baseUrl}{paymentStatusEndpoint}?dynamicsContactID={contactID}&paymentGuidId={paymentGUID}&environment={environment}";
@@ -354,7 +376,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                     new KeyValuePair<string, string>("client_secret", ClientSecret) // Secret shouldn't be hardcoded in
                 });
 
-           tracingService.Trace("Sending POST request...");
+            tracingService.Trace("Sending POST request...");
 
             // Send the authentication request
             HttpResponseMessage response = await client.PostAsync(tokenURL, form);
