@@ -20,7 +20,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         protected PluginConfig Config = new PluginConfig();
 
         public PostCreate(string unsecureConfiguration)
-           : base(typeof(PostOrderNewRecycling), unsecureConfiguration) 
+           : base(typeof(PostCreate), unsecureConfiguration) 
         {
             if (!string.IsNullOrWhiteSpace(unsecureConfiguration))
             {
@@ -29,7 +29,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             RegisterEvents(); 
         }
         //Registers the plugin to run after a missedbin record is created.
-        public PostCreate() : base(typeof(PostMissedBin))
+        public PostCreate() : base(typeof(PostCreate))
         {
             RegisterEvents();
         }
@@ -45,7 +45,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         /// <param name="localContext">Contains a local plug-in context.</param>
         protected void Execute(LocalPluginContext localContext)
         {
-            localContext.TracingService.Trace("UnsecuredString - " + Config.TableName);
+            localContext.TracingService.Trace("UnsecuredString - " + Config.IncidentIdColumnLogicalName);
 
             if (localContext == null)
             {
@@ -84,7 +84,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                         if (serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.Subject) && serviceConfiguration.Attributes[ServiceConfiguration.Subject] != null)
                                         {
                                             var title = serviceConfiguration.GetAttributeValue<string>(ServiceConfiguration.Subject);
+                                            //localContext.TracingService.Trace("Subject - " + title);
                                             var subjects = DataverseHelper.RetrieveSubject(service, Subject.TableName, title, new ColumnSet(Subject.Title));
+                                            //foreach (var subject in subjects.Entities)
+                                            //{
+                                            //    localContext.TracingService.Trace("Subject Retrieved - " + subject.GetAttributeValue<string>(Subject.Title));
+                                            //}
                                             if (subjects != null && subjects.Entities != null && subjects.Entities.Count > 0)
                                             {
                                                 var subject = subjects.Entities[0];
@@ -95,7 +100,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                                 {
                                                     Id = entity.Id
                                                 };
-                                                entityToUpdate.Attributes.Add(ServiceRequest.Case, new EntityReference(Case.TableName, incidentId));
+
+                                                entityToUpdate.Attributes.Add(Config.IncidentIdColumnLogicalName, new EntityReference(Case.TableName, incidentId));
+
                                                 DataverseHelper.Update(service, entityToUpdate);
                                             }
                                             else
@@ -120,11 +127,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
             catch (FaultException<OrganizationServiceFault> ex)
             {
-                throw new InvalidPluginExecutionException("Fault exception occured executing PostMissedBin: " + ex + ".");
+                throw new InvalidPluginExecutionException("Fault exception occured executing PostCreate: " + ex + ".");
             }
             catch (Exception ex)
             {
-                throw new InvalidPluginExecutionException("An exception occured executing PostMissedBin: " + ex + ".");
+                throw new InvalidPluginExecutionException("An exception occured executing PostCreate: " + ex + ".");
             }
 
         }

@@ -311,9 +311,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     }
 
                 }
-                tracingService.Trace("HelperHere4");
 
-                tracingService.Trace("HelperHere5");
                 return service.Create(entityToCreate);
             }
             catch (Exception ex)
@@ -328,6 +326,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             try
             {
                 service.Update(entityToUpdate);
+                
             }
             catch (Exception ex)
             {
