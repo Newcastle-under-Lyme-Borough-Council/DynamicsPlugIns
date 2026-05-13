@@ -424,7 +424,7 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
 
     //---------------------------------------------------------------Case Table --------------------------------------------------------
    caseTableFields: {
-        caseLogicalName: "incident",
+       caseLogicalName: "ss_incident",
         crewSchemaName:"ss_Crew",
         crewLogicalName:"ss_crew",
     },
@@ -441,7 +441,8 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
     emailTableFields: {
         regarding: "regardingobjectid",
         contact:"_ss_customer_value",
-        to:"to"
+        to: "to",
+        from: "from"
     },
 
     //Bank holiday table field error message
@@ -487,7 +488,6 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
     },
 
     //----------------------------------------------------------------Bartec Events  Table------------------------------------------------------
-    //Taxi licence table fields
     bartecEventsTableFields: {
         bartecEventsSchemaName: "ss_bartecevents",
         mainEvent: "ss_associatedevent",
@@ -495,6 +495,13 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
         associatedEventType: "ss_associatedeventtype"
     },
 
+    //----------------------------------------------------------------User Table------------------------------------------------------
+    userTableFields: {
+        userTablelogicalName: "systemuser",
+        userId: "systemuserid",
+        primaryEmail: "internalemailaddress",
+        fullName: "fullname"
+    },
 
     //Bartec events form name
     bartecEventsFormName: {
@@ -555,6 +562,11 @@ SS.MSDYN.LGIntelliware.WR.Constants = {
     radioOptionSet: {
         yes: 1,
         no: 0
+    },
+
+    //---------------------------------------------------------------- Email Address Values ------------------------------------------------------
+    emailAddress: {
+        nulbcCustomerService: "NULBC_CustomerServices@newcastle-staffs.gov.uk"
     }
 
 };

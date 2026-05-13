@@ -62,6 +62,37 @@ SS.MSDYN.LGIntelliware.WR.Email = {
         } catch (e) {
             SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
         }
+    },
+
+    setEmailFrom: function (executionContext) {
+        try {
+            var formContext = executionContext.getFormContext();
+            if (formContext.ui.getFormType() !== SS.MSDYN.LGIntelliware.WR.Constants.formType.create) {
+                return;
+            }
+            var userTable = SS.MSDYN.LGIntelliware.WR.Constants.userTableFields.userTablelogicalName;
+            var userIdField = SS.MSDYN.LGIntelliware.WR.Constants.userTableFields.userId;
+            var emailField = SS.MSDYN.LGIntelliware.WR.Constants.userTableFields.primaryEmail;
+            var emailAddress = SS.MSDYN.LGIntelliware.WR.Constants.emailAddress.nulbcCustomerService;
+            var fullNameField = SS.MSDYN.LGIntelliware.WR.Constants.userTableFields.fullName;
+            var query =
+                `?$select=${userIdField},${fullNameField}&$filter=${emailField} eq '${emailAddress}'`;
+            Xrm.WebApi.retrieveMultipleRecords(userTable, query).then(
+                function success(result) {
+                    if (result.entities.length > 0) {
+                        var user = result.entities[0];
+                        var fromLookup = [{
+                            id: user[userIdField],
+                            name: user.fullname,
+                            entityType: userTable
+                        }];
+                        formContext.getAttribute(SS.MSDYN.LGIntelliware.WR.Constants.emailTableFields.from).setValue(fromLookup);
+                    }
+                }
+            );
+        } catch (e) {
+            SS.MSDYN.LGIntelliware.WR.Common.showError(e, true);
+        }
     }
 
 };

@@ -256,6 +256,8 @@ namespace SS.MSDYN.LGIntelliware.Actions
 
             query.Criteria.AddCondition(PaymentTransaction.ServiceRequestId, ConditionOperator.Equal, new Guid(caseID));
 
+            query.AddOrder("createdon", OrderType.Descending);
+
             var result = service.RetrieveMultiple(query);
 
             if (result.Entities.Count > 0)
