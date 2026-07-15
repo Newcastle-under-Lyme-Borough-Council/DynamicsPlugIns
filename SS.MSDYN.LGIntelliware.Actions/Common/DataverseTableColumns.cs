@@ -28,6 +28,8 @@ namespace SS.MSDYN.LGIntelliware.Actions
         public const string GetProductEndpoint = "ss_getproductendpoint";
         public const string Environment = "ss_environment";
         public const string RecordName = "Payment Integration";
+        public const string NumberOfTimeoutAttempts = "ss_numberoftimeoutattempts";
+
     }
     #endregion
 
@@ -58,7 +60,8 @@ namespace SS.MSDYN.LGIntelliware.Actions
     {
         Pending = 1,
         Success = 717800001,
-        Failed = 717800002
+        Failed = 717800002,
+        Timedout = 717800003
     }
     #endregion
 

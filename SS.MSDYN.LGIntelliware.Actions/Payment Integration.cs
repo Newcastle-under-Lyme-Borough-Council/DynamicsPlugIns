@@ -12,6 +12,7 @@ using System.Security.Policy;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 
@@ -31,6 +32,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
         private static string ClientId = "";
         private static string ClientSecret = "";
         private static string Environment = "";
+        private static int NumberOfTimeoutAttempts = 0;
 
         // Main represents where the plugin would call the main code
         // Expects 2 values
@@ -88,6 +90,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                         SingleProductResponse productJson = JsonConvert.DeserializeObject<SingleProductResponse>(productCost);
                         tracingService.Trace("sss" + productJson);
                         productJson.product.amount = productJson.product.amount * product.quantity;
+                        productJson.product.amount = Math.Round(productJson.product.amount, 2);
                         productJson.product.quantity = product.quantity;
                         output.products.Add(productJson.product);
                     }
@@ -102,43 +105,78 @@ namespace SS.MSDYN.LGIntelliware.Actions
                     tracingService.Trace("Entered if");
                     // Check Transactions table
                     Entity transaction = CheckTransactionsTable(caseJson.CaseID, service);
-                    tracingService.Trace("transacions checked!");
+                    tracingService.Trace("transaction checked!");
                     // Get payment status of transaction if one is found
                     if (transaction != null)
                     {
                         string result = CheckPaymentStatus(transaction[PaymentTransaction.TransactionId].ToString(), caseJson.ContactID, paymentJson.environment, authJson.access_token, tracingService).GetAwaiter().GetResult();
 
                         PaymentResponse response = JsonConvert.DeserializeObject<PaymentResponse>(result);
-                        tracingService.Trace("Payment STATUS checked" + response.status);
+                        tracingService.Trace("Payment STATUS checked " + response.status);
                         if (response.status == "failed" || response.status == "cancelled" || response.status == "error")
                         {
-                            output.status = "failed";
-                            output.errorMessage = response.messages;
-
-                            // for regenrating payment link
-                            string newPaymentLink = GetPaymentLink(authJson.access_token, inputString, tracingService).GetAwaiter().GetResult();
-                            // convert response to Json object
-                            PaymentResponse newPayment = JsonConvert.DeserializeObject<PaymentResponse>(newPaymentLink);
-                            // Set output values
-                            output.paymentLink = newPayment.paymentLinkUrl;
-                            //update the transaction id in the back office record
-                            UpdateTransactionsRecord(newPayment.paymentGuidId, transaction[PaymentTransaction.PaymentTransactionId].ToString(), newPayment.amount, newPayment.paymentLinkUrl, StatusCode.Failed.GetHashCode(), service);
-                            outputString = JsonConvert.SerializeObject(output);
-                            context.OutputParameters["outputString"] = outputString;
+                            tracingService.Trace("Entered If failed/cancelled/error");
+                            tracingService.Trace("payment status " + response.status);
+                            HandleFailedPayment(output, response.messages, authJson.access_token, inputString, transaction, service, tracingService, context);
                             return;
                         }
                         else if (response.status == "success")
                         {
-                            output.status = response.status;
-                            var transactionEntity = UpdateTransactionsRecord(" ", transaction[PaymentTransaction.PaymentTransactionId].ToString(), 0, " ", StatusCode.Success.GetHashCode(), service);
-                            //Update service record
-                            UpdateServicePaidColumn(transactionEntity, service);
-                            outputString = JsonConvert.SerializeObject(output);
-                            context.OutputParameters["outputString"] = outputString;
+                            tracingService.Trace("Entered If success");
+                            HandleSuccessfulPayment(output, response.status, transaction, service, context);
+                            return;
+                        }
+                        else if (response.status == "timedout")
+                        {
+                            tracingService.Trace("Entered If timedout");
+                            HandleTimedoutPayment(output, response.messages, authJson.access_token, inputString, transaction, service, tracingService, context);
                             return;
                         }
                         else
                         {
+                            tracingService.Trace("Entered else");
+
+                            PaymentResponse paymentStatusResponse = null;
+
+                            // Check status every 2 seconds for a maximum of number of time out attempts seconds
+                            for (int attempt = 0; attempt < NumberOfTimeoutAttempts; attempt++)
+                            {
+                                // Wait 2 seconds before next check
+                                System.Threading.Thread.Sleep(2000);
+
+                                string paymentStatusResult = CheckPaymentStatus(transaction[PaymentTransaction.TransactionId].ToString(), caseJson.ContactID, paymentJson.environment, authJson.access_token, tracingService).GetAwaiter().GetResult();
+                                paymentStatusResponse = JsonConvert.DeserializeObject<PaymentResponse>(paymentStatusResult);
+
+                                tracingService.Trace($"Attempt {attempt + 1} - Status: {paymentStatusResponse.status}");
+                                // Success
+                                if (paymentStatusResponse.status == "success")
+                                {
+                                    tracingService.Trace("Entered else success");
+                                    HandleSuccessfulPayment(output, paymentStatusResponse.status, transaction, service, context);
+                                    return;
+                                }
+
+                                // Timedout
+                                else if (paymentStatusResponse.status == "timedout")
+                                {
+                                    tracingService.Trace("Entered else timedout");
+                                    HandleTimedoutPayment(output, paymentStatusResponse.messages, authJson.access_token, inputString, transaction, service, tracingService, context);
+                                    return;
+                                }
+
+                                // Failed/Cancelled/Error
+                                else if (paymentStatusResponse.status == "failed" || paymentStatusResponse.status == "cancelled" || paymentStatusResponse.status == "error")
+                                {
+                                    tracingService.Trace("Entered else failed/cancelled/error");
+                                    tracingService.Trace("payment status " + paymentStatusResponse.status);
+                                    HandleFailedPayment(output, paymentStatusResponse.messages, authJson.access_token, inputString, transaction, service, tracingService, context);
+                                    return;
+                                }
+
+                                // If pending, continue loop until max number of time out attempts seconds
+                            }
+                            tracingService.Trace("Entered else pending");
+                            // Still pending after max number of time out attempts seconds create new payment link
                             output.status = "pending";
                             // for regenrating payment link
                             string newPaymentLink = GetPaymentLink(authJson.access_token, inputString, tracingService).GetAwaiter().GetResult();
@@ -155,15 +193,12 @@ namespace SS.MSDYN.LGIntelliware.Actions
                             }
                             else
                             {
-                                // Set output values
                                 output.paymentLink = newPayment.paymentLinkUrl;
-                                //update the transaction id in the back office record
                                 UpdateTransactionsRecord(newPayment.paymentGuidId, transaction[PaymentTransaction.PaymentTransactionId].ToString(), newPayment.amount, newPayment.paymentLinkUrl, StatusCode.Pending.GetHashCode(), service);
                                 outputString = JsonConvert.SerializeObject(output);
                                 context.OutputParameters["outputString"] = outputString;
                                 return;
                             }
-
                         }
                     }
                     // Call payment result and pass authentication token
@@ -275,7 +310,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
         {
             var query = new QueryExpression(ServiceConfiguration.TableName)
             {
-                ColumnSet = new ColumnSet(ServiceConfiguration.BaseUrl, ServiceConfiguration.TokenUrl, ServiceConfiguration.ClientId, ServiceConfiguration.ClientSecret, ServiceConfiguration.CreatePaymentLink, ServiceConfiguration.CheckPaymentStatus, ServiceConfiguration.GetProductEndpoint, ServiceConfiguration.Environment)
+                ColumnSet = new ColumnSet(ServiceConfiguration.BaseUrl, ServiceConfiguration.TokenUrl, ServiceConfiguration.ClientId, ServiceConfiguration.ClientSecret, ServiceConfiguration.CreatePaymentLink, ServiceConfiguration.CheckPaymentStatus, ServiceConfiguration.GetProductEndpoint, ServiceConfiguration.Environment, ServiceConfiguration.NumberOfTimeoutAttempts)
             };
 
             query.Criteria.AddCondition(ServiceConfiguration.Name, ConditionOperator.Equal, ServiceConfiguration.RecordName);
@@ -293,6 +328,7 @@ namespace SS.MSDYN.LGIntelliware.Actions
                 ClientId = servicConfig[ServiceConfiguration.ClientId].ToString();
                 ClientSecret = servicConfig[ServiceConfiguration.ClientSecret].ToString();
                 Environment = servicConfig[ServiceConfiguration.Environment].ToString();
+                NumberOfTimeoutAttempts = (int)servicConfig[ServiceConfiguration.NumberOfTimeoutAttempts];
             }
             return;
         }
@@ -394,6 +430,39 @@ namespace SS.MSDYN.LGIntelliware.Actions
             // request received  
             return result;
 
+        }
+
+        private static void HandleFailedPayment(OutputJson output, List<string> messages, string accessToken, string inputString, Entity transaction, IOrganizationService service, ITracingService tracingService, IPluginExecutionContext context)
+        {
+            output.status = "failed";
+            output.errorMessage = messages;
+
+            // Generate new payment link
+            string newPaymentLink = GetPaymentLink(accessToken, inputString, tracingService).GetAwaiter().GetResult();
+            PaymentResponse newPayment = JsonConvert.DeserializeObject<PaymentResponse>(newPaymentLink);
+            output.paymentLink = newPayment.paymentLinkUrl;
+            UpdateTransactionsRecord(newPayment.paymentGuidId, transaction[PaymentTransaction.PaymentTransactionId].ToString(), newPayment.amount, newPayment.paymentLinkUrl, StatusCode.Failed.GetHashCode(), service);
+            context.OutputParameters["outputString"] = JsonConvert.SerializeObject(output);
+        }
+
+        private static void HandleTimedoutPayment(OutputJson output, List<string> messages, string accessToken, string inputString, Entity transaction, IOrganizationService service, ITracingService tracingService, IPluginExecutionContext context)
+        {
+            output.status = "timedout";
+            output.errorMessage = messages;
+            // Generate new payment link
+            string newPaymentLink = GetPaymentLink(accessToken, inputString, tracingService).GetAwaiter().GetResult();
+            PaymentResponse newPayment = JsonConvert.DeserializeObject<PaymentResponse>(newPaymentLink);
+            output.paymentLink = newPayment.paymentLinkUrl;
+            UpdateTransactionsRecord(newPayment.paymentGuidId, transaction[PaymentTransaction.PaymentTransactionId].ToString(), newPayment.amount, newPayment.paymentLinkUrl, StatusCode.Timedout.GetHashCode(), service);
+            context.OutputParameters["outputString"] = JsonConvert.SerializeObject(output);
+        }
+
+        private static void HandleSuccessfulPayment(OutputJson output, string status, Entity transaction, IOrganizationService service, IPluginExecutionContext context)
+        {
+            output.status = status;
+            var transactionEntity = UpdateTransactionsRecord(" ", transaction[PaymentTransaction.PaymentTransactionId].ToString(), 0, " ", StatusCode.Success.GetHashCode(), service);
+            UpdateServicePaidColumn(transactionEntity, service);
+            context.OutputParameters["outputString"] = JsonConvert.SerializeObject(output);
         }
     }
     // Used to easily get the access token from the json response
