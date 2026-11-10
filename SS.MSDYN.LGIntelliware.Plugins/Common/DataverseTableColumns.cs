@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Policy;
 using System.Text;
 
@@ -176,4 +177,36 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     }
     #endregion
 
+
+    #region Sealed class: QueueItemTableColumnNames
+    /// <summary>
+    /// Sealed class for contactproperty table column names.
+    /// </summary>
+    public sealed class QueueItem
+    {
+        public const string TableName = "queueitem";
+        public const string Contact = "cr91b_customersearch";
+        public const string Address = "nulbc_address";
+        public const string CaseReference = "nulbc_casereference";
+        public const string CaseStage = "crb98_casestage";
+        public const string CaseStatus = "crb98_casestatus";
+        public const string CustomerStatus = "nulbc_customerstatus";
+        public const string DataSource = "nulbc_datasource";
+        public const string DateCompleted = "nulbc_datecompleted";
+        public const string DateSubmitted = "nulbc_datesubmitted";
+        public const string Description = "nulbc_description";
+        public const string Queue = "nulbc_queue";
+        public const string EmailAddress = "nulbc_emailaddress";
+        public const string FirstName = "nulbc_firstname";
+        public const string LastName = "nulbc_lastname";
+        public const string PhoneNumber = "nulbc_phonenumber";
+        public const string ExternalReference = "nulbc_externalreference";
+        public const string InternalNotification = "nulbc_internalnotification";
+        public const string InternalNotificationEmail = "nulbc_internalnotificationemail";
+        public const string InternalNotificationURL = "nulbc_internalnotificationurl";
+        public const string Owner = "ownerId";
+        public const string StatusFilter = "nulbc_statusfilter";
+        public const string Object = "objectid";
+    }
+    #endregion
 }
