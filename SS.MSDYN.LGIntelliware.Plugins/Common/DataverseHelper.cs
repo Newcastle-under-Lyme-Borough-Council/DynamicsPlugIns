@@ -656,6 +656,32 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveDefaultContactProperty: " + ex + ".");
             }
         }
+
+
+        //Retrieve a contact record
+        public static Entity RetrieveUnassignedUser(this IOrganizationService service)
+        {
+            try
+            {
+                //query User table to get Unassigned user
+                QueryExpression unassignedOwnerQuery = new QueryExpression("systemuser")
+                {
+                    ColumnSet = new ColumnSet("systemuserid", "fullname")
+                };
+
+                unassignedOwnerQuery.Criteria.AddCondition(
+                    "fullname", ConditionOperator.Equal, "Unassigned #"
+                    );
+
+                var users = service.RetrieveMultiple(unassignedOwnerQuery);
+
+                return users.Entities.Count > 0 ? users.Entities[0] : null;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveUnassignedUser: " + ex + ".");
+            }
+        }
     }
 }
 
