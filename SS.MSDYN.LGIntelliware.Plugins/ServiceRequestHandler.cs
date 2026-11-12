@@ -63,7 +63,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 // Check if context message name is 'Create' ...
                 if (context.MessageName.Equals(PluginExecutionMessageName.CREATE))
                 {
-                    
+                    // Code will live here
                 }
             }
             catch (FaultException<OrganizationServiceFault> ex)
