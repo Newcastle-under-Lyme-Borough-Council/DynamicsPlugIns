@@ -207,6 +207,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Owner = "workerid";
         public const string StatusFilter = "crb98_statusfilter";
         public const string Object = "objectid";
+        public const string Title = "title";
     }
     #endregion
 }
