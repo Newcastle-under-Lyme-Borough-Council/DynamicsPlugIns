@@ -117,6 +117,7 @@
     <Compile Include="PostCreate.cs" />
     <Compile Include="PostOrderNewRecycling.cs" />
     <Compile Include="QueueItemHandler.cs" />
+    <Compile Include="ServiceRequestHandler.cs" />
     <Compile Include="UpdateContactPropertySetIsDefault.cs" />
     <Compile Include="PostContact.cs" />
     <Compile Include="PostContactUpdate.cs" />
