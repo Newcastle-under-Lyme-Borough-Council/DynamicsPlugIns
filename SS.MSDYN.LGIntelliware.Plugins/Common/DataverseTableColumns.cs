@@ -195,7 +195,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string DateCompleted = "nulbc_datecompleted";
         public const string DateSubmitted = "nulbc_datesubmitted";
         public const string Description = "nulbc_description";
-        public const string Queue = "nulbc_queue";
+        public const string Queue = "queueid";
         public const string EmailAddress = "nulbc_emailaddress";
         public const string FirstName = "nulbc_firstname";
         public const string LastName = "nulbc_lastname";
@@ -204,9 +204,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string InternalNotification = "nulbc_internalnotification";
         public const string InternalNotificationEmail = "nulbc_internalnotificationemail";
         public const string InternalNotificationURL = "nulbc_internalnotificationurl";
-        public const string Owner = "ownerId";
-        public const string StatusFilter = "nulbc_statusfilter";
+        public const string Owner = "workerid";
+        public const string StatusFilter = "crb98_statusfilter";
         public const string Object = "objectid";
+        public const string Title = "title";
     }
     #endregion
 }
