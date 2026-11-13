@@ -682,6 +682,26 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveUnassignedUser: " + ex + ".");
             }
         }
+
+        //Retrieve a contact record
+        public static Entity RetrieveQueueItem(this IOrganizationService service, Guid recordId)
+        {
+            try
+            {
+                var queueItemQuery = new QueryExpression(QueueItem.TableName);
+
+                queueItemQuery.Criteria.AddCondition("objectid", ConditionOperator.Equal, recordId);
+
+                var result = service.RetrieveMultiple(queueItemQuery);
+
+                return result.Entities.Count > 0 ? result.Entities[0] : null;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("Fault exception occured executing RetrieveQueueItem: " + ex + ".");
+            }
+        }
+
     }
 }
 
