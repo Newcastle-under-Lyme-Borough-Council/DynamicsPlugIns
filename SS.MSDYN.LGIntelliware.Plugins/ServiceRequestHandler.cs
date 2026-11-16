@@ -23,7 +23,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     {
         private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
         // Column on the case that receives the summary (assumption - change to your real column).
-        private const string CaseSummaryColumn = "ss_casesummary";
+        //private const string CaseSummaryColumn = "ss_casesummary";
         // Key used to hand the summary to the queue plugin (same transaction only).
         public const string SummarySharedVariable = "CaseSummary";
 
