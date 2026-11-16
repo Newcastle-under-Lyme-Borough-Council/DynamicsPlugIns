@@ -248,7 +248,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             entityToCreate[QueueItem.InternalNotificationURL] = incidentAttributes.GetAttributeValue<string>("nulbc_internalnotificationurl");
                             tracingService.Trace("here10");
 
-                            //entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value.GetHashCode());
+                            entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value);
                             tracingService.Trace("here11");
 
                             entityToCreate[QueueItem.DataSource] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource").Value.GetHashCode());
@@ -285,7 +285,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             entityToCreate[QueueItem.DateSubmitted] = dateSubmitted.Value;
                             tracingService.Trace("here8");
 
-                            entityToCreate[QueueItem.DateCompleted] = dateCompleted.Value;
+                            entityToCreate[QueueItem.DateCompleted] = dateCompleted.HasValue ? dateCompleted.Value : (DateTime?)null;
                             tracingService.Trace("here9");
 
                             tracingService.Trace("Date submitted value: " + Convert.ToString(currentRecord.GetAttributeValue<DateTime>("nulbc_datesubmitted")));
@@ -363,7 +363,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             "nulbc_internalnotificationurl",
                             "nulbc_phonenumber",
                             "nulbc_property",
-                            "ss_serviceconfigurationid",
                             "ss_subjectid",
                             "nulbc_synceddate"
                         )
