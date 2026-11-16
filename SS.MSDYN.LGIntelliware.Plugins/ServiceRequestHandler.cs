@@ -45,8 +45,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
         public void RegisterEvents()
         {
-            // Empty table name = whichever table the step is registered on.
-            // (Relies on PluginBase treating "" as a wildcard, as in the standard Microsoft template.)
+            // Plugin triggers
+            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
+    PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, string.Empty, Execute));
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
                 PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, string.Empty, Execute));
         }
