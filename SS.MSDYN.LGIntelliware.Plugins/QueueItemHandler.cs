@@ -359,10 +359,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         };
 
 
-                        if (entity.Attributes.Contains("nulbc_datecompleted") && incidentAttributes["nulbc_datecompleted"] != null)
-                        {
-                            queueItemToUpdate[QueueItem.DateCompleted] = incidentAttributes.GetAttributeValue<DateTime>("nulbc_datecompleted");
-                        }
+                        //if (entity.Attributes.Contains("nulbc_datecompleted") && incidentAttributes["nulbc_datecompleted"] != null)
+                        //{
+                        //    queueItemToUpdate[QueueItem.DateCompleted] = incidentAttributes.GetAttributeValue<DateTime>("nulbc_datecompleted");
+                        //}
 
                         if (entity.Attributes.Contains("nulbc_emailaddress") && incidentAttributes["nulbc_emailaddress"] != null)
                         {
