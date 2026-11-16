@@ -215,12 +215,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             {
                                 entityToCreate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid").Id);
                             }
-                            else
-                            {
-                                tracingService.Trace("Incident has no customer id reference");
-                            }
-
-                            entityToCreate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid").Id);
 
                             entityToCreate[QueueItem.Address] = incidentAttributes.GetAttributeValue<string>("nulbc_address");
 
@@ -238,15 +232,17 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                             entityToCreate[QueueItem.InternalNotification] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotification").Value.GetHashCode());
 
-                            entityToCreate[QueueItem.InternalNotificationEmail] = incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotificationemail");
+                            entityToCreate[QueueItem.InternalNotificationEmail] = incidentAttributes.GetAttributeValue<string>("nulbc_internalnotificationemail");
 
-                            entityToCreate[QueueItem.InternalNotificationURL] = incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotificationurl");
+                            entityToCreate[QueueItem.InternalNotificationURL] = incidentAttributes.GetAttributeValue<string>("nulbc_internalnotificationurl");
 
                             entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value.GetHashCode());
 
                             entityToCreate[QueueItem.DataSource] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource").Value.GetHashCode());
 
                             entityToCreate[QueueItem.Description] = incidentAttributes.GetAttributeValue<string>("nulbc_description");
+
+                            tracingService.Trace("here");
 
                             if (incidentAttributes.GetAttributeValue<EntityReference>("ss_subjectid") != null)
                             {
@@ -268,10 +264,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                             entityToCreate[QueueItem.DateSubmitted] = dateSubmitted.Value;
 
-                            entityToCreate[QueueItem.DateCompleted] = dateCompleted.HasValue ? dateCompleted.Value : (DateTime?)null;
+                            entityToCreate[QueueItem.DateCompleted] = dateCompleted.Value;
 
-
-                            tracingService.Trace(incidentAttributes.GetAttributeValue<EntityReference>("ss_serviceconfigurationid") != null ? $"Service configuration id is not null {incidentAttributes.GetAttributeValue<EntityReference>("ss_serviceconfigurationid").Id}" : "Service configuration id is null");
                             tracingService.Trace("Date submitted value: " + Convert.ToString(currentRecord.GetAttributeValue<DateTime>("nulbc_datesubmitted")));
                             tracingService.Trace("Date completed value: " + Convert.ToString(currentRecord.GetAttributeValue<DateTime>("nulbc_datecompleted")));
 
