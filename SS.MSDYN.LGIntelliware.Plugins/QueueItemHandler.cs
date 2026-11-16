@@ -199,8 +199,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 "nulbc_phonenumber",
                                 "nulbc_property",
                                 "ss_subjectid",
-                                "nulbc_synceddate",
-                                "ss_subjectid"
+                                "nulbc_synceddate"
                             )
                         );
 
@@ -220,44 +219,44 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             tracingService.Trace("here2");
 
                             entityToCreate[QueueItem.Address] = incidentAttributes.GetAttributeValue<string>("nulbc_address");
-                            tracingService.Trace("here");
+                            tracingService.Trace("here1");
 
                             entityToCreate[QueueItem.StatusFilter] = new OptionSetValue(StatusFilter.RequiresAction.GetHashCode());
-                            tracingService.Trace("here");
+                            tracingService.Trace("here2");
 
                             entityToCreate[QueueItem.FirstName] = incidentAttributes.GetAttributeValue<string>("nulbc_firstname");
-                            tracingService.Trace("here");
+                            tracingService.Trace("here3");
 
                             entityToCreate[QueueItem.LastName] = incidentAttributes.GetAttributeValue<string>("nulbc_lastname");
-                            tracingService.Trace("here");
+                            tracingService.Trace("here4");
 
                             entityToCreate[QueueItem.PhoneNumber] = incidentAttributes.GetAttributeValue<string>("nulbc_phonenumber");
-                            tracingService.Trace("here");
+                            tracingService.Trace("here5");
 
                             entityToCreate[QueueItem.EmailAddress] = incidentAttributes.GetAttributeValue<string>("nulbc_emailaddress");
-                            tracingService.Trace("here");
+                            tracingService.Trace("here6");
 
                             entityToCreate[QueueItem.ExternalReference] = incidentAttributes.GetAttributeValue<string>("nulbc_externalreference");
-                            tracingService.Trace("here");
+                            tracingService.Trace("here7");
 
                             entityToCreate[QueueItem.InternalNotification] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotification").Value.GetHashCode());
-                            tracingService.Trace("here");
+                            tracingService.Trace("here8");
 
                             entityToCreate[QueueItem.InternalNotificationEmail] = incidentAttributes.GetAttributeValue<string>("nulbc_internalnotificationemail");
-                            tracingService.Trace("here");
+                            tracingService.Trace("here9");
 
                             entityToCreate[QueueItem.InternalNotificationURL] = incidentAttributes.GetAttributeValue<string>("nulbc_internalnotificationurl");
-                            tracingService.Trace("here");
+                            tracingService.Trace("here10");
 
-                            entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value.GetHashCode());
-                            tracingService.Trace("here");
+                            //entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value.GetHashCode());
+                            tracingService.Trace("here11");
 
                             entityToCreate[QueueItem.DataSource] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource").Value.GetHashCode());
-                            tracingService.Trace("here");
+                            tracingService.Trace("here12");
 
                             entityToCreate[QueueItem.Description] = incidentAttributes.GetAttributeValue<string>("nulbc_description");
 
-                            tracingService.Trace("here");
+                            tracingService.Trace("here13");
 
                             if (incidentAttributes.GetAttributeValue<EntityReference>("ss_subjectid") != null)
                             {
