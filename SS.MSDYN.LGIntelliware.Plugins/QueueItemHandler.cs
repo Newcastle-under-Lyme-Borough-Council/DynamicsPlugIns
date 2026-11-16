@@ -248,11 +248,17 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             entityToCreate[QueueItem.InternalNotificationURL] = incidentAttributes.GetAttributeValue<string>("nulbc_internalnotificationurl");
                             tracingService.Trace("here10");
 
-                            entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value);
-                            tracingService.Trace("here11");
+                            if(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus") != null) 
+                            { 
+                                entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value);
+                                tracingService.Trace("here11");
+                            }
 
-                            entityToCreate[QueueItem.DataSource] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource").Value.GetHashCode());
-                            tracingService.Trace("here12");
+                            if (incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource") != null)
+                            {
+                                entityToCreate[QueueItem.DataSource] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource").Value.GetHashCode());
+                                tracingService.Trace("here12");
+                            }
 
                             entityToCreate[QueueItem.Description] = incidentAttributes.GetAttributeValue<string>("nulbc_description");
 
