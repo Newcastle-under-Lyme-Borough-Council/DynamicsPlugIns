@@ -65,8 +65,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             trace.Trace("ServiceRequestHandler start. Table: " + context.PrimaryEntityName + ", Message: " + context.MessageName + ", Depth: " + context.Depth);
 
-            // Updates triggered by another plugin (e.g. PostCreate linking the case) are skipped,
-            // because the Create step already handles that run.
             if (context.Depth > 2 || (context.MessageName == PluginExecutionMessageName.UPDATE && context.Depth > 1))
             {
                 return;
@@ -80,11 +78,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // 1. Get the table/column settings from the PostCreate step for this table.
+                // Get the table/column settings from the PostCreate step for this table.
                 var config = LoadConfigFromPostCreateStep(service, target.LogicalName, trace);
 
-                // 2. Get the full form record (Update targets only hold changed columns, and on Create
-                //    the case lookup was written by PostCreate after the Target was built).
+                // Get the full form record (Update targets only hold changed columns, and on Create - the case lookup was written by PostCreate after the Target was built).
                 var columns = Array.FindAll(
                     new[]
                     {
@@ -97,7 +94,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 var record = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(columns));
 
-                // 3. Only continue when the Service Config lookup has been filled in.
+                // Only continue when the Service Config lookup has been filled in.
                 var serviceConfigRef = record.GetAttributeValue<EntityReference>(config.ServiceConfigurationColumnLogicalName);
                 if (serviceConfigRef == null || serviceConfigRef.Id == Guid.Empty)
                 {
@@ -105,7 +102,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // 4. Need a case to write the summary to.
+                // Need a case to write the summary to
                 var caseRef = record.GetAttributeValue<EntityReference>(config.IncidentIdColumnLogicalName);
                 if (caseRef == null || caseRef.Id == Guid.Empty)
                 {
@@ -119,7 +116,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 var summary = BuildSummary(record, serviceConfig, config);
                 trace.Trace("Summary: " + summary);
 
-                // Output for the queue plugin.
+                // Output for the queue plugin
                 context.SharedVariables[SummarySharedVariable] = summary;
 
                 var caseUpdate = new Entity(caseRef.LogicalName, caseRef.Id);
