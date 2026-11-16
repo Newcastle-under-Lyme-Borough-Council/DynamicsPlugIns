@@ -208,6 +208,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string StatusFilter = "crb98_statusfilter";
         public const string Object = "objectid";
         public const string Title = "title";
+        public const string Subject = "nulbc_subject";   
     }
     #endregion
 }
