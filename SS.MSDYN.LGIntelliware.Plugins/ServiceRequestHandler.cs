@@ -5,6 +5,7 @@ using System;
 using System.ServiceModel;
 using System.Text;
 using System.Text.Json;
+using System.Xml.Linq;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
@@ -47,13 +48,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             // Empty table name = whichever table the step is registered on.
             // (Relies on PluginBase treating "" as a wildcard, as in the standard Microsoft template.)
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
-                PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, string.Empty, Execute));
-            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
                 PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, string.Empty, Execute));
         }
 
         protected void Execute(LocalPluginContext localContext)
         {
+            localContext.TracingService.Trace("Service request plugin executed.");
             if (localContext == null)
             {
                 throw new ArgumentNullException(nameof(localContext));
@@ -69,7 +69,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             {
                 return;
             }
-
+            localContext.TracingService.Trace("Run on update");
             try
             {
                 if (!context.InputParameters.Contains(ContextInputParameters.TARGET) ||
@@ -93,6 +93,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     c => !string.IsNullOrWhiteSpace(c));
 
                 var record = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(columns));
+
+                localContext.TracingService.Trace("Fetched standardised columns");
 
                 // Only continue when the Service Config lookup has been filled in.
                 var serviceConfigRef = record.GetAttributeValue<EntityReference>(config.ServiceConfigurationColumnLogicalName);
