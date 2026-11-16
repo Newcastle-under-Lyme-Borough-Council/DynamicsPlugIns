@@ -73,4 +73,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         Portal = 4,
     }
 
+    public enum StatusFilter
+    {
+        RequiresAction = 901600001
+    }
+
 }
