@@ -99,13 +99,15 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     new ColumnSet(
                         "nulbc_queueitem",
                         "nulbc_queue",
-                        "nulbc_datesubmitted"
+                        "nulbc_datesubmitted",
+                        "nulbc_datecompleted"
                     )
                 );
 
                 EntityReference queue = currentRecord.GetAttributeValue<EntityReference>("nulbc_queue");
                 //DateTime is a value type and cannot be null
                 DateTime? dateSubmitted = currentRecord.GetAttributeValue<DateTime?>("nulbc_datesubmitted").HasValue ? currentRecord.GetAttributeValue<DateTime?>("nulbc_datesubmitted") : null;
+                DateTime? dateCompleted = currentRecord.GetAttributeValue<DateTime?>("nulbc_datecompleted").HasValue ? currentRecord.GetAttributeValue<DateTime?>("nulbc_datecompleted") : null;
 
                 if (!dateSubmitted.HasValue)
                 {
@@ -196,14 +198,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 "nulbc_internalnotificationurl",
                                 "nulbc_phonenumber",
                                 "nulbc_property",
-                                "ss_serviceconfigurationid",
                                 "ss_subjectid",
                                 "nulbc_synceddate",
-                                "ss_serviceconfigurationid"
+                                "ss_subjectid"
                             )
                         );
-
-                        DateTime? dateCompleted = incidentAttributes.GetAttributeValue<DateTime?>("nulbc_datecompleted");
 
                         tracingService.Trace("Date completed value: " + dateCompleted.HasValue);
 
@@ -221,11 +220,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 tracingService.Trace("Incident has no customer id reference");
                             }
 
-                            //entityToCreate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid").Id);
+                            entityToCreate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid").Id);
 
                             entityToCreate[QueueItem.Address] = incidentAttributes.GetAttributeValue<string>("nulbc_address");
 
-                            //entityToCreate[QueueItem.StatusFilter] = new OptionSetValue(StatusFilter.RequiresAction.GetHashCode());
+                            entityToCreate[QueueItem.StatusFilter] = new OptionSetValue(StatusFilter.RequiresAction.GetHashCode());
 
                             entityToCreate[QueueItem.FirstName] = incidentAttributes.GetAttributeValue<string>("nulbc_firstname");
 
@@ -237,17 +236,22 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                             entityToCreate[QueueItem.ExternalReference] = incidentAttributes.GetAttributeValue<string>("nulbc_externalreference");
 
-                            //entityToCreate[QueueItem.InternalNotification] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotification").Value.GetHashCode());
+                            entityToCreate[QueueItem.InternalNotification] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotification").Value.GetHashCode());
 
-                            //entityToCreate[QueueItem.InternalNotificationEmail] = incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotificationemail");
+                            entityToCreate[QueueItem.InternalNotificationEmail] = incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotificationemail");
 
-                            //entityToCreate[QueueItem.InternalNotificationURL] = incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotificationurl");
+                            entityToCreate[QueueItem.InternalNotificationURL] = incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotificationurl");
 
-                            //entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value.GetHashCode());
+                            entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value.GetHashCode());
 
-                            //entityToCreate[QueueItem.DataSource] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource").Value.GetHashCode());
+                            entityToCreate[QueueItem.DataSource] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource").Value.GetHashCode());
 
                             entityToCreate[QueueItem.Description] = incidentAttributes.GetAttributeValue<string>("nulbc_description");
+
+                            if (incidentAttributes.GetAttributeValue<EntityReference>("ss_subjectid") != null)
+                            {
+                                entityToCreate[QueueItem.Subject] = new EntityReference("subject", incidentAttributes.GetAttributeValue<EntityReference>("ss_subjectid").Id);
+                            }
 
                             //For testing purposes, hardcoding the queue id to the 'Unassigned' queue
                             entityToCreate[QueueItem.Queue] = new EntityReference("queue", queueId);
@@ -264,7 +268,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                             entityToCreate[QueueItem.DateSubmitted] = dateSubmitted.Value;
 
-                            //entityToCreate[QueueItem.DateCompleted] = dateCompleted.HasValue ? dateCompleted.Value : (DateTime?)null;
+                            entityToCreate[QueueItem.DateCompleted] = dateCompleted.HasValue ? dateCompleted.Value : (DateTime?)null;
 
 
                             tracingService.Trace(incidentAttributes.GetAttributeValue<EntityReference>("ss_serviceconfigurationid") != null ? $"Service configuration id is not null {incidentAttributes.GetAttributeValue<EntityReference>("ss_serviceconfigurationid").Id}" : "Service configuration id is null");
@@ -283,76 +287,22 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                             service.Create(entityToCreate);
 
-                         var newQueueItem = DataverseHelper.RetrieveQueueItem(service, recordId);
+                            var newQueueItem = DataverseHelper.RetrieveQueueItem(service, recordId);
 
 
                             tracingService.Trace("Queue item created successfully: " + newQueueItem.Id);
 
-
-                            //find the child entity table name and primary key column from service configuration table
-                            QueryExpression serviceConfigQuery = new QueryExpression("ss_serviceconfiguration")
+                            var EntityToUpdate = new Entity(Case.TableName)
                             {
-                                ColumnSet = new ColumnSet("ss_servicelogicalname", "ss_serviceprimarykeycolumnname")
-
-                            };
-
-                            serviceConfigQuery.Criteria.AddCondition("ss_serviceconfigurationid", ConditionOperator.Equal, incidentAttributes.GetAttributeValue<EntityReference>("ss_serviceconfigurationid").Id);
-
-                            var result = service.RetrieveMultiple(serviceConfigQuery);
-
-                            var serviceConfig = result.Entities.Count() > 0 ? result.Entities[0] : null;
-
-                            tracingService.Trace("Service configuration record retrieved: " + (serviceConfig != null ? "Yes" : "No"));
-
-                            if (serviceConfig == null)
-                            {
-                                throw new InvalidPluginExecutionException("Service configuration record not found for the given service configuration id.");
-                            }
-
-                            var serviceLogicalName = serviceConfig.GetAttributeValue<string>("ss_servicelogicalname");
-                            var primaryColumnName = serviceConfig.GetAttributeValue<string>("ss_serviceprimarykeycolumnname");
-
-                            if (string.IsNullOrWhiteSpace(serviceLogicalName))
-                            {
-                                throw new InvalidPluginExecutionException(
-                                    "Service logical name is empty in Service Configuration.");
-                            }
-
-                            if (string.IsNullOrWhiteSpace(primaryColumnName))
-                            {
-                                throw new InvalidPluginExecutionException(
-                                    "Primary column name is empty in Service Configuration.");
-                            }
-
-                            tracingService.Trace(serviceLogicalName + " - " + primaryColumnName);
-                            tracingService.Trace("Got to here");
-
-
-                            QueryExpression childEntityQuery = new QueryExpression(serviceLogicalName)
-                            {
-                                ColumnSet = new ColumnSet(true)
-                            };
-
-                            childEntityQuery.Criteria.AddCondition(primaryColumnName, ConditionOperator.Equal, incidentAttributes.GetAttributeValue<string>("nulbc_casenumber"));
-
-                            var childEntityResult = service.RetrieveMultiple(childEntityQuery);
-
-                            Entity childEntity = childEntityResult.Entities.Count() > 0 ? childEntityResult.Entities[0] : null;
-
-                            if (childEntity == null)
-                            {
-                                throw new InvalidPluginExecutionException("Child entity record not found");
-                            }
-
-                            var EntityToUpdate = new Entity(serviceLogicalName)
-                            {
-                                Id = childEntity.Id
+                                Id = recordId
                             };
 
 
                             EntityToUpdate["nulbc_queueitem"] = new EntityReference(QueueItem.TableName, newQueueItem.Id);
 
                             service.Update(EntityToUpdate);
+
+                            tracingService.Trace("Case summary record updated with queue item reference: " + newQueueItem.Id);
 
                         }
                         catch (Exception ex)
@@ -420,7 +370,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             tracingService.Trace("Email address updated:" + incidentAttributes.GetAttributeValue<string>("nulbc_emailaddress"));
                         }
 
-                        //queueItemToUpdate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid").Id);
+                        queueItemToUpdate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid").Id);
 
                         queueItemToUpdate[QueueItem.Address] = incidentAttributes.GetAttributeValue<string>("nulbc_address");
 
@@ -434,9 +384,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                         //queueItemToUpdate[QueueItem.EmailAddress] = incidentAttributes.GetAttributeValue<string>("nulbc_emailaddress");
 
-                        //queueItemToUpdate[QueueItem.DateCompleted] = incidentAttributes.GetAttributeValue<DateTime>("nulbc_datecompleted");
+                        queueItemToUpdate[QueueItem.DateCompleted] = dateCompleted.HasValue ? dateCompleted.Value : (DateTime?)null;
 
-                        queueItemToUpdate[QueueItem.DateSubmitted] = incidentAttributes.GetAttributeValue<DateTime>("nulbc_datesubmitted");
+                        queueItemToUpdate[QueueItem.DateSubmitted] = dateSubmitted.Value;
 
                         queueItemToUpdate[QueueItem.ExternalReference] = incidentAttributes.GetAttributeValue<string>("nulbc_externalreference");
 
@@ -455,8 +405,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         //queueItemToUpdate[QueueItem.CaseStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_casestatus").Value.GetHashCode());
                         //For testing purposes, hardcoding the queue id to the 'Unassigned' queue
                         //queueItemToUpdate[QueueItem.Object] = new EntityReference(Case.TableName, recordId);
-                        //queueItemToUpdate[QueueItem.Owner] = new EntityReference("systemuser", unassignedUser.Id);
-
+                        if(incidentAttributes.GetAttributeValue<EntityReference>("ownerid") != null)
+                        {
+                            queueItemToUpdate[QueueItem.Owner] = new EntityReference("systemuser", incidentAttributes.GetAttributeValue<EntityReference>("ownerid").Id);
+                        }
 
                         service.Update(queueItemToUpdate);
                     }
