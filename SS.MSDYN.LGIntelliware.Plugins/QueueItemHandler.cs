@@ -210,35 +210,50 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         try
                         {
                             var entityToCreate = new Entity(QueueItem.TableName);
+                            tracingService.Trace("here");
 
-                            if(incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid") != null)
+                            if (incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid") != null)
                             {
                                 entityToCreate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid").Id);
+                                tracingService.Trace("here");
                             }
+                            tracingService.Trace("here2");
 
                             entityToCreate[QueueItem.Address] = incidentAttributes.GetAttributeValue<string>("nulbc_address");
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.StatusFilter] = new OptionSetValue(StatusFilter.RequiresAction.GetHashCode());
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.FirstName] = incidentAttributes.GetAttributeValue<string>("nulbc_firstname");
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.LastName] = incidentAttributes.GetAttributeValue<string>("nulbc_lastname");
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.PhoneNumber] = incidentAttributes.GetAttributeValue<string>("nulbc_phonenumber");
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.EmailAddress] = incidentAttributes.GetAttributeValue<string>("nulbc_emailaddress");
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.ExternalReference] = incidentAttributes.GetAttributeValue<string>("nulbc_externalreference");
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.InternalNotification] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotification").Value.GetHashCode());
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.InternalNotificationEmail] = incidentAttributes.GetAttributeValue<string>("nulbc_internalnotificationemail");
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.InternalNotificationURL] = incidentAttributes.GetAttributeValue<string>("nulbc_internalnotificationurl");
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value.GetHashCode());
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.DataSource] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource").Value.GetHashCode());
+                            tracingService.Trace("here");
 
                             entityToCreate[QueueItem.Description] = incidentAttributes.GetAttributeValue<string>("nulbc_description");
 
@@ -247,24 +262,32 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                             if (incidentAttributes.GetAttributeValue<EntityReference>("ss_subjectid") != null)
                             {
                                 entityToCreate[QueueItem.Subject] = new EntityReference("subject", incidentAttributes.GetAttributeValue<EntityReference>("ss_subjectid").Id);
+                                tracingService.Trace("here");
                             }
+                            tracingService.Trace("here3");
 
                             //For testing purposes, hardcoding the queue id to the 'Unassigned' queue
                             entityToCreate[QueueItem.Queue] = new EntityReference("queue", queueId);
+                            tracingService.Trace("here4");
 
                             //entityToCreate[QueueItem.Queue] = new EntityReference("queue", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue").Id);
 
                             //entityToCreate[QueueItem.CaseStatus] = new EntityReference("nulbc_statuscase", incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_statuscase"));
 
                             entityToCreate[QueueItem.Object] = new EntityReference(Case.TableName, recordId);
+                            tracingService.Trace("here5");
 
                             entityToCreate[QueueItem.Owner] = new EntityReference("systemuser", unassignedUser.Id);
+                            tracingService.Trace("here6");
 
                             entityToCreate[QueueItem.Title] = incidentAttributes.GetAttributeValue<string>("ss_casenumber");
+                            tracingService.Trace("here7");
 
                             entityToCreate[QueueItem.DateSubmitted] = dateSubmitted.Value;
+                            tracingService.Trace("here8");
 
                             entityToCreate[QueueItem.DateCompleted] = dateCompleted.Value;
+                            tracingService.Trace("here9");
 
                             tracingService.Trace("Date submitted value: " + Convert.ToString(currentRecord.GetAttributeValue<DateTime>("nulbc_datesubmitted")));
                             tracingService.Trace("Date completed value: " + Convert.ToString(currentRecord.GetAttributeValue<DateTime>("nulbc_datecompleted")));
@@ -283,8 +306,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                             var newQueueItem = DataverseHelper.RetrieveQueueItem(service, recordId);
 
-
-                            tracingService.Trace("Queue item created successfully: " + newQueueItem.Id);
+                            if(newQueueItem == null)
+                            {
+                                throw new InvalidPluginExecutionException("No new queue item reference");
+                            }
+                             tracingService.Trace("Queue item created successfully: " + newQueueItem.Id);
 
                             var EntityToUpdate = new Entity(Case.TableName)
                             {
