@@ -13,6 +13,5 @@ namespace SS.MSDYN.LGIntelliware.Plugins.Common
         public string ReferenceNumberColumnLogicalName { get; set; } = string.Empty;
         public string ServiceConfigurationColumnLogicalName { get; set; } = string.Empty;
         public string IncidentIdColumnLogicalName { get; set; } = string.Empty;
-        public string CouncilTaxReferenceColumnLogicalName { get; set; } = string.Empty;
     }
 }
