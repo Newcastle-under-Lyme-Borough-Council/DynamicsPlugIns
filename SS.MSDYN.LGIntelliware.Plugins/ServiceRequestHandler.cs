@@ -7,29 +7,45 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
-using System.Text;
 using System.Text.Json;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
-
+    // Copies the standardised fields from a form record to its linked service request (ss_incident) record.
+    // The incident update is what triggers QueueItemHandler, which then creates/updates the queue item.
+    //
     // The table/column settings are read from the PostCreate step registered for the same table.
-    // The summary is built from every custom column on the form table that has data, marking which
-    // are mandatory; mandatory columns with no data are flagged as missing.
+    // Register an Update step (Post-operation, Synchronous, empty unsecure config) on each form table.
     public class ServiceRequestHandler : PluginBase
     {
         private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
-        // Key used to hand the summary to the queue plugin (same transaction only).
-        public const string SummarySharedVariable = "CaseSummary";
 
-        // Columns to leave out of the summary
-        // The config columns (service config, case, reference, contact) aren't included here.
-        private static readonly HashSet<string> ExcludedColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        // Column on the incident that holds the contact. The form's contact column comes from the config
+        // (ContactColumnLogicalName), so it is mapped explicitly below.
+        private const string IncidentContactColumn = "ss_customerid";
+
+        // STANDARDISED FIELDS copied form -> incident. Same logical name on the form table and on the incident.
+        // Only fields that exist on both tables, are updatable and have matching types are copied.
+        // Add / remove names here to change what is synced.
+        private static readonly string[] StandardFields =
         {
-            "nulbc_internalnotification",
-            "nulbc_statusfilter",
+            "nulbc_firstname",
+            "nulbc_lastname",
+            "nulbc_emailaddress",
+            "nulbc_phonenumber",
+            "nulbc_address",
+            "nulbc_property",
+            "nulbc_description",
+            "nulbc_datesubmitted",      // QueueItemHandler won't run without this
             "nulbc_datasource",
-            "nulbc_selectedaddress",
+            "nulbc_externalreference",
+            "nulbc_internalnotification",
+            "nulbc_internalnotificationemail",
+            "nulbc_internalnotificationurl",
+            "ss_subjectid",
+            // Managed by staff / system on the incident - leave out unless the form should drive them:
+            // "nulbc_status", "nulbc_casestatus", "nulbc_customerstatus", "nulbc_datecompleted",
+            // "nulbc_queue", "nulbc_queueitem", "nulbc_casereference", "ss_casenumber", "nulbc_synceddate",
         };
 
         private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
@@ -37,12 +53,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             PropertyNameCaseInsensitive = true
         };
 
-        // A form column that can appear in the summary.
-        private class SummaryField
+        // A form column -> incident column pair.
+        private class FieldPair
         {
-            public string LogicalName { get; set; }
-            public string Label { get; set; }
-            public bool IsMandatory { get; set; }
+            public string Form { get; set; }
+            public string Incident { get; set; }
         }
 
         public ServiceRequestHandler(string unsecureConfiguration)
@@ -58,7 +73,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
         public void RegisterEvents()
         {
-            // Update trigger only. Will run if a user creates a new record, or if a user edits an exisitng record.
+            // Update trigger only. Runs when a user edits a record, and when PostCreate links the new case.
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
                 PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, string.Empty, Execute));
         }
@@ -90,28 +105,26 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // Get the table/column settings from the PostCreate step for this table.
+                // 1. Get the table/column settings from the PostCreate step for this table.
                 var config = LoadConfigFromPostCreateStep(service, target.LogicalName, trace);
 
-                // Columns that are always needed.
-                var coreColumns = Array.FindAll(
-                    new[]
-                    {
-                        config.ServiceConfigurationColumnLogicalName,
-                        config.IncidentIdColumnLogicalName,
-                        config.ReferenceNumberColumnLogicalName,
-                        config.ContactColumnLogicalName
-                    },
-                    c => !string.IsNullOrWhiteSpace(c));
+                // 2. Work out which standardised fields can be copied (exist on both tables, updatable, same type).
+                var pairs = BuildFieldPairs(config);
+                var formMeta = GetAttributes(service, target.LogicalName);
+                var incidentTable = GetIncidentTableName(service, target.LogicalName, config, trace);
+                var incidentMeta = GetAttributes(service, incidentTable);
+                var usable = FilterUsablePairs(pairs, formMeta, incidentMeta, trace);
 
-                // Work out every mandatory / non-mandatory column on this form table.
-                var fields = GetSummaryFields(service, target.LogicalName, coreColumns, trace);
+                // 3. Read the form record.
+                var formColumns = new[] { config.ServiceConfigurationColumnLogicalName, config.IncidentIdColumnLogicalName }
+                    .Concat(usable.Select(p => p.Form))
+                    .Where(c => !string.IsNullOrWhiteSpace(c))
+                    .Distinct()
+                    .ToArray();
 
-                var columns = coreColumns.Concat(fields.Select(f => f.LogicalName)).Distinct().ToArray();
-                var record = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(columns));
-                trace.Trace("Fetched " + columns.Length + " columns.");
+                var record = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(formColumns));
 
-                // Only continue when the Service Config lookup has been filled in.
+                // 4. Only continue when the Service Config lookup has been filled in.
                 var serviceConfigRef = record.GetAttributeValue<EntityReference>(config.ServiceConfigurationColumnLogicalName);
                 if (serviceConfigRef == null || serviceConfigRef.Id == Guid.Empty)
                 {
@@ -119,25 +132,57 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // Need a case to link the summary to
+                // 5. Need the linked service request (incident) record.
                 var caseRef = record.GetAttributeValue<EntityReference>(config.IncidentIdColumnLogicalName);
                 if (caseRef == null || caseRef.Id == Guid.Empty)
                 {
-                    trace.Trace("No case has been linked yet.");
+                    trace.Trace("No service request (case) has been linked yet.");
                     return;
                 }
 
-                var serviceConfig = service.Retrieve(serviceConfigRef.LogicalName, serviceConfigRef.Id,
-                    new ColumnSet(ServiceConfiguration.Name, ServiceConfiguration.Subject));
+                var incident = service.Retrieve(caseRef.LogicalName, caseRef.Id,
+                    new ColumnSet(usable.Select(p => p.Incident).Distinct().ToArray()));
 
-                var summary = BuildSummary(record, serviceConfig, config, fields, trace);
-                trace.Trace("Summary: " + summary);
+                // 6. Build an update containing only the standardised fields that have data and differ.
+                var update = new Entity(caseRef.LogicalName, caseRef.Id);
+                foreach (var p in usable)
+                {
+                    if (!HasData(record, p.Form))
+                    {
+                        continue;   // never blank out an incident field
+                    }
 
-                // Output for the queue plugin
-                context.SharedVariables[SummarySharedVariable] = summary;
+                    var formValue = record[p.Form];
 
-                var caseUpdate = new Entity(caseRef.LogicalName, caseRef.Id);
-                service.Update(caseUpdate);
+                    // A lookup must point at a table the incident column accepts.
+                    if (formValue is EntityReference er &&
+                        incidentMeta[p.Incident] is LookupAttributeMetadata lookup &&
+                        lookup.Targets != null && lookup.Targets.Length > 0 &&
+                        !lookup.Targets.Contains(er.LogicalName))
+                    {
+                        trace.Trace("Skipped '" + p.Form + "' - lookup target '" + er.LogicalName + "' not accepted by '" + p.Incident + "'.");
+                        continue;
+                    }
+
+                    var incidentValue = incident.Contains(p.Incident) ? incident[p.Incident] : null;
+                    if (ValuesEqual(formValue, incidentValue))
+                    {
+                        continue;
+                    }
+
+                    update[p.Incident] = formValue;
+                    trace.Trace("Changed: " + p.Form + " -> " + p.Incident);
+                }
+
+                // 7. Update the incident. This is what triggers QueueItemHandler.
+                if (update.Attributes.Count == 0)
+                {
+                    trace.Trace("Incident already in line with the form - no update needed.");
+                    return;
+                }
+
+                service.Update(update);
+                trace.Trace("Incident " + caseRef.Id + " updated with " + update.Attributes.Count + " field(s).");
             }
             catch (FaultException<OrganizationServiceFault> ex)
             {
@@ -154,7 +199,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         }
 
         // Reads the Unsecure Configuration JSON from the active PostCreate Create step registered in XRM Toolbox.
-        // In other words - Reads the ServiceConfig on the current form record.
         private static ServiceRequestConfig LoadConfigFromPostCreateStep(IOrganizationService service, string tableName, ITracingService trace)
         {
             var query = new QueryExpression("sdkmessageprocessingstep")
@@ -202,8 +246,39 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return config;
         }
 
-        // Reads the table's metadata and returns every field on the form.
-        private static List<SummaryField> GetSummaryFields(IOrganizationService service, string tableName, string[] coreColumns, ITracingService trace)
+        // The incident table is always ss_incident, but this reads it from the case lookup's target
+        // so it stays correct if that ever changes.
+        private static string GetIncidentTableName(IOrganizationService service, string formTable, ServiceRequestConfig config, ITracingService trace)
+        {
+            var attribute = (RetrieveAttributeResponse)service.Execute(new RetrieveAttributeRequest
+            {
+                EntityLogicalName = formTable,
+                LogicalName = config.IncidentIdColumnLogicalName,
+                RetrieveAsIfPublished = false
+            });
+
+            var lookup = attribute.AttributeMetadata as LookupAttributeMetadata;
+            var table = lookup?.Targets?.FirstOrDefault() ?? "ss_incident";
+            trace.Trace("Service request table: " + table);
+            return table;
+        }
+
+        // The standardised fields, plus the contact (whose form column comes from the config).
+        private static List<FieldPair> BuildFieldPairs(ServiceRequestConfig config)
+        {
+            var pairs = StandardFields
+                .Select(f => new FieldPair { Form = f, Incident = f })
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(config.ContactColumnLogicalName))
+            {
+                pairs.Add(new FieldPair { Form = config.ContactColumnLogicalName, Incident = IncidentContactColumn });
+            }
+
+            return pairs;
+        }
+
+        private static Dictionary<string, AttributeMetadata> GetAttributes(IOrganizationService service, string tableName)
         {
             var response = (RetrieveEntityResponse)service.Execute(new RetrieveEntityRequest
             {
@@ -212,90 +287,52 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 RetrieveAsIfPublished = false
             });
 
-            var core = new HashSet<string>(coreColumns, StringComparer.OrdinalIgnoreCase);
-            var fields = new List<SummaryField>();
+            return response.EntityMetadata.Attributes.ToDictionary(a => a.LogicalName, a => a, StringComparer.OrdinalIgnoreCase);
+        }
 
-            foreach (var a in response.EntityMetadata.Attributes)
+        // Keeps only pairs that exist on both tables, can be updated on the incident, and have matching types.
+        private static List<FieldPair> FilterUsablePairs(
+            List<FieldPair> pairs,
+            Dictionary<string, AttributeMetadata> formMeta,
+            Dictionary<string, AttributeMetadata> incidentMeta,
+            ITracingService trace)
+        {
+            var usable = new List<FieldPair>();
+
+            foreach (var p in pairs)
             {
-                if (a.IsCustomAttribute != true) continue;                    // skips system columns (createdon, owner, status...)
-                if (a.IsValidForRead != true) continue;
-                if (!string.IsNullOrEmpty(a.AttributeOf)) continue;           // skips virtual "...name" companion columns
-                if (a.IsPrimaryId == true) continue;
-                if (core.Contains(a.LogicalName) || ExcludedColumns.Contains(a.LogicalName)) continue;
-
-                var type = a.AttributeType;
-                if (type == AttributeTypeCode.ManagedProperty ||
-                    type == AttributeTypeCode.Uniqueidentifier ||
-                    type == AttributeTypeCode.EntityName ||
-                    type == AttributeTypeCode.CalendarRules ||
-                    type == AttributeTypeCode.PartyList ||
-                    (type == AttributeTypeCode.Virtual && !(a is MultiSelectPicklistAttributeMetadata)))
+                if (!formMeta.TryGetValue(p.Form, out var formAttr) || formAttr.IsValidForRead != true)
                 {
+                    trace.Trace("Not copied: '" + p.Form + "' is not on the form table.");
                     continue;
                 }
 
-                var level = a.RequiredLevel?.Value;
-                fields.Add(new SummaryField
+                if (!incidentMeta.TryGetValue(p.Incident, out var incAttr) || incAttr.IsValidForUpdate != true)
                 {
-                    LogicalName = a.LogicalName,
-                    Label = a.DisplayName?.UserLocalizedLabel?.Label ?? a.LogicalName,
-                    IsMandatory = level == AttributeRequiredLevel.ApplicationRequired ||
-                                  level == AttributeRequiredLevel.SystemRequired
-                });
+                    trace.Trace("Not copied: '" + p.Incident + "' is not on the incident table or can't be updated.");
+                    continue;
+                }
+
+                if (!TypesCompatible(formAttr.AttributeType, incAttr.AttributeType))
+                {
+                    trace.Trace("Not copied: '" + p.Form + "' (" + formAttr.AttributeType + ") vs '" + p.Incident + "' (" + incAttr.AttributeType + ") types differ.");
+                    continue;
+                }
+
+                usable.Add(p);
             }
 
-            trace.Trace("Summary columns found on '" + tableName + "': " + fields.Count +
-                        " (mandatory: " + fields.Count(f => f.IsMandatory) + ")");
-            trace.Trace("Summary column names: " + string.Join(", ", fields.Select(f => f.LogicalName)));
-            return fields;
+            trace.Trace("Fields that will be synced: " + string.Join(", ", usable.Select(p => p.Form + (p.Form == p.Incident ? "" : "->" + p.Incident))));
+            return usable;
         }
 
-        // Create/Build the summary from the record.
-        private static string BuildSummary(Entity record, Entity serviceConfig, ServiceRequestConfig config, List<SummaryField> fields, ITracingService trace)
+        private static bool TypesCompatible(AttributeTypeCode? a, AttributeTypeCode? b)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("Form: " + config.TableName);
+            if (a == b) return true;
 
-            if (!string.IsNullOrWhiteSpace(config.ReferenceNumberColumnLogicalName))
-            {
-                sb.AppendLine("Reference: " + record.GetAttributeValue<string>(config.ReferenceNumberColumnLogicalName));
-            }
-
-            if (!string.IsNullOrWhiteSpace(config.ContactColumnLogicalName))
-            {
-                var contact = record.GetAttributeValue<EntityReference>(config.ContactColumnLogicalName);
-                sb.AppendLine("Contact: " + (contact?.Name ?? contact?.Id.ToString() ?? "Not provided"));
-            }
-
-            sb.AppendLine("Service: " + serviceConfig.GetAttributeValue<string>(ServiceConfiguration.Name));
-            sb.AppendLine("Subject: " + serviceConfig.GetAttributeValue<string>(ServiceConfiguration.Subject));
-
-            // Creates list of fields in trace logs. Mandatory fields are listed first, then non-mandatory fields, both alphabetically by label. Only fields with data are included in the summary.
-            var listed = fields
-                .Where(f => f.IsMandatory || HasData(record, f.LogicalName))
-                .OrderByDescending(f => f.IsMandatory)
-                .ThenBy(f => f.Label)
-                .ToList();
-
-            if (listed.Count > 0)
-            {
-                sb.AppendLine();
-                sb.AppendLine("Fields:");
-                foreach (var f in listed)
-                {
-                    if (HasData(record, f.LogicalName))
-                    {
-                        sb.AppendLine("- " + f.Label + ": " + FormatValue(record, f.LogicalName));
-                    }
-                    else
-                    {
-                        trace.Trace("Mandatory '" + f.LogicalName + "' has no data.");
-                        sb.AppendLine("- " + f.Label + ": [missing]");
-                    }
-                }
-            }
-
-            return sb.ToString().TrimEnd();
+            // Lookup-style columns can be copied between each other (target table is checked separately).
+            bool IsLookup(AttributeTypeCode? t) => t == AttributeTypeCode.Lookup || t == AttributeTypeCode.Customer;
+            return IsLookup(a) && IsLookup(b);
         }
 
         private static bool HasData(Entity record, string column)
@@ -305,27 +342,16 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return true;
         }
 
-        // Turns a column value into readable text.
-        private static string FormatValue(Entity record, string column)
+        private static bool ValuesEqual(object a, object b)
         {
-            var value = record[column];
+            if (a == null && b == null) return true;
+            if (a == null || b == null) return false;
 
-            if (value is EntityReference er)
-            {
-                return er.Name ?? er.Id.ToString();
-            }
+            if (a is EntityReference ra && b is EntityReference rb) return ra.Id == rb.Id;
+            if (a is OptionSetValue oa && b is OptionSetValue ob) return oa.Value == ob.Value;
+            if (a is Money ma && b is Money mb) return ma.Value == mb.Value;
 
-            if (record.FormattedValues.Contains(column))
-            {
-                return record.FormattedValues[column];
-            }
-
-            if (value is Money money)
-            {
-                return money.Value.ToString("0.00");
-            }
-
-            return value.ToString();
+            return a.Equals(b);
         }
     }
 }
