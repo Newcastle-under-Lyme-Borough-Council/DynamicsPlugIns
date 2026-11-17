@@ -33,6 +33,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         protected void Execute(LocalPluginContext localContext)
         {
 
+            localContext.TracingService.Trace("Executing QueueItemHandler");
+
             if (localContext == null)
             {
                 throw new ArgumentNullException(nameof(localContext));
@@ -401,8 +403,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid") != null)
                 {
                     tracingService.Trace("Child case table logical name value: " + incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").LogicalName);
-                    tracingService.Trace("Child case table logical name value: " + incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").Id);
-                    entityToCreate[QueueItem.Object] = new EntityReference(incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").LogicalName, incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").Id); ;
+                    tracingService.Trace("Child case table Guid value: " + incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").Id);
+                    //entityToCreate[QueueItem.Object] = new EntityReference(incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").LogicalName, incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").Id);
+                    entityToCreate[QueueItem.Object] = new EntityReference(Case.TableName, recordId);
                 }
 
 
@@ -467,7 +470,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 //entityToCreate[QueueItem.CaseStatus] = new EntityReference("nulbc_statuscase", incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_statuscase"));
 
-                //entityToCreate[QueueItem.Object] = new EntityReference(Case.TableName, recordId);
 
 
                 entityToCreate[QueueItem.Owner] = new EntityReference("systemuser", unassignedUser.Id);
@@ -491,6 +493,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 //{
                 //    entityToCreate[QueueItem.DateCompleted] = dateCompleted.Value;
                 //}
+
+                tracingService.Trace(entityToCreate.ToString());
 
                 service.Create(entityToCreate);
 
