@@ -402,10 +402,14 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 if (incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid") != null)
                 {
-                    tracingService.Trace("Child case table logical name value: " + incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").LogicalName);
-                    tracingService.Trace("Child case table Guid value: " + incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").Id);
-                    //entityToCreate[QueueItem.Object] = new EntityReference(incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").LogicalName, incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").Id);
-                    entityToCreate[QueueItem.Object] = new EntityReference(Case.TableName, recordId);
+
+                    string tableName = incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").LogicalName;
+                    Guid childCaseId = incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").Id;
+
+                    tracingService.Trace(tableName);
+                    tracingService.Trace(""+childCaseId);
+                    entityToCreate[QueueItem.Object] = new EntityReference(tableName, childCaseId);
+                    //entityToCreate[QueueItem.Object] = new EntityReference(Case.TableName, recordId);
                 }
 
 
