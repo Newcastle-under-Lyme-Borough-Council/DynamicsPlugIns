@@ -12,21 +12,19 @@ using System.Text.Json;
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
     // Copies the standardised fields from a form record to its linked service request (ss_incident) record.
-    // The incident update is what triggers QueueItemHandler, which then creates/updates the queue item.
-    //
+    // The incident update is what triggers QueueItemHandler, which should create the queue item?
+ 
     // The table/column settings are read from the PostCreate step registered for the same table.
-    // Register an Update step (Post-operation, Synchronous, empty unsecure config) on each form table.
+    // Register an Update step on each form table.
     public class ServiceRequestHandler : PluginBase
     {
         private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
 
         // Column on the incident that holds the contact. The form's contact column comes from the config
-        // (ContactColumnLogicalName), so it is mapped explicitly below.
+        // ContactColumnLogicalName, so it is mapped explicitly below.
         private const string IncidentContactColumn = "ss_customerid";
 
-        // STANDARDISED FIELDS copied form -> incident. Same logical name on the form table and on the incident.
-        // Only fields that exist on both tables, are updatable and have matching types are copied.
-        // Add / remove names here to change what is synced.
+        // Standardised fields that are copied from the form to the incident.
         private static readonly string[] StandardFields =
         {
             "nulbc_firstname",
@@ -43,7 +41,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_internalnotificationemail",
             "nulbc_internalnotificationurl",
             "ss_subjectid",
-            // Managed by staff / system on the incident - leave out unless the form should drive them:
+            // Leave out these values unless we need?
             // "nulbc_status", "nulbc_casestatus", "nulbc_customerstatus", "nulbc_datecompleted",
             // "nulbc_queue", "nulbc_queueitem", "nulbc_casereference", "ss_casenumber", "nulbc_synceddate",
         };
@@ -53,7 +51,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             PropertyNameCaseInsensitive = true
         };
 
-        // A form column -> incident column pair.
+        // Form column & incident column pairs.
         private class FieldPair
         {
             public string Form { get; set; }
@@ -91,7 +89,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             trace.Trace("ServiceRequestHandler triggered. Table: " + context.PrimaryEntityName + ", Message: " + context.MessageName + ", Depth: " + context.Depth);
 
-            // Depth 1 = a user edit, depth 2 = PostCreate linking the new case. Both should run.
+            // Depth 1 = User edits record, depth 2 = PostCreate linking the new case. Both should run after User edits.
             if (context.Depth > 2)
             {
                 return;
@@ -105,17 +103,17 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // 1. Get the table/column settings from the PostCreate step for this table.
+                // Get the table/column settings from the PostCreate step for this table.
                 var config = LoadConfigFromPostCreateStep(service, target.LogicalName, trace);
 
-                // 2. Work out which standardised fields can be copied (exist on both tables, updatable, same type).
+                // Work out which standardised fields can be copied.
                 var pairs = BuildFieldPairs(config);
                 var formMeta = GetAttributes(service, target.LogicalName);
                 var incidentTable = GetIncidentTableName(service, target.LogicalName, config, trace);
                 var incidentMeta = GetAttributes(service, incidentTable);
                 var usable = FilterUsablePairs(pairs, formMeta, incidentMeta, trace);
 
-                // 3. Read the form record.
+                // Read the form record.
                 var formColumns = new[] { config.ServiceConfigurationColumnLogicalName, config.IncidentIdColumnLogicalName }
                     .Concat(usable.Select(p => p.Form))
                     .Where(c => !string.IsNullOrWhiteSpace(c))
@@ -124,7 +122,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 var record = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(formColumns));
 
-                // 4. Only continue when the Service Config lookup has been filled in.
+                // Only continue when the Service Config lookup has been filled in.
                 var serviceConfigRef = record.GetAttributeValue<EntityReference>(config.ServiceConfigurationColumnLogicalName);
                 if (serviceConfigRef == null || serviceConfigRef.Id == Guid.Empty)
                 {
@@ -132,7 +130,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // 5. Need the linked service request (incident) record.
+                // Need the linked service request (incident) record.
                 var caseRef = record.GetAttributeValue<EntityReference>(config.IncidentIdColumnLogicalName);
                 if (caseRef == null || caseRef.Id == Guid.Empty)
                 {
@@ -143,13 +141,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 var incident = service.Retrieve(caseRef.LogicalName, caseRef.Id,
                     new ColumnSet(usable.Select(p => p.Incident).Distinct().ToArray()));
 
-                // 6. Build an update containing only the standardised fields that have data and differ.
+                // Build an update containing only the standardised fields that have data and differ.
                 var update = new Entity(caseRef.LogicalName, caseRef.Id);
                 foreach (var p in usable)
                 {
                     if (!HasData(record, p.Form))
                     {
-                        continue;   // never blank out an incident field
+                        continue;   // Never blank out an incident field
                     }
 
                     var formValue = record[p.Form];
@@ -174,7 +172,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     trace.Trace("Changed: " + p.Form + " -> " + p.Incident);
                 }
 
-                // 7. Update the incident. This is what triggers QueueItemHandler.
+                // Update the incident. Should trigger QueueItemHandler?
                 if (update.Attributes.Count == 0)
                 {
                     trace.Trace("Incident already in line with the form - no update needed.");
@@ -246,8 +244,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return config;
         }
 
-        // The incident table is always ss_incident, but this reads it from the case lookup's target
-        // so it stays correct if that ever changes.
+        // The incident table is ss_incident; reads from the case lookup's target - so it stays correct if that ever changes.
         private static string GetIncidentTableName(IOrganizationService service, string formTable, ServiceRequestConfig config, ITracingService trace)
         {
             var attribute = (RetrieveAttributeResponse)service.Execute(new RetrieveAttributeRequest
@@ -342,6 +339,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return true;
         }
 
+        // Ensure values are correct
         private static bool ValuesEqual(object a, object b)
         {
             if (a == null && b == null) return true;
@@ -353,5 +351,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             return a.Equals(b);
         }
+
+        trace.Trace("Exited plugin");
     }
 }
