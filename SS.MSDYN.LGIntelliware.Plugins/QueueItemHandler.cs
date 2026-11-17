@@ -171,8 +171,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                         var newQueueItem = CreateQueueItem(service, tracingService, recordId, unassignedUser, queueId, incidentAttributes);
 
-                        //var newQueueItem = DataverseHelper.RetrieveQueueItem(service, recordId);
-
                         if (newQueueItem == null)
                         {
                             throw new InvalidPluginExecutionException("No new queue item reference");
@@ -190,72 +188,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         service.Update(EntityToUpdate);
 
                         tracingService.Trace("Case summary record updated with queue item reference: " + newQueueItem);
-
-
-                        ////find the child entity table name and primary key column from service configuration table
-                        //QueryExpression serviceConfigQuery = new QueryExpression("ss_serviceconfiguration")
-                        //{
-                        //    ColumnSet = new ColumnSet("ss_servicelogicalname", "ss_serviceprimarykeycolumnname")
-
-                        //};
-
-                        //serviceConfigQuery.Criteria.AddCondition("ss_serviceconfigurationid", ConditionOperator.Equal, incidentAttributes.GetAttributeValue<EntityReference>("ss_serviceconfigurationid").Id);
-
-                        //var result = service.RetrieveMultiple(serviceConfigQuery);
-
-                        //var serviceConfig = result.Entities.Count() > 0 ? result.Entities[0] : null;
-
-                        //tracingService.Trace("Service configuration record retrieved: " + (serviceConfig != null ? "Yes" : "No"));
-
-                        //if (serviceConfig == null)
-                        //{
-                        //    throw new InvalidPluginExecutionException("Service configuration record not found for the given service configuration id.");
-                        //}
-
-                        //var serviceLogicalName = serviceConfig.GetAttributeValue<string>("ss_servicelogicalname");
-                        //var primaryColumnName = serviceConfig.GetAttributeValue<string>("ss_serviceprimarykeycolumnname");
-
-                        //if (string.IsNullOrWhiteSpace(serviceLogicalName))
-                        //{
-                        //    throw new InvalidPluginExecutionException(
-                        //        "Service logical name is empty in Service Configuration.");
-                        //}
-
-                        //if (string.IsNullOrWhiteSpace(primaryColumnName))
-                        //{
-                        //    throw new InvalidPluginExecutionException(
-                        //        "Primary column name is empty in Service Configuration.");
-                        //}
-
-                        //tracingService.Trace(serviceLogicalName + " - " + primaryColumnName);
-                        //tracingService.Trace("Got to here");
-
-
-                        //QueryExpression childEntityQuery = new QueryExpression(serviceLogicalName)
-                        //{
-                        //    ColumnSet = new ColumnSet(true)
-                        //};
-
-                        //childEntityQuery.Criteria.AddCondition(primaryColumnName, ConditionOperator.Equal, incidentAttributes.GetAttributeValue<string>("nulbc_casenumber"));
-
-                        //var childEntityResult = service.RetrieveMultiple(childEntityQuery);
-
-                        //Entity childEntity = childEntityResult.Entities.Count() > 0 ? childEntityResult.Entities[0] : null;
-
-                        //if (childEntity == null)
-                        //{
-                        //    throw new InvalidPluginExecutionException("Child entity record not found");
-                        //}
-
-                        //var ChildEntityToUpdate = new Entity(serviceLogicalName)
-                        //{
-                        //    Id = childEntity.Id
-                        //};
-
-
-                        EntityToUpdate["nulbc_queueitem"] = new EntityReference(QueueItem.TableName, newQueueItem);
-
-                        service.Update(EntityToUpdate);
 
                     }
                 }
@@ -366,8 +298,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 //For testing purposes, hardcoding the queue id to the 'Unassigned' queue
                 queueItemToUpdate[QueueItem.Queue] = new EntityReference("queue", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue").Id);
 
-
-  
                 //queueItemToUpdate[QueueItem.CaseStatus] = new EntityReference("nulbc_statuscase", incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_statuscase"));
 
 
