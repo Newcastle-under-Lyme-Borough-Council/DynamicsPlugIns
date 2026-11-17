@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using SS.MSDYN.LGIntelliware.Plugins.Common;
 using System;
@@ -11,37 +12,38 @@ using System.Text.Json;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
-    /// <summary>
-    /// Case summary plugin. Register Create + Update steps (Post-operation, Synchronous) on each form
-    /// table with an EMPTY unsecure configuration. The plugin reads the table / column settings from
-    /// the existing PostCreate step registered for the same table.
-    ///
-    /// Create step: Execution Order 2 (after PostCreate has created and linked the case).
-    /// Update step: set Filtering Attributes to the columns that should trigger a refresh.
-    /// Run in User's Context: use an account that can read plug-in step records (e.g. a system admin
-    /// / service account), as the plugin queries the step configuration.
-    /// </summary>
+
+    // The table/column settings are read from the PostCreate step registered for the same table.
+    // The summary is built from every custom column on the form table that has data, marking which
+    // are mandatory; mandatory columns with no data are flagged as missing.
     public class ServiceRequestHandler : PluginBase
     {
         private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
         // Key used to hand the summary to the queue plugin (same transaction only).
         public const string SummarySharedVariable = "CaseSummary";
 
-        /// <summary>
-        /// ADD NEW SUMMARY FIELDS HERE.
-        /// Key = label shown in the summary, Value = column logical name (the same on every form table).
-        /// A field is skipped if the table doesn't have the column or the value is empty/null.
-        /// </summary>
-        private static readonly KeyValuePair<string, string>[] AdditionalFields =
+        // Columns to leave out of the summary
+        // The config columns (service config, case, reference, contact) aren't included here.
+        private static readonly HashSet<string> ExcludedColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            new KeyValuePair<string, string>("Council Tax reference", "nulbc_counciltaxreference"),
-            // new KeyValuePair<string, string>("Label shown in summary", "logical_name"),
+            "nulbc_internalnotification",
+            "nulbc_statusfilter",
+            "nulbc_datasource",
+            "nulbc_selectedaddress",
         };
 
         private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         };
+
+        // A form column that can appear in the summary.
+        private class SummaryField
+        {
+            public string LogicalName { get; set; }
+            public string Label { get; set; }
+            public bool IsMandatory { get; set; }
+        }
 
         public ServiceRequestHandler(string unsecureConfiguration)
             : base(typeof(ServiceRequestHandler), unsecureConfiguration)
@@ -56,9 +58,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
         public void RegisterEvents()
         {
-            // Plugin triggers
-            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
-                PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.CREATE, string.Empty, Execute));
+            // Update trigger only. Will run if a user creates a new record, or if a user edits an exisitng record.
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
                 PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, string.Empty, Execute));
         }
@@ -74,9 +74,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             var service = localContext.OrganizationService;
             var trace = localContext.TracingService;
 
-            trace.Trace("ServiceRequestHandler start. Table: " + context.PrimaryEntityName + ", Message: " + context.MessageName + ", Depth: " + context.Depth);
+            trace.Trace("ServiceRequestHandler triggered. Table: " + context.PrimaryEntityName + ", Message: " + context.MessageName + ", Depth: " + context.Depth);
 
-            if (context.Depth > 2 || (context.MessageName == PluginExecutionMessageName.UPDATE && context.Depth > 1))
+            // Depth 1 = a user edit, depth 2 = PostCreate linking the new case. Both should run.
+            if (context.Depth > 2)
             {
                 return;
             }
@@ -93,7 +94,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 var config = LoadConfigFromPostCreateStep(service, target.LogicalName, trace);
 
                 // Columns that are always needed.
-                var columns = new List<string>(Array.FindAll(
+                var coreColumns = Array.FindAll(
                     new[]
                     {
                         config.ServiceConfigurationColumnLogicalName,
@@ -101,24 +102,14 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         config.ReferenceNumberColumnLogicalName,
                         config.ContactColumnLogicalName
                     },
-                    c => !string.IsNullOrWhiteSpace(c)));
+                    c => !string.IsNullOrWhiteSpace(c));
 
-                // Add the additional summary fields, but only those that exist on this table.
-                var tableColumns = GetTableColumns(service, target.LogicalName);
-                foreach (var field in AdditionalFields)
-                {
-                    if (tableColumns.Contains(field.Value))
-                    {
-                        columns.Add(field.Value);
-                    }
-                    else
-                    {
-                        trace.Trace("Column '" + field.Value + "' not on '" + target.LogicalName + "' - skipped.");
-                    }
-                }
+                // Work out every mandatory / non-mandatory column on this form table.
+                var fields = GetSummaryFields(service, target.LogicalName, coreColumns, trace);
 
-                var record = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(columns.Distinct().ToArray()));
-                trace.Trace("Fetched columns: " + string.Join(", ", columns));
+                var columns = coreColumns.Concat(fields.Select(f => f.LogicalName)).Distinct().ToArray();
+                var record = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(columns));
+                trace.Trace("Fetched " + columns.Length + " columns.");
 
                 // Only continue when the Service Config lookup has been filled in.
                 var serviceConfigRef = record.GetAttributeValue<EntityReference>(config.ServiceConfigurationColumnLogicalName);
@@ -139,7 +130,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 var serviceConfig = service.Retrieve(serviceConfigRef.LogicalName, serviceConfigRef.Id,
                     new ColumnSet(ServiceConfiguration.Name, ServiceConfiguration.Subject));
 
-                var summary = BuildSummary(record, serviceConfig, config, trace);
+                var summary = BuildSummary(record, serviceConfig, config, fields, trace);
                 trace.Trace("Summary: " + summary);
 
                 // Output for the queue plugin
@@ -162,10 +153,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        /// <summary>
-        /// Reads the Unsecure Configuration JSON from the active PostCreate Create step
-        /// registered on the given table.
-        /// </summary>
+        // Reads the Unsecure Configuration JSON from the active PostCreate Create step registered in XRM Toolbox.
+        // In other words - Reads the ServiceConfig on the current form record.
         private static ServiceRequestConfig LoadConfigFromPostCreateStep(IOrganizationService service, string tableName, ITracingService trace)
         {
             var query = new QueryExpression("sdkmessageprocessingstep")
@@ -213,23 +202,56 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return config;
         }
 
-        /// <summary>Gets the logical names of all columns on a table, so missing columns can be skipped safely.</summary>
-        private static HashSet<string> GetTableColumns(IOrganizationService service, string tableName)
+        // Reads the table's metadata and returns every field on the form.
+        private static List<SummaryField> GetSummaryFields(IOrganizationService service, string tableName, string[] coreColumns, ITracingService trace)
         {
             var response = (RetrieveEntityResponse)service.Execute(new RetrieveEntityRequest
             {
                 LogicalName = tableName,
-                EntityFilters = Microsoft.Xrm.Sdk.Metadata.EntityFilters.Attributes,
+                EntityFilters = EntityFilters.Attributes,
                 RetrieveAsIfPublished = false
             });
 
-            return new HashSet<string>(
-                response.EntityMetadata.Attributes.Select(a => a.LogicalName),
-                StringComparer.OrdinalIgnoreCase);
+            var core = new HashSet<string>(coreColumns, StringComparer.OrdinalIgnoreCase);
+            var fields = new List<SummaryField>();
+
+            foreach (var a in response.EntityMetadata.Attributes)
+            {
+                if (a.IsCustomAttribute != true) continue;                    // skips system columns (createdon, owner, status...)
+                if (a.IsValidForRead != true) continue;
+                if (!string.IsNullOrEmpty(a.AttributeOf)) continue;           // skips virtual "...name" companion columns
+                if (a.IsPrimaryId == true) continue;
+                if (core.Contains(a.LogicalName) || ExcludedColumns.Contains(a.LogicalName)) continue;
+
+                var type = a.AttributeType;
+                if (type == AttributeTypeCode.ManagedProperty ||
+                    type == AttributeTypeCode.Uniqueidentifier ||
+                    type == AttributeTypeCode.EntityName ||
+                    type == AttributeTypeCode.CalendarRules ||
+                    type == AttributeTypeCode.PartyList ||
+                    (type == AttributeTypeCode.Virtual && !(a is MultiSelectPicklistAttributeMetadata)))
+                {
+                    continue;
+                }
+
+                var level = a.RequiredLevel?.Value;
+                fields.Add(new SummaryField
+                {
+                    LogicalName = a.LogicalName,
+                    Label = a.DisplayName?.UserLocalizedLabel?.Label ?? a.LogicalName,
+                    IsMandatory = level == AttributeRequiredLevel.ApplicationRequired ||
+                                  level == AttributeRequiredLevel.SystemRequired
+                });
+            }
+
+            trace.Trace("Summary columns found on '" + tableName + "': " + fields.Count +
+                        " (mandatory: " + fields.Count(f => f.IsMandatory) + ")");
+            trace.Trace("Summary column names: " + string.Join(", ", fields.Select(f => f.LogicalName)));
+            return fields;
         }
 
         // Create/Build the summary from the record.
-        private static string BuildSummary(Entity record, Entity serviceConfig, ServiceRequestConfig config, ITracingService trace)
+        private static string BuildSummary(Entity record, Entity serviceConfig, ServiceRequestConfig config, List<SummaryField> fields, ITracingService trace)
         {
             var sb = new StringBuilder();
             sb.AppendLine("Form: " + config.TableName);
@@ -248,29 +270,42 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             sb.AppendLine("Service: " + serviceConfig.GetAttributeValue<string>(ServiceConfiguration.Name));
             sb.AppendLine("Subject: " + serviceConfig.GetAttributeValue<string>(ServiceConfiguration.Subject));
 
-            // Additional fields - only included when the column was fetched and has a value.
-            foreach (var field in AdditionalFields)
+            // Creates list of fields in trace logs. Mandatory fields are listed first, then non-mandatory fields, both alphabetically by label. Only fields with data are included in the summary.
+            var listed = fields
+                .Where(f => f.IsMandatory || HasData(record, f.LogicalName))
+                .OrderByDescending(f => f.IsMandatory)
+                .ThenBy(f => f.Label)
+                .ToList();
+
+            if (listed.Count > 0)
             {
-                if (!record.Contains(field.Value) || record[field.Value] == null)
+                sb.AppendLine();
+                sb.AppendLine("Fields:");
+                foreach (var f in listed)
                 {
-                    trace.Trace("'" + field.Value + "' is null/not present - not added to summary.");
-                    continue;
+                    if (HasData(record, f.LogicalName))
+                    {
+                        sb.AppendLine("- " + f.Label + ": " + FormatValue(record, f.LogicalName));
+                    }
+                    else
+                    {
+                        trace.Trace("Mandatory '" + f.LogicalName + "' has no data.");
+                        sb.AppendLine("- " + f.Label + ": [missing]");
+                    }
                 }
-
-                var text = FormatValue(record, field.Value);
-                if (string.IsNullOrWhiteSpace(text))
-                {
-                    trace.Trace("'" + field.Value + "' is empty - not added to summary.");
-                    continue;
-                }
-
-                sb.AppendLine(field.Key + ": " + text);
             }
 
             return sb.ToString().TrimEnd();
         }
 
-        /// <summary>Turns a column value into readable text (lookup names, option set labels, money, dates...).</summary>
+        private static bool HasData(Entity record, string column)
+        {
+            if (!record.Contains(column) || record[column] == null) return false;
+            if (record[column] is string s && string.IsNullOrWhiteSpace(s)) return false;
+            return true;
+        }
+
+        // Turns a column value into readable text.
         private static string FormatValue(Entity record, string column)
         {
             var value = record[column];
