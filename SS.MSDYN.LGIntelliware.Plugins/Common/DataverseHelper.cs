@@ -658,7 +658,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         }
 
 
-        //Retrieve a contact record
+        //Retrieve the unassigned user entity 
         public static Entity RetrieveUnassignedUser(this IOrganizationService service)
         {
             try
@@ -683,7 +683,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        //Retrieve a contact record
+        //Retrieve the queue item entity using the case summary record GUID
         public static Entity RetrieveQueueItem(this IOrganizationService service, Guid recordId)
         {
             try
