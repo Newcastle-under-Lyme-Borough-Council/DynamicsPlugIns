@@ -19,15 +19,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     {
         protected PluginConfig Config = new PluginConfig();
 
-        public QueueItemHandler(string unsecureConfiguration)
-          : base(typeof(QueueItemHandler), unsecureConfiguration)
-        {
-            if (!string.IsNullOrWhiteSpace(unsecureConfiguration))
-            {
-                Config = JsonSerializer.Deserialize<PluginConfig>(unsecureConfiguration);
-            }
-            RegisterEvents();
-        }
         //Registers the plugin to run after a entity record is created or updated.
         public QueueItemHandler() : base(typeof(QueueItemHandler))
         {
@@ -295,7 +286,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         private static void UpdateQueueItem(IOrganizationService service, ITracingService tracingService, Entity entity, Guid queueItemId, Entity incidentAttributes)
         {
 
-            DateTime? dateSubmitted = incidentAttributes.GetAttributeValue<DateTime?>("nulbc_datesubmitted").HasValue ? incidentAttributes.GetAttributeValue<DateTime?>("nulbc_datesubmitted") : null;
             DateTime? dateCompleted = incidentAttributes.GetAttributeValue<DateTime?>("nulbc_datecompleted").HasValue ? incidentAttributes.GetAttributeValue<DateTime?>("nulbc_datecompleted") : null;
 
             try
@@ -321,7 +311,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 queueItemToUpdate[QueueItem.Address] = incidentAttributes.GetAttributeValue<string>("nulbc_address");
 
 
-                queueItemToUpdate[QueueItem.StatusFilter] = new OptionSetValue(StatusFilter.RequiresAction.GetHashCode());
+                queueItemToUpdate[QueueItem.StatusFilter] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_status").Value);
 
 
                 queueItemToUpdate[QueueItem.FirstName] = incidentAttributes.GetAttributeValue<string>("nulbc_firstname");
@@ -350,8 +340,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 if (incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus") != null)
                 {
-                    queueItemToUpdate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value);
-
+                    queueItemToUpdate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value.GetHashCode());
                 }
 
                 if (incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource") != null)
