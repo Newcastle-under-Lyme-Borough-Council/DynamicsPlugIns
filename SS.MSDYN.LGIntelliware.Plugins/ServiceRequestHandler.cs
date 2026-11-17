@@ -13,7 +13,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 {
     // Copies the standardised fields from a form record to its linked service request (ss_incident) record.
     // The incident update is what triggers QueueItemHandler, which should create the queue item?
- 
+
     // The table/column settings are read from the PostCreate step registered for the same table.
     // Register an Update step on each form table.
     public class ServiceRequestHandler : PluginBase
@@ -92,6 +92,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             // Depth 1 = User edits record, depth 2 = PostCreate linking the new case. Both should run after User edits.
             if (context.Depth > 2)
             {
+                trace.Trace("Exited plugin");
                 return;
             }
 
@@ -100,6 +101,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (!context.InputParameters.Contains(ContextInputParameters.TARGET) ||
                     !(context.InputParameters[ContextInputParameters.TARGET] is Entity target))
                 {
+                    trace.Trace("Exited plugin");
                     return;
                 }
 
@@ -127,6 +129,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (serviceConfigRef == null || serviceConfigRef.Id == Guid.Empty)
                 {
                     trace.Trace("Service Config not pre-filled.");
+                    trace.Trace("Exited plugin");
                     return;
                 }
 
@@ -135,6 +138,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (caseRef == null || caseRef.Id == Guid.Empty)
                 {
                     trace.Trace("No service request (case) has been linked yet.");
+                    trace.Trace("Exited plugin");
                     return;
                 }
 
@@ -176,11 +180,14 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (update.Attributes.Count == 0)
                 {
                     trace.Trace("Incident already in line with the form - no update needed.");
+                    trace.Trace("Exited plugin");
                     return;
                 }
 
                 service.Update(update);
                 trace.Trace("Incident " + caseRef.Id + " updated with " + update.Attributes.Count + " field(s).");
+
+                trace.Trace("Exited plugin");
             }
             catch (FaultException<OrganizationServiceFault> ex)
             {
@@ -351,7 +358,5 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             return a.Equals(b);
         }
-
-        trace.Trace("Exited plugin");
     }
 }
