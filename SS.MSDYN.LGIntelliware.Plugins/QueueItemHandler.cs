@@ -42,7 +42,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             var tracingService = localContext.TracingService;
 
             // Prevent infinite loops by limiting depth
-            if (context.Depth > 2)
+            if (context.Depth > 3)
             {
                 return;
             }
