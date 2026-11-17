@@ -288,6 +288,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             DateTime? dateCompleted = incidentAttributes.GetAttributeValue<DateTime?>("nulbc_datecompleted").HasValue ? incidentAttributes.GetAttributeValue<DateTime?>("nulbc_datecompleted") : null;
 
+            tracingService.Trace("executing UpdateQueueItem method");
             try
             {
                 var queueItemToUpdate = new Entity(QueueItem.TableName)
@@ -397,6 +398,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 }
 
+                if (incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid") != null)
+                {
+                    tracingService.Trace("service request id value: " + incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid"));
+                    entityToCreate[QueueItem.Object] = incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid");
+                }
+
 
                 entityToCreate[QueueItem.Address] = incidentAttributes.GetAttributeValue<string>("nulbc_address");
 
@@ -459,7 +466,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 //entityToCreate[QueueItem.CaseStatus] = new EntityReference("nulbc_statuscase", incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_statuscase"));
 
-                entityToCreate[QueueItem.Object] = new EntityReference(Case.TableName, recordId);
+                //entityToCreate[QueueItem.Object] = new EntityReference(Case.TableName, recordId);
 
 
                 entityToCreate[QueueItem.Owner] = new EntityReference("systemuser", unassignedUser.Id);
@@ -523,7 +530,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     "nulbc_queue",
                     "nulbc_datesubmitted",
                     "nulbc_queueitem",
-                    "nulbc_datecompleted"
+                    "nulbc_datecompleted",
+                    "ss_servicerequestid"
                 )
             );
         }
