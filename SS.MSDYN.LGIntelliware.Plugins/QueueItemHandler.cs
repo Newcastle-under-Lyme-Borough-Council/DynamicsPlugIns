@@ -400,8 +400,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 if (incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid") != null)
                 {
-                    tracingService.Trace("service request id value: " + incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid"));
-                    entityToCreate[QueueItem.Object] = incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid");
+                    tracingService.Trace("Child case table logical name value: " + incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").LogicalName);
+                    tracingService.Trace("Child case table logical name value: " + incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").Id);
+                    entityToCreate[QueueItem.Object] = new EntityReference(incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").LogicalName, incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").Id); ;
                 }
 
 
