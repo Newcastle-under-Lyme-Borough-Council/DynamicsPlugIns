@@ -46,21 +46,23 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_internalnotificationemail",
             "nulbc_internalnotificationurl",
             "ss_subjectid",
+            "nulbc_customersearch",
             // Leave out these values unless we need?
             // "nulbc_status", "nulbc_datecompleted",
             // "nulbc_queue", "nulbc_queueitem", "nulbc_casereference", "ss_casenumber", "nulbc_synceddate",
         };
 
-        // Standardised fields with DIFFERENT logical names: Key = form column, Value = incident column.
-        // Add a row here for any field that is named differently on the two tables.
-        // Choice columns need the same option values on both; lookups need to point at the same table.
         private static readonly KeyValuePair<string, string>[] MappedFields =
         {
-            // Customer status (choice, shared option set)
+            // Customer status
             new KeyValuePair<string, string>("nulbc_customercasestatus", "nulbc_customerstatus"),
 
-            // Status case (lookup to the status case table, e.g. Draft / Requires Action)
-            new KeyValuePair<string, string>("nulbc_statuscase", "nulbc_casestatus"),
+            // Status case
+            new KeyValuePair<string, string>("nulbc_statuscase", "nulbc_statuscase"),
+
+            new KeyValuePair<string, string>("nulbc_customersearch", "nulbc_contact"),
+
+            new KeyValuePair<string, string>("nulbc_uprn", "nulbc_property"),
         };
 
         private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
@@ -208,7 +210,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     caseRef = new EntityReference(Case.TableName, incidentId);
                 }
 
-                // Existing update code: bring the incident in line with the form.
+                // Bring the incident in line with the form.
                 var incidentColumns = usable.Select(p => p.Incident).ToList();
                 if (incidentMeta.ContainsKey(IncidentServiceRequestColumn))
                 {
