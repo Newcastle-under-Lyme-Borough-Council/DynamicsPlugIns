@@ -47,7 +47,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_internalnotificationurl",
             "ss_subjectid",
             "nulbc_customerstatus",
-            "nulbc_casestatus",
+            "nulbc_statuscase",
             // Leave out these values unless we need?
             // "nulbc_status", "nulbc_datecompleted",
             // "nulbc_queue", "nulbc_queueitem", "nulbc_casereference", "ss_casenumber", "nulbc_synceddate",
@@ -218,10 +218,16 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     }
 
                     var formValue = record[p.Form];
+                    trace.Trace(
+                        $"Field={p.Form}, Type={formValue?.GetType().Name}, Value={formValue}");
 
                     // A lookup must point at a table the incident column accepts.
-                    if (formValue is EntityReference er &&
-                        incidentMeta[p.Incident] is LookupAttributeMetadata lookup &&
+                    if (formValue is EntityReference er)
+                    {
+                        trace.Trace(
+                            $"Lookup: Id={er.Id}, Name={er.Name}, LogicalName={er.LogicalName}");
+                    }
+                    incidentMeta[p.Incident] is LookupAttributeMetadata lookup &&
                         lookup.Targets != null && lookup.Targets.Length > 0 &&
                         !lookup.Targets.Contains(er.LogicalName))
                     {
