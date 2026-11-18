@@ -316,7 +316,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_property") != null)
                 {
                     tracingService.Trace("Testing property");
-                    queueItemToUpdate[QueueItem.Property] = new EntityReference("property", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_property").Id);
+                    queueItemToUpdate[QueueItem.Property] = new EntityReference("ss_property", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_property").Id);
                 }
 
                 tracingService.Trace("Testing datecompleted");
