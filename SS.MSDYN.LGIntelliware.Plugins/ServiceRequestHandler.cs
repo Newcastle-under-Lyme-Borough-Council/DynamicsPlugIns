@@ -29,7 +29,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         // Lookup on the incident that points back at the form record. QueueItemHandler uses it as the queue item's Object, so it must be set before the queue item is created.
         private const string IncidentServiceRequestColumn = "ss_servicerequestid";
 
-        // Standardised fields that are copied from the form to the incident.
+        // Standardised fields with the SAME logical name on the form table and the incident.
         private static readonly string[] StandardFields =
         {
             "nulbc_firstname",
@@ -46,11 +46,23 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_internalnotificationemail",
             "nulbc_internalnotificationurl",
             "ss_subjectid",
-            "nulbc_customerstatus",
-            "nulbc_statuscase",
+            "nulbc_customersearch",
             // Leave out these values unless we need?
             // "nulbc_status", "nulbc_datecompleted",
             // "nulbc_queue", "nulbc_queueitem", "nulbc_casereference", "ss_casenumber", "nulbc_synceddate",
+        };
+
+        private static readonly KeyValuePair<string, string>[] MappedFields =
+        {
+            // Customer status
+            new KeyValuePair<string, string>("nulbc_customercasestatus", "nulbc_customerstatus"),
+
+            // Status case
+            new KeyValuePair<string, string>("nulbc_statuscase", "nulbc_statuscase"),
+
+            new KeyValuePair<string, string>("nulbc_customersearch", "nulbc_contact"),
+
+            new KeyValuePair<string, string>("nulbc_uprn", "nulbc_property"),
         };
 
         private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
@@ -198,7 +210,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     caseRef = new EntityReference(Case.TableName, incidentId);
                 }
 
-                // Existing update code: bring the incident in line with the form.
+                // Bring the incident in line with the form.
                 var incidentColumns = usable.Select(p => p.Incident).ToList();
                 if (incidentMeta.ContainsKey(IncidentServiceRequestColumn))
                 {
@@ -395,12 +407,15 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return table;
         }
 
-        // The standardised fields are copied from the form to the incident.
+        // The standardised fields are copied from the form to the incident: same-name fields, mapped fields, and the contact.
         private static List<FieldPair> BuildFieldPairs(ServiceRequestConfig config)
         {
             var pairs = StandardFields
                 .Select(f => new FieldPair { Form = f, Incident = f })
                 .ToList();
+
+            // Fields named differently on the form and the incident.
+            pairs.AddRange(MappedFields.Select(m => new FieldPair { Form = m.Key, Incident = m.Value }));
 
             if (!string.IsNullOrWhiteSpace(config.ContactColumnLogicalName))
             {
@@ -435,26 +450,26 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             {
                 if (!formMeta.TryGetValue(p.Form, out var formAttr) || formAttr.IsValidForRead != true)
                 {
-                    trace.Trace("Not copied: '" + p.Form + "' is not on the form table.");
+                    trace.Trace("Not synced: '" + p.Form + "' is not on the form table.");
                     continue;
                 }
 
                 if (!incidentMeta.TryGetValue(p.Incident, out var incAttr) || incAttr.IsValidForUpdate != true)
                 {
-                    trace.Trace("Not copied: '" + p.Incident + "' is not on the incident table or can't be updated.");
+                    trace.Trace("Not synced: '" + p.Incident + "' is not on the incident table or can't be updated.");
                     continue;
                 }
 
                 if (!TypesCompatible(formAttr.AttributeType, incAttr.AttributeType))
                 {
-                    trace.Trace("Not copied: '" + p.Form + "' (" + formAttr.AttributeType + ") vs '" + p.Incident + "' (" + incAttr.AttributeType + ") types differ.");
+                    trace.Trace("Not synced: '" + p.Form + "' (" + formAttr.AttributeType + ") vs '" + p.Incident + "' (" + incAttr.AttributeType + ") types differ.");
                     continue;
                 }
 
                 usable.Add(p);
             }
 
-            trace.Trace("Fields that will be synced: " + string.Join(", ", usable.Select(p => p.Form + (p.Form == p.Incident ? "" : "->" + p.Incident))));
+            trace.Trace("Synced: " + string.Join(", ", usable.Select(p => p.Form + (p.Form == p.Incident ? "" : "->" + p.Incident))));
             return usable;
         }
 
