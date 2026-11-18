@@ -196,7 +196,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                     context.SharedVariables[LinkingFlag] = true;
                     DataverseHelper.Update(service, entityToUpdate);
-                    trace.Trace("Case linked to the form record.")
+                    trace.Trace("Case linked to the form record.");
 
                     caseRef = new EntityReference(Case.TableName, incidentId);
                 }
