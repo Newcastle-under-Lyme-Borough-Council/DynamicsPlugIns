@@ -231,15 +231,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 };
 
 
-                //if (entity.Attributes.Contains("nulbc_datecompleted") && incidentAttributes["nulbc_datecompleted"] != null)
-                //{
-                //    queueItemToUpdate[QueueItem.DateCompleted] = incidentAttributes.GetAttributeValue<DateTime>("nulbc_datecompleted");
-                //}
-
                 if (incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid") != null)
                 {
                     queueItemToUpdate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid").Id);
-
+                    tracingService.Trace("Testing contact");
                 }
 
 
@@ -247,6 +242,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
 
                 queueItemToUpdate[QueueItem.StatusFilter] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_status").Value);
+                tracingService.Trace("Testing status filter");
 
 
                 queueItemToUpdate[QueueItem.FirstName] = incidentAttributes.GetAttributeValue<string>("nulbc_firstname");
@@ -265,6 +261,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
 
                 queueItemToUpdate[QueueItem.InternalNotification] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_internalnotification").Value.GetHashCode());
+                tracingService.Trace("Testing internal notification");
 
 
                 queueItemToUpdate[QueueItem.InternalNotificationEmail] = incidentAttributes.GetAttributeValue<string>("nulbc_internalnotificationemail");
@@ -276,36 +273,42 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus") != null)
                 {
                     queueItemToUpdate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value.GetHashCode());
+                    tracingService.Trace("Testing customer status");
                 }
 
                 if (incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource") != null)
                 {
                     queueItemToUpdate[QueueItem.DataSource] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource").Value.GetHashCode());
+                    tracingService.Trace("Testing data source");
 
                 }
 
                 queueItemToUpdate[QueueItem.Description] = incidentAttributes.GetAttributeValue<string>("nulbc_description");
-
+                tracingService.Trace("Testing description");
 
 
                 if (incidentAttributes.GetAttributeValue<EntityReference>("ss_subjectid") != null)
                 {
                     queueItemToUpdate[QueueItem.Subject] = new EntityReference("subject", incidentAttributes.GetAttributeValue<EntityReference>("ss_subjectid").Id);
-
+                    tracingService.Trace("Testing subject");
                 }
 
+                if(incidentAttributes.GetAttributeValue<EntityReference>("nulbc_statuscase") != null)
+                {
+                    queueItemToUpdate[QueueItem.CaseStatus] = new EntityReference("nulbc_statuscase", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_statuscase").Id);
+                }
 
-                //For testing purposes, hardcoding the queue id to the 'Unassigned' queue
-                queueItemToUpdate[QueueItem.Queue] = new EntityReference("queue", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue").Id);
-
-                //queueItemToUpdate[QueueItem.CaseStatus] = new EntityReference("nulbc_statuscase", incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_statuscase"));
-
-
+                if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue") != null)
+                {
+                    queueItemToUpdate[QueueItem.Queue] = new EntityReference("queue", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue").Id);
+                    tracingService.Trace("Testing queue");
+                }
+                
                 queueItemToUpdate[QueueItem.Owner] = new EntityReference("systemuser", incidentAttributes.GetAttributeValue<EntityReference>("ownerid").Id);
 
-
+                tracingService.Trace("Testing owner");
                 queueItemToUpdate[QueueItem.DateCompleted] = dateCompleted.HasValue ? dateCompleted.Value : (DateTime?)null;
-
+                tracingService.Trace("Testing datecompleted");
                 service.Update(queueItemToUpdate);
             }
             catch (Exception ex)

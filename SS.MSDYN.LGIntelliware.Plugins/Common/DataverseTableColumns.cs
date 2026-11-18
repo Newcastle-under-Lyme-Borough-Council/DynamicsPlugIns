@@ -189,7 +189,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string Address = "nulbc_address";
         public const string CaseReference = "nulbc_casereference";
         public const string CaseStage = "crb98_casestage";
-        public const string CaseStatus = "crb98_casestatus";
+        public const string CaseStatus = "nulbc_statuscase";
         public const string CustomerStatus = "nulbc_customerstatus";
         public const string DataSource = "nulbc_datasource";
         public const string DateCompleted = "nulbc_datecompleted";
