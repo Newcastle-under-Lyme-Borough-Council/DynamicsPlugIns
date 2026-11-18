@@ -16,11 +16,15 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     // The case updatin triggers QueueItemHandler
     // Configuration source uses the step's own Unsecure Configuration if one is provided, otherwise the JSON on the-
     // PostCreate step registered for the same table. (the step can be reigstered, just not enabled).
+    //
+    // When nulbc_statuscase is changed on the form, the customer status and status filter are also copied onto the
+    // form from the matching nulbc_statuscase row (before the form is synced to the case).
     public class ServiceRequestHandler : PluginBase
     {
         private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
 
-        // Shared variable set while this plugin links the new case to the form record, so the update it causes doesn't run the plugin a second time.
+        // Shared variable set while this plugin makes an update to the form record itself (linking the new case, or syncing
+        // the status fields), so the update it causes doesn't run the plugin a second time.
         private const string LinkingFlag = "ServiceRequestHandler.LinkingCase";
 
         // Column on the incident that holds the contact. The form's contact column comes from the config.
@@ -28,6 +32,19 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
         // Lookup on the incident that points back at the form record. QueueItemHandler uses it as the queue item's Object, so it must be set before the queue item is created.
         private const string IncidentServiceRequestColumn = "ss_servicerequestid";
+
+        // Status case table, and the columns on it that are copied onto the form.
+        private const string StatusCaseTable = "nulbc_statuscase";
+        private const string StatusCaseLookupColumn = "nulbc_statuscase";
+        private const string StatusCaseCustomerStatusColumn = "nulbc_customerstatus";
+        private const string StatusFilterColumn = "nulbc_statusfilter";
+
+        // Whichever of these exists on the form table gets the customer status.
+        private static readonly string[] CustomerStatusColumns =
+        {
+            "nulbc_customerstatus",
+            "nulbc_customercasestatus"
+        };
 
         // Standardised fields with the SAME logical name on the form table and the incident.
         private static readonly string[] StandardFields =
@@ -117,10 +134,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 return;
             }
 
-            // If the update this plugin makes to link a new case to the form record isn't from a user, skip it.
+            // If the update this plugin makes to the form record (linking a new case, syncing status fields) isn't from a user, skip it.
             if (IsLinkingUpdate(context))
             {
-                trace.Trace("Triggered by this plugin linking the new case.");
+                trace.Trace("Triggered by this plugin updating the form record.");
                 trace.Trace("Exited plugin");
                 return;
             }
@@ -140,6 +157,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 // Work out which standardised fields can be copied.
                 var pairs = BuildFieldPairs(config);
                 var formMeta = GetAttributes(service, target.LogicalName);
+
+                // If the status case was changed, copy its customer status + status filter onto the form.
+                // Done before the form is read below, so the case is synced with the new values.
+                SyncStatusCaseFields(service, context, target, formMeta, trace);
+
                 var incidentTable = GetIncidentTableName(service, target.LogicalName, config, trace);
                 var incidentMeta = GetAttributes(service, incidentTable);
                 var usable = FilterUsablePairs(pairs, formMeta, incidentMeta, trace);
@@ -293,6 +315,87 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             {
                 throw new InvalidPluginExecutionException("An exception occurred executing ServiceRequestHandler: " + ex + ".");
             }
+        }
+
+        // When nulbc_statuscase is changed on the form, copies the matching customer status and
+        // status filter from the nulbc_statuscase row onto the form record.
+        private static void SyncStatusCaseFields(
+            IOrganizationService service,
+            IPluginExecutionContext context,
+            Entity target,
+            Dictionary<string, AttributeMetadata> formMeta,
+            ITracingService trace)
+        {
+            // Only runs when the lookup is part of this save.
+            if (!target.Contains(StatusCaseLookupColumn)) return;
+
+            var customerCol = CustomerStatusColumns.FirstOrDefault(c =>
+                formMeta.TryGetValue(c, out var m) && m.IsValidForUpdate == true);
+
+            var filterCol = formMeta.TryGetValue(StatusFilterColumn, out var fm) && fm.IsValidForUpdate == true
+                ? StatusFilterColumn
+                : null;
+
+            if (customerCol == null && filterCol == null)
+            {
+                trace.Trace("Status sync skipped: form has neither a customer status nor a status filter column.");
+                return;
+            }
+
+            var statusRef = target.GetAttributeValue<EntityReference>(StatusCaseLookupColumn);
+            var update = new Entity(target.LogicalName, target.Id);
+
+            if (statusRef == null)
+            {
+                // Lookup cleared -> clear the synced columns too.
+                if (customerCol != null) update[customerCol] = null;
+                if (filterCol != null) update[filterCol] = null;
+            }
+            else
+            {
+                var statusCase = service.Retrieve(
+                    StatusCaseTable,
+                    statusRef.Id,
+                    new ColumnSet(StatusCaseCustomerStatusColumn, StatusFilterColumn));
+
+                if (customerCol != null)
+                {
+                    update[customerCol] = ConvertForColumn(statusCase, StatusCaseCustomerStatusColumn, formMeta[customerCol], trace);
+                }
+
+                if (filterCol != null)
+                {
+                    update[filterCol] = ConvertForColumn(statusCase, StatusFilterColumn, formMeta[filterCol], trace);
+                }
+            }
+
+            // The update below re-triggers this plugin; the flag makes that nested run exit early.
+            context.SharedVariables[LinkingFlag] = true;
+            service.Update(update);
+            trace.Trace("Status fields synced from " + StatusCaseTable + ".");
+        }
+
+        // Choice -> same-type choice is copied as is; choice -> text uses the label.
+        private static object ConvertForColumn(Entity source, string sourceColumn, AttributeMetadata destination, ITracingService trace)
+        {
+            if (!source.Contains(sourceColumn) || source[sourceColumn] == null) return null;
+
+            var value = source[sourceColumn];
+
+            if (value is OptionSetValue && destination.AttributeType == AttributeTypeCode.Picklist)
+            {
+                return value;
+            }
+
+            if (destination.AttributeType == AttributeTypeCode.String || destination.AttributeType == AttributeTypeCode.Memo)
+            {
+                return source.FormattedValues.Contains(sourceColumn)
+                    ? source.FormattedValues[sourceColumn]
+                    : value.ToString();
+            }
+
+            trace.Trace("Status sync: can't convert '" + sourceColumn + "' to " + destination.AttributeType + " column '" + destination.LogicalName + "'.");
+            return null;
         }
 
         // Links case to form record, so the update it causes doesn't run the plugin a second time.
