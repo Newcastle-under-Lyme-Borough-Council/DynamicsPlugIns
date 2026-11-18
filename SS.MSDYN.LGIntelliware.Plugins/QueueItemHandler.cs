@@ -410,7 +410,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_property") != null)
                 {
-                    entityToCreate[QueueItem.Property] = new EntityReference("property", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_property").Id);
+                    entityToCreate[QueueItem.Property] = new EntityReference("ss_property", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_property").Id);
 
                 }
 
