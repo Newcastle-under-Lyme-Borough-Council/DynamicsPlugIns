@@ -187,6 +187,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public const string TableName = "queueitem";
         public const string Contact = "cr91b_customersearch";
         public const string Address = "nulbc_address";
+        public const string Property = "nulbc_property";
         public const string CaseReference = "nulbc_casereference";
         public const string CaseStage = "crb98_casestage";
         public const string CaseStatus = "nulbc_statuscase";
