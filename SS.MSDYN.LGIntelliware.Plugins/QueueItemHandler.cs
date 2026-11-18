@@ -296,6 +296,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if(incidentAttributes.GetAttributeValue<EntityReference>("nulbc_statuscase") != null)
                 {
                     queueItemToUpdate[QueueItem.CaseStatus] = new EntityReference("nulbc_statuscase", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_statuscase").Id);
+                    tracingService.Trace("Testing status case");
                 }
 
                 if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue") != null)
@@ -304,9 +305,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     tracingService.Trace("Testing queue");
                 }
                 
-                queueItemToUpdate[QueueItem.Owner] = new EntityReference("systemuser", incidentAttributes.GetAttributeValue<EntityReference>("ownerid").Id);
-
-                tracingService.Trace("Testing owner");
+                if (incidentAttributes.GetAttributeValue<EntityReference>("ownerid") != null)
+                {
+                    queueItemToUpdate[QueueItem.Owner] = new EntityReference("systemuser", incidentAttributes.GetAttributeValue<EntityReference>("ownerid").Id);
+                    tracingService.Trace("Testing owner not null");
+                }
+                
                 queueItemToUpdate[QueueItem.DateCompleted] = dateCompleted.HasValue ? dateCompleted.Value : (DateTime?)null;
                 tracingService.Trace("Testing datecompleted");
                 service.Update(queueItemToUpdate);
