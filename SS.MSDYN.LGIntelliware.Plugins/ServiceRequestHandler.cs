@@ -11,27 +11,22 @@ using System.Text.Json;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
-    // 1. If the form record has no case yet, does exactly what PostCreate did: create the case and link it.
-    // 2. Then copies the standardised fields from the form record to the case (runs on every save).
-    //    The case update is what triggers QueueItemHandler.
-    //
-    // Config source: the step's own Unsecure Configuration if one is provided, otherwise the JSON on the
-    // PostCreate step registered for the same table (so that step can stay registered, but disabled).
-    // Register an Update step on each form table.
+    // If the form record has no case yet, create a new case and link it.
+    // Copies standardised fields from the form, into the case - updates each time the form is saved.
+    // The case updatin triggers QueueItemHandler
+    // Configuration source uses the step's own Unsecure Configuration if one is provided, otherwise the JSON on the-
+    // PostCreate step registered for the same table. (the step can be reigstered, just not enabled).
     public class ServiceRequestHandler : PluginBase
     {
         private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
 
-        // Shared variable set while this plugin links the new case to the form record, so the update it
-        // causes doesn't run the plugin a second time.
+        // Shared variable set while this plugin links the new case to the form record, so the update it causes doesn't run the plugin a second time.
         private const string LinkingFlag = "ServiceRequestHandler.LinkingCase";
 
-        // Column on the incident that holds the contact. The form's contact column comes from the config
-        // ContactColumnLogicalName, so it is mapped explicitly below.
+        // Column on the incident that holds the contact. The form's contact column comes from the config.
         private const string IncidentContactColumn = "ss_customerid";
 
-        // Lookup on the incident that points back at the form record. QueueItemHandler uses it as the
-        // queue item's Object, so it must be set before the queue item is created.
+        // Lookup on the incident that points back at the form record. QueueItemHandler uses it as the queue item's Object, so it must be set before the queue item is created.
         private const string IncidentServiceRequestColumn = "ss_servicerequestid";
 
         // Standardised fields that are copied from the form to the incident.
@@ -108,10 +103,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 return;
             }
 
-            // The update this plugin makes to link a new case to the form record isn't a user edit - skip it.
+            // If the update this plugin makes to link a new case to the form record isn't from a user, skip it.
             if (IsLinkingUpdate(context))
             {
-                trace.Trace("Triggered by this plugin linking the new case - nothing to do.");
+                trace.Trace("Triggered by this plugin linking the new case.");
                 trace.Trace("Exited plugin");
                 return;
             }
@@ -262,7 +257,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 // Update the incident - Triggers QueueItemHandler.
                 if (update.Attributes.Count == 0)
                 {
-                    trace.Trace("Incident already in line with the form - no update needed.");
+                    trace.Trace("Incident already in line with the form - no update is needed.");
                     trace.Trace("Exited plugin");
                     return;
                 }
@@ -398,7 +393,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return table;
         }
 
-        // The standardised fields, plus the contact (whose form column comes from the config).
+        // The standardised fields are copied from the form to the incident.
         private static List<FieldPair> BuildFieldPairs(ServiceRequestConfig config)
         {
             var pairs = StandardFields
@@ -465,12 +460,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         {
             if (a == b) return true;
 
-            // Lookup-style columns can be copied between each other (target table is checked separately).
+            // Lookup-style columns can be copied between each other.
             bool IsLookup(AttributeTypeCode? t) => t == AttributeTypeCode.Lookup || t == AttributeTypeCode.Customer;
             return IsLookup(a) && IsLookup(b);
         }
 
-        // True if a lookup column accepts records from the given table (or doesn't restrict its targets).
+        // True if a lookup column accepts records from the given table.
         private static bool AcceptsTable(AttributeMetadata attribute, string tableName)
         {
             var lookup = attribute as LookupAttributeMetadata;
