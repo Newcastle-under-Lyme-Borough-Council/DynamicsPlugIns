@@ -459,7 +459,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     "nulbc_description",
                     "nulbc_datecompleted",
                     "nulbc_datasource",
-                    "nulbc_casestatus",
+                    "nulbc_statuscase",
                     "nulbc_customerstatus",
                     "nulbc_externalreference",
                     "nulbc_internalnotification",
