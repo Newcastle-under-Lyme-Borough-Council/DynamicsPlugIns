@@ -195,7 +195,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 {
                     tracingService.Trace("queue item is not null");
 
-                    tracingService.Trace("" + entity.Attributes);
+                    foreach (var attribute in entity.Attributes)
+                    {
+                        var value = attribute.Value?.ToString() ?? "NULL";
+                        tracingService.Trace(
+                            $"Attribute: {attribute.Key}, Value: {value}");
+                    }
 
                     var queueItemId = currentRecord.GetAttributeValue<EntityReference>("nulbc_queueitem").Id;
                     Entity incidentAttributes = RetrieveCaseAttributes(service, recordId);
