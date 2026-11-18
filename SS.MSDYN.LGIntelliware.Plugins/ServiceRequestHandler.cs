@@ -11,18 +11,28 @@ using System.Text.Json;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
-    // Copies the standardised fields from a form record to its linked service request (ss_incident) record.
-    // The incident update is what triggers QueueItemHandler, which should create the queue item?
-
-    // The table/column settings are read from the PostCreate step registered for the same table.
+    // 1. If the form record has no case yet, does exactly what PostCreate did: create the case and link it.
+    // 2. Then copies the standardised fields from the form record to the case (runs on every save).
+    //    The case update is what triggers QueueItemHandler.
+    //
+    // Config source: the step's own Unsecure Configuration if one is provided, otherwise the JSON on the
+    // PostCreate step registered for the same table (so that step can stay registered, but disabled).
     // Register an Update step on each form table.
     public class ServiceRequestHandler : PluginBase
     {
         private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
 
+        // Shared variable set while this plugin links the new case to the form record, so the update it
+        // causes doesn't run the plugin a second time.
+        private const string LinkingFlag = "ServiceRequestHandler.LinkingCase";
+
         // Column on the incident that holds the contact. The form's contact column comes from the config
         // ContactColumnLogicalName, so it is mapped explicitly below.
         private const string IncidentContactColumn = "ss_customerid";
+
+        // Lookup on the incident that points back at the form record. QueueItemHandler uses it as the
+        // queue item's Object, so it must be set before the queue item is created.
+        private const string IncidentServiceRequestColumn = "ss_servicerequestid";
 
         // Standardised fields that are copied from the form to the incident.
         private static readonly string[] StandardFields =
@@ -34,7 +44,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_address",
             "nulbc_property",
             "nulbc_description",
-            "nulbc_datesubmitted",      // QueueItemHandler won't run without this
+            "nulbc_datesubmitted",      // QueueItemHandler requires this field to be triggered
             "nulbc_datasource",
             "nulbc_externalreference",
             "nulbc_internalnotification",
@@ -51,6 +61,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             PropertyNameCaseInsensitive = true
         };
 
+        private readonly string _unsecureConfiguration;
+
         // Form column & incident column pairs.
         private class FieldPair
         {
@@ -61,6 +73,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         public ServiceRequestHandler(string unsecureConfiguration)
             : base(typeof(ServiceRequestHandler), unsecureConfiguration)
         {
+            _unsecureConfiguration = unsecureConfiguration;
             RegisterEvents();
         }
 
@@ -71,7 +84,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
         public void RegisterEvents()
         {
-            // Update trigger only. Runs when a user edits a record, and when PostCreate links the new case.
+            // Update trigger only. Runs when a user saves a form record.
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
                 PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, string.Empty, Execute));
         }
@@ -89,9 +102,16 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             trace.Trace("ServiceRequestHandler triggered. Table: " + context.PrimaryEntityName + ", Message: " + context.MessageName + ", Depth: " + context.Depth);
 
-            // Depth 1 = User edits record, depth 2 = PostCreate linking the new case. Both should run after User edits.
             if (context.Depth > 2)
             {
+                trace.Trace("Exited plugin");
+                return;
+            }
+
+            // The update this plugin makes to link a new case to the form record isn't a user edit - skip it.
+            if (IsLinkingUpdate(context))
+            {
+                trace.Trace("Triggered by this plugin linking the new case - nothing to do.");
                 trace.Trace("Exited plugin");
                 return;
             }
@@ -105,8 +125,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // Get the table/column settings from the PostCreate step for this table.
-                var config = LoadConfigFromPostCreateStep(service, target.LogicalName, trace);
+                // Get the table/column settings for this form table.
+                var config = LoadConfig(service, target.LogicalName, trace);
 
                 // Work out which standardised fields can be copied.
                 var pairs = BuildFieldPairs(config);
@@ -119,7 +139,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 var formColumns = new[] { config.ServiceConfigurationColumnLogicalName, config.IncidentIdColumnLogicalName }
                     .Concat(usable.Select(p => p.Form))
                     .Where(c => !string.IsNullOrWhiteSpace(c))
-                    .Distinct()
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
                 var record = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(formColumns));
@@ -133,17 +153,63 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // Need the linked service request (incident) record.
+                // Does the case already exist for this form record?
                 var caseRef = record.GetAttributeValue<EntityReference>(config.IncidentIdColumnLogicalName);
                 if (caseRef == null || caseRef.Id == Guid.Empty)
                 {
-                    trace.Trace("No service request (case) has been linked yet.");
-                    trace.Trace("Exited plugin");
-                    return;
+                    trace.Trace("No case exists yet for this record, creating new record.");
+
+                    var serviceConfigurations = DataverseHelper.RetrieveServiceConfiguration(service, ServiceConfiguration.TableName, serviceConfigRef.Id, new ColumnSet(ServiceConfiguration.Subject, ServiceConfiguration.Name));
+                    if (serviceConfigurations == null || serviceConfigurations.Entities == null || serviceConfigurations.Entities.Count == 0)
+                    {
+                        throw new InvalidPluginExecutionException("There are no active service configuration found for the selected record.");
+                    }
+
+                    var serviceConfiguration = serviceConfigurations.Entities[0];
+                    if (!serviceConfiguration.Attributes.ContainsKey(ServiceConfiguration.Subject) || serviceConfiguration.Attributes[ServiceConfiguration.Subject] == null)
+                    {
+                        throw new InvalidPluginExecutionException("Selected record does not have subject configuration.");
+                    }
+
+                    var title = serviceConfiguration.GetAttributeValue<string>(ServiceConfiguration.Subject);
+                    var subjects = DataverseHelper.RetrieveSubject(service, Subject.TableName, title, new ColumnSet(Subject.Title));
+                    if (subjects == null || subjects.Entities == null || subjects.Entities.Count == 0)
+                    {
+                        throw new InvalidPluginExecutionException("There are no active subject found for the selected record.");
+                    }
+
+                    var subject = subjects.Entities[0];
+
+                    // PostCreate received the whole new record; here the full record is read so the helper has every column.
+                    var fullRecord = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(true));
+
+                    // Create an Incident (case)
+                    var incidentId = DataverseHelper.CreateCaseGeneric(service, fullRecord, serviceConfiguration, subject, ToPluginConfig(config), trace);
+                    trace.Trace("Case created: " + incidentId);
+
+                    // Link it to the form record
+                    var entityToUpdate = new Entity(target.LogicalName)
+                    {
+                        Id = target.Id
+                    };
+                    entityToUpdate.Attributes.Add(config.IncidentIdColumnLogicalName, new EntityReference(Case.TableName, incidentId));
+
+                    context.SharedVariables[LinkingFlag] = true;
+                    DataverseHelper.Update(service, entityToUpdate);
+                    trace.Trace("Case linked to the form record.")
+
+                    caseRef = new EntityReference(Case.TableName, incidentId);
+                }
+
+                // Existing update code: bring the incident in line with the form.
+                var incidentColumns = usable.Select(p => p.Incident).ToList();
+                if (incidentMeta.ContainsKey(IncidentServiceRequestColumn))
+                {
+                    incidentColumns.Add(IncidentServiceRequestColumn);
                 }
 
                 var incident = service.Retrieve(caseRef.LogicalName, caseRef.Id,
-                    new ColumnSet(usable.Select(p => p.Incident).Distinct().ToArray()));
+                    new ColumnSet(incidentColumns.Distinct().ToArray()));
 
                 // Build an update containing only the standardised fields that have data and differ.
                 var update = new Entity(caseRef.LogicalName, caseRef.Id);
@@ -176,7 +242,24 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     trace.Trace("Changed: " + p.Form + " -> " + p.Incident);
                 }
 
-                // Update the incident. Should trigger QueueItemHandler?
+                // Point the incident back at this form record.
+                if (incidentMeta.TryGetValue(IncidentServiceRequestColumn, out var srMeta) &&
+                    srMeta.IsValidForUpdate == true &&
+                    AcceptsTable(srMeta, record.LogicalName))
+                {
+                    var currentLink = incident.GetAttributeValue<EntityReference>(IncidentServiceRequestColumn);
+                    if (currentLink == null || currentLink.Id != record.Id)
+                    {
+                        update[IncidentServiceRequestColumn] = new EntityReference(record.LogicalName, record.Id);
+                        trace.Trace("Changed: " + IncidentServiceRequestColumn + " -> " + record.LogicalName + " " + record.Id);
+                    }
+                }
+                else
+                {
+                    trace.Trace("'" + IncidentServiceRequestColumn + "' not set: missing, not updatable, or doesn't accept '" + record.LogicalName + "'.");
+                }
+
+                // Update the incident - Triggers QueueItemHandler.
                 if (update.Attributes.Count == 0)
                 {
                     trace.Trace("Incident already in line with the form - no update needed.");
@@ -203,7 +286,56 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        // Reads the Unsecure Configuration JSON from the active PostCreate Create step registered in XRM Toolbox.
+        // Links case to form record, so the update it causes doesn't run the plugin a second time.
+        private static bool IsLinkingUpdate(IPluginExecutionContext context)
+        {
+            var parent = context.ParentContext;
+            while (parent != null)
+            {
+                if (parent.SharedVariables.Contains(LinkingFlag))
+                {
+                    return true;
+                }
+                parent = parent.ParentContext;
+            }
+            return false;
+        }
+
+        // CreateCaseGeneric takes the PluginConfig type, so the config is copied across.
+        private static PluginConfig ToPluginConfig(ServiceRequestConfig c)
+        {
+            return new PluginConfig
+            {
+                TableName = c.TableName,
+                ContactColumnLogicalName = c.ContactColumnLogicalName,
+                ReferenceNumberColumnLogicalName = c.ReferenceNumberColumnLogicalName,
+                ServiceConfigurationColumnLogicalName = c.ServiceConfigurationColumnLogicalName,
+                IncidentIdColumnLogicalName = c.IncidentIdColumnLogicalName
+            };
+        }
+
+        // Uses the step's own Unsecure Configuration.
+        private ServiceRequestConfig LoadConfig(IOrganizationService service, string tableName, ITracingService trace)
+        {
+            if (!string.IsNullOrWhiteSpace(_unsecureConfiguration))
+            {
+                var own = JsonSerializer.Deserialize<ServiceRequestConfig>(_unsecureConfiguration, JsonOptions);
+                if (own != null &&
+                    !string.IsNullOrWhiteSpace(own.ServiceConfigurationColumnLogicalName) &&
+                    !string.IsNullOrWhiteSpace(own.IncidentIdColumnLogicalName))
+                {
+                    trace.Trace("Config read from this step's unsecure configuration.");
+                    return own;
+                }
+
+                throw new InvalidPluginExecutionException(
+                    "The unsecure configuration on this step is incomplete.");
+            }
+
+            return LoadConfigFromPostCreateStep(service, tableName, trace);
+        }
+
+        // Reads the Unsecure Configuration JSON from the PostCreate Create step registered for this table.
         private static ServiceRequestConfig LoadConfigFromPostCreateStep(IOrganizationService service, string tableName, ITracingService trace)
         {
             var query = new QueryExpression("sdkmessageprocessingstep")
@@ -211,7 +343,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 ColumnSet = new ColumnSet("configuration", "name"),
                 TopCount = 1
             };
-            query.Criteria.AddCondition("statecode", ConditionOperator.Equal, 0);
 
             var pluginType = query.AddLink("plugintype", "plugintypeid", "plugintypeid");
             pluginType.LinkCriteria.AddCondition("typename", ConditionOperator.Equal, PostCreateTypeName);
@@ -226,7 +357,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             if (results.Entities.Count == 0)
             {
                 throw new InvalidPluginExecutionException(
-                    "No PostCreate step configuration was found for '" + tableName + "'.");
+                    "No configuration was found for '" + tableName + "' (no unsecure configuration on this step and no PostCreate step).");
             }
 
             var step = results.Entities[0];
@@ -337,6 +468,18 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             // Lookup-style columns can be copied between each other (target table is checked separately).
             bool IsLookup(AttributeTypeCode? t) => t == AttributeTypeCode.Lookup || t == AttributeTypeCode.Customer;
             return IsLookup(a) && IsLookup(b);
+        }
+
+        // True if a lookup column accepts records from the given table (or doesn't restrict its targets).
+        private static bool AcceptsTable(AttributeMetadata attribute, string tableName)
+        {
+            var lookup = attribute as LookupAttributeMetadata;
+            if (lookup == null || lookup.Targets == null || lookup.Targets.Length == 0)
+            {
+                return true;
+            }
+
+            return lookup.Targets.Contains(tableName);
         }
 
         private static bool HasData(Entity record, string column)
