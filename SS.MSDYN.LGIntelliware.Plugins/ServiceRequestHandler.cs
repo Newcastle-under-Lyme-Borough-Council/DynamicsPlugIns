@@ -71,7 +71,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         private static readonly KeyValuePair<string, string>[] MappedFields =
         {
             // Customer status
-            new KeyValuePair<string, string>("nulbc_customercasestatus", "nulbc_customercasestatus"),
+            new KeyValuePair<string, string>("nulbc_customercasestatus", "nulbc_customerstatus"),
 
             // Status case
             new KeyValuePair<string, string>("nulbc_statuscase", "nulbc_statuscase"),
