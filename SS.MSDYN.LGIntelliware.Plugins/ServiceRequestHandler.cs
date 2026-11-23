@@ -63,7 +63,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_internalnotificationemail",
             "nulbc_internalnotificationurl",
             "ss_subjectid",
-            "nulbc_customersearch",
+            "nulbc_customersearch"
             // Leave out these values unless we need?
             // "nulbc_status", "nulbc_datecompleted",
             // "nulbc_queue", "nulbc_queueitem", "nulbc_casereference", "ss_casenumber", "nulbc_synceddate",
@@ -72,7 +72,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         private static readonly KeyValuePair<string, string>[] MappedFields =
         {
             // Customer status
-            new KeyValuePair<string, string>("nulbc_customercasestatus", "nulbc_customerstatus"),
+            new KeyValuePair<string, string>("nulbc_customercasestatus", "nulbc_customercasestatus"),
 
             // Status case
             new KeyValuePair<string, string>("nulbc_statuscase", "nulbc_statuscase"),
