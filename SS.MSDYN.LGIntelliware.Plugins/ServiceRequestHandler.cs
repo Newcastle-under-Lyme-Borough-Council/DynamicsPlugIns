@@ -36,7 +36,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         // Status case table, and the columns on it that are copied onto the form.
         private const string StatusCaseTable = "nulbc_statuscase";
         private const string StatusCaseLookupColumn = "nulbc_statuscase";
-        private const string StatusCaseCustomerStatusColumn = "nulbc_customercasestatus";
+        private const string StatusCaseCustomerStatusColumn = "nulbc_customerstatus";
         private const string StatusFilterColumn = "nulbc_statusfilter";
 
         // Whichever of these exists on the form table gets the customer status.
