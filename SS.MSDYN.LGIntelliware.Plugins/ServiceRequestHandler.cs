@@ -52,7 +52,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
         // NEW: Subject lookup on the form, and the text column its title is copied into.
         private const string FormSubjectLookupColumn = "ss_subjectid";
-        private const string FormSubjectTextColumn = "nulbc_formsubject";
+        private const string FormSubjectTextColumn = "nulbc_formname";
 
         // Whichever of these exists on the form table gets the customer status.
         private static readonly string[] CustomerStatusColumns =
