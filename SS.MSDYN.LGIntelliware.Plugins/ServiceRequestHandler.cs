@@ -14,16 +14,18 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     // If the form record has no case yet, create a new case and link it.
     // Copies standardised fields from the form, into the case - updates each time the form is saved.
     // The case updatin triggers QueueItemHandler
-    //
-    // Configuration is read from the Unsecure Configuration of the step that triggers this plugin.
+    // Configuration source uses the step's own Unsecure Configuration if one is provided, otherwise the JSON on the-
+    // PostCreate step registered for the same table. (the step can be reigstered, just not enabled).
     //
     // When nulbc_statuscase is changed on the form, the customer status and status filter are also copied onto the
-    // form from the matching nulbc_statuscase row.
+    // form from the matching nulbc_statuscase row (before the form is synced to the case).
     //
     // Single-line and multi-line text columns can be synced with each other. Text longer than the case column's
     // maximum length is trimmed to fit.
     public class ServiceRequestHandler : PluginBase
     {
+        private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
+
         // Shared variable set while this plugin makes an update to the form record itself (linking the new case, or syncing
         // the status fields), so the update it causes doesn't run the plugin a second time.
         private const string LinkingFlag = "ServiceRequestHandler.LinkingCase";
@@ -46,7 +48,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_customercasestatus"
         };
 
-        // Standardised fields with the same logical name on the form table and the incident.
+        // Standardised fields with the SAME logical name on the form table and the incident.
         private static readonly string[] StandardFields =
         {
             "nulbc_firstname",
@@ -151,8 +153,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // Get the table/column settings for this form table, from this step's Unsecure Configuration.
-                var config = LoadConfig(target.LogicalName, trace);
+                // Get the table/column settings for this form table.
+                var config = LoadConfig(service, target.LogicalName, trace);
 
                 // Work out which standardised fields can be copied.
                 var pairs = BuildFieldPairs(config);
@@ -211,14 +213,14 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                     var subject = subjects.Entities[0];
 
-                    // The full record is read so the helper has every column.
+                    // PostCreate received the whole new record; here the full record is read so the helper has every column.
                     var fullRecord = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(true));
 
-                    // Create an Incident case
+                    // Create an Incident (case)
                     var incidentId = DataverseHelper.CreateCaseGeneric(service, fullRecord, serviceConfiguration, subject, ToPluginConfig(config), trace);
                     trace.Trace("Case created: " + incidentId);
 
-                    // Link it to the form record.
+                    // Link it to the form record
                     var entityToUpdate = new Entity(target.LogicalName)
                     {
                         Id = target.Id
@@ -246,6 +248,15 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 var update = new Entity(caseRef.LogicalName, caseRef.Id);
                 foreach (var p in usable)
                 {
+
+                    // Debug whether the address field is actually filled in
+                    if (p.Incident == "nulbc_address")
+                    {
+                        var formLen = record.Contains(p.Form) && record[p.Form] is string fs ? fs.Length : -1;
+                        var incLen = incident.Contains(p.Incident) && incident[p.Incident] is string isv ? isv.Length : -1;
+                        trace.Trace("Address check: hasData=" + HasData(record, p.Form) + ", formLength=" + formLen + ", incidentLength=" + incLen);
+                    }
+
                     if (!HasData(record, p.Form))
                     {
                         continue;   // Never blank out an incident field
@@ -330,7 +341,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        // When nulbc_statuscase is changed on the form, copies the matching customer status status filter from the nulbc_statuscase row onto the form record.
+        // When nulbc_statuscase is changed on the form, copies the matching customer status and
+        // status filter from the nulbc_statuscase row onto the form record.
         private static void SyncStatusCaseFields(
             IOrganizationService service,
             IPluginExecutionContext context,
@@ -359,7 +371,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             if (statusRef == null)
             {
-                // Clear the synced columns if the main lookup is cleared.
+                // Lookup cleared -> clear the synced columns too.
                 if (customerCol != null) update[customerCol] = null;
                 if (filterCol != null) update[filterCol] = null;
             }
@@ -387,7 +399,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             trace.Trace("Status fields synced from " + StatusCaseTable + ".");
         }
 
-        // Copy and sync the choices based on field name.
+        // Choice -> same-type choice is copied as is; choice -> text uses the label.
         private static object ConvertForColumn(Entity source, string sourceColumn, AttributeMetadata destination, ITracingService trace)
         {
             if (!source.Contains(sourceColumn) || source[sourceColumn] == null) return null;
@@ -438,39 +450,75 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             };
         }
 
-        // Reads the configuration from the Unsecure Configuration of the step that triggered this plugin.
-        private ServiceRequestConfig LoadConfig(string tableName, ITracingService trace)
+        // Uses the step's own Unsecure Configuration.
+        private ServiceRequestConfig LoadConfig(IOrganizationService service, string tableName, ITracingService trace)
         {
-            if (string.IsNullOrWhiteSpace(_unsecureConfiguration))
+            if (!string.IsNullOrWhiteSpace(_unsecureConfiguration))
             {
+                var own = JsonSerializer.Deserialize<ServiceRequestConfig>(_unsecureConfiguration, JsonOptions);
+                if (own != null &&
+                    !string.IsNullOrWhiteSpace(own.ServiceConfigurationColumnLogicalName) &&
+                    !string.IsNullOrWhiteSpace(own.IncidentIdColumnLogicalName))
+                {
+                    trace.Trace("Config read from this step's unsecure configuration.");
+                    return own;
+                }
+
                 throw new InvalidPluginExecutionException(
-                    "No configuration found for '" + tableName + "'. Add the JSON configuration to the Unsecure Configuration of this Update step.");
+                    "The unsecure configuration on this step is incomplete.");
             }
 
-            ServiceRequestConfig config;
-            try
+            return LoadConfigFromPostCreateStep(service, tableName, trace);
+        }
+
+        // Reads the Unsecure Configuration JSON from the PostCreate Create step registered for this table.
+        private static ServiceRequestConfig LoadConfigFromPostCreateStep(IOrganizationService service, string tableName, ITracingService trace)
+        {
+            var query = new QueryExpression("sdkmessageprocessingstep")
             {
-                config = JsonSerializer.Deserialize<ServiceRequestConfig>(_unsecureConfiguration, JsonOptions);
-            }
-            catch (JsonException ex)
+                ColumnSet = new ColumnSet("configuration", "name"),
+                TopCount = 1
+            };
+
+            var pluginType = query.AddLink("plugintype", "plugintypeid", "plugintypeid");
+            pluginType.LinkCriteria.AddCondition("typename", ConditionOperator.Equal, PostCreateTypeName);
+
+            var message = query.AddLink("sdkmessage", "sdkmessageid", "sdkmessageid");
+            message.LinkCriteria.AddCondition("name", ConditionOperator.Equal, "Create");
+
+            var filter = query.AddLink("sdkmessagefilter", "sdkmessagefilterid", "sdkmessagefilterid");
+            filter.LinkCriteria.AddCondition("primaryobjecttypecode", ConditionOperator.Equal, tableName);
+
+            var results = service.RetrieveMultiple(query);
+            if (results.Entities.Count == 0)
             {
                 throw new InvalidPluginExecutionException(
-                    "The Unsecure Configuration on this step for '" + tableName + "' is not valid JSON: " + ex.Message);
+                    "No configuration was found for '" + tableName + "' (no unsecure configuration on this step and no PostCreate step).");
             }
 
+            var step = results.Entities[0];
+            trace.Trace("Config read from step: " + step.GetAttributeValue<string>("name"));
+
+            var json = step.GetAttributeValue<string>("configuration");
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                throw new InvalidPluginExecutionException(
+                    "The PostCreate step for '" + tableName + "' has no configuration.");
+            }
+
+            var config = JsonSerializer.Deserialize<ServiceRequestConfig>(json, JsonOptions);
             if (config == null ||
                 string.IsNullOrWhiteSpace(config.ServiceConfigurationColumnLogicalName) ||
                 string.IsNullOrWhiteSpace(config.IncidentIdColumnLogicalName))
             {
                 throw new InvalidPluginExecutionException(
-                    "The Unsecure Configuration on this step for '" + tableName + "' is incomplete.");
+                    "The PostCreate step configuration for '" + tableName + "' is incomplete.");
             }
 
-            trace.Trace("Config read from this step's unsecure configuration.");
             return config;
         }
 
-        // The incident table is ss_incident; reads from the case lookup's target; it stays correct if that ever changes.
+        // The incident table is ss_incident; reads from the case lookup's target - so it stays correct if that ever changes.
         private static string GetIncidentTableName(IOrganizationService service, string formTable, ServiceRequestConfig config, ITracingService trace)
         {
             var attribute = (RetrieveAttributeResponse)service.Execute(new RetrieveAttributeRequest
