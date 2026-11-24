@@ -22,6 +22,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     //
     // Single-line and multi-line text columns can be synced with each other. Text longer than the case column's
     // maximum length is trimmed to fit.
+    //
+    // The form table's primary column (the case reference) is copied into nulbc_childreference on the case.
     public class ServiceRequestHandler : PluginBase
     {
         private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
@@ -35,6 +37,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
         // Lookup on the incident that points back at the form record. QueueItemHandler uses it as the queue item's Object, so it must be set before the queue item is created.
         private const string IncidentServiceRequestColumn = "ss_servicerequestid";
+
+        // Column on the incident that receives the form table's primary column value (the case reference).
+        private const string IncidentChildReferenceColumn = "nulbc_childreference";
 
         // Status case table, and the columns on it that are copied onto the form.
         private const string StatusCaseTable = "nulbc_statuscase";
@@ -162,6 +167,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 var pairs = BuildFieldPairs(config);
                 var formMeta = GetAttributes(service, target.LogicalName);
 
+                // The form table's primary column (the case reference).
+                var primaryNameColumn = formMeta.Values.FirstOrDefault(a => a.IsPrimaryName == true)?.LogicalName;
+
                 // If the status case was changed, copy its customer status + status filter onto the form.
                 // Done before the form is read below, so the case is synced with the new values.
                 SyncStatusCaseFields(service, context, target, formMeta, trace);
@@ -173,6 +181,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 // Read the form record.
                 var formColumns = new[] { config.ServiceConfigurationColumnLogicalName, config.IncidentIdColumnLogicalName }
                     .Concat(usable.Select(p => p.Form))
+                    .Concat(new[] { primaryNameColumn })
                     .Where(c => !string.IsNullOrWhiteSpace(c))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray();
@@ -243,6 +252,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     incidentColumns.Add(IncidentServiceRequestColumn);
                 }
 
+                if (incidentMeta.ContainsKey(IncidentChildReferenceColumn))
+                {
+                    incidentColumns.Add(IncidentChildReferenceColumn);
+                }
+
                 var incident = service.Retrieve(caseRef.LogicalName, caseRef.Id,
                     new ColumnSet(incidentColumns.Distinct().ToArray()));
 
@@ -297,6 +311,34 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                     update[p.Incident] = formValue;
                     trace.Trace("Changed: " + p.Form + " -> " + p.Incident);
+                }
+
+                // Copy the form's primary column (case reference) into the child reference column on the incident.
+                if (!string.IsNullOrWhiteSpace(primaryNameColumn) &&
+                    incidentMeta.TryGetValue(IncidentChildReferenceColumn, out var childMeta) &&
+                    childMeta.IsValidForUpdate == true &&
+                    (childMeta.AttributeType == AttributeTypeCode.String || childMeta.AttributeType == AttributeTypeCode.Memo))
+                {
+                    var reference = record.GetAttributeValue<string>(primaryNameColumn);
+                    if (!string.IsNullOrWhiteSpace(reference))
+                    {
+                        var childMax = GetMaxLength(childMeta);
+                        if (childMax.HasValue && reference.Length > childMax.Value)
+                        {
+                            reference = reference.Substring(0, childMax.Value);
+                        }
+
+                        var currentReference = incident.Contains(IncidentChildReferenceColumn) ? incident[IncidentChildReferenceColumn] as string : null;
+                        if (!string.Equals(currentReference, reference, StringComparison.Ordinal))
+                        {
+                            update[IncidentChildReferenceColumn] = reference;
+                            trace.Trace("Changed: " + primaryNameColumn + " -> " + IncidentChildReferenceColumn);
+                        }
+                    }
+                }
+                else
+                {
+                    trace.Trace("'" + IncidentChildReferenceColumn + "' not set: no primary column found, or the column is missing, not updatable or not text.");
                 }
 
                 // Point the incident back at this form record.
