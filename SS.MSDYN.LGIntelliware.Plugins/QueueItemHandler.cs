@@ -112,7 +112,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
 
                 //Check if the Case summary entity has a queue reference
-                if (currentRecord.GetAttributeValue<EntityReference>("nulbc_queue") == null && currentRecord.GetAttributeValue<EntityReference>("nulbc_queue").Id == Guid.Empty)
+                if (queue == null && queue.Id == Guid.Empty)
                 {
                     tracingService.Trace("Incident type has no assigned queue");
                     return;
@@ -145,7 +145,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     //Retrieve Unassigned User from User table
                     var unassignedUser = DataverseHelper.RetrieveUnassignedUser(service);
 
-                    var queueId = currentRecord.GetAttributeValue<EntityReference>("nulbc_queue").Id;
+                    var queueId = queue.Id;
                     //var queueId = Guid.Parse("c7c29624-c0a6-f111-aaad-7c1e522f31c2");
 
                     if (queueId != null)
@@ -158,7 +158,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                                 new ColumnSet("name")
                                 );
 
-                            tracingService.Trace("Assigned Queue: " + queueRetrieval.GetAttributeValue<string>("nulbc_name"));
+                            tracingService.Trace("Assigned Queue: " + queueRetrieval.GetAttributeValue<string>("name"));
                         }
                         catch
                         {
