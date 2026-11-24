@@ -255,6 +255,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                     var formValue = record[p.Form];
 
+                    if (p.Incident == "nulbc_address")
+                    {
+                        var formLen = record.Contains(p.Form) && record[p.Form] is string fs ? fs.Length : -1;
+                        var incLen = incident.Contains(p.Incident) && incident[p.Incident] is string isv ? isv.Length : -1;
+                        trace.Trace("Address check: hasData=" + HasData(record, p.Form) + ", formLength=" + formLen + ", incidentLength=" + incLen);
+                    }
+
                     // Text copied between single-line and multi-line columns is trimmed to the incident column's maximum length.
                     if (formValue is string text)
                     {
