@@ -118,6 +118,27 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
+                var queueId = queue.Id;
+                //var queueId = Guid.Parse("c7c29624-c0a6-f111-aaad-7c1e522f31c2");
+
+                try
+                {
+                    var queueRetrieval = service.Retrieve(
+                        "queue",
+                        queueId,
+                        new ColumnSet("name")
+                        );
+
+                    tracingService.Trace("Assigned Queue: " + queueRetrieval.GetAttributeValue<string>("name"));
+                }
+                catch
+                {
+                    throw new InvalidPluginExecutionException("Fault exception occured retrieving queue record.");
+                }
+
+                //check if queue reference is present in queue table
+                tracingService.Trace("Incident has a valid queue reference");
+
                 var queueItemRef = currentRecord.GetAttributeValue<EntityReference>("nulbc_queueitem");
 
                 tracingService.Trace(
@@ -145,50 +166,30 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     //Retrieve Unassigned User from User table
                     var unassignedUser = DataverseHelper.RetrieveUnassignedUser(service);
 
-                    var queueId = queue.Id;
-                    //var queueId = Guid.Parse("c7c29624-c0a6-f111-aaad-7c1e522f31c2");
+                  
+                    //retrieve the rest of the common attributes of the Case summary entity to create a queue item
+                    Entity incidentAttributes = RetrieveCaseAttributes(service, recordId);
 
-                    if (queueId != null)
+                    var newQueueItem = CreateQueueItem(service, tracingService, recordId, unassignedUser, queueId, incidentAttributes);
+
+                    if (newQueueItem == null)
                     {
-                        try
-                        {
-                            var queueRetrieval = service.Retrieve(
-                                "queue",
-                                queueId,
-                                new ColumnSet("name")
-                                );
-                        }
-                        catch
-                        {
-                            throw new InvalidPluginExecutionException("Fault exception occured retrieving queue record.");
-                        }
-
-                        //check if queue reference is present in queue table
-                        tracingService.Trace("Incident has a valid queue reference");
-
-                        //retrieve the rest of the common attributes of the Case summary entity to create a queue item
-                        Entity incidentAttributes = RetrieveCaseAttributes(service, recordId);
-
-                        var newQueueItem = CreateQueueItem(service, tracingService, recordId, unassignedUser, queueId, incidentAttributes);
-
-                        if (newQueueItem == null)
-                        {
-                            throw new InvalidPluginExecutionException("No new queue item reference");
-                        }
-                        tracingService.Trace("Queue item created successfully: " + newQueueItem);
-
-                        var EntityToUpdate = new Entity(Case.TableName)
-                        {
-                            Id = recordId
-                        };
-
-                        EntityToUpdate["nulbc_queueitem"] = new EntityReference(QueueItem.TableName, newQueueItem);
-
-                        service.Update(EntityToUpdate);
-
-                        tracingService.Trace("Case summary record updated with queue item reference: " + newQueueItem);
-
+                        throw new InvalidPluginExecutionException("No new queue item reference");
                     }
+                    tracingService.Trace("Queue item created successfully: " + newQueueItem);
+
+                    var EntityToUpdate = new Entity(Case.TableName)
+                    {
+                        Id = recordId
+                    };
+
+                    EntityToUpdate["nulbc_queueitem"] = new EntityReference(QueueItem.TableName, newQueueItem);
+
+                    service.Update(EntityToUpdate);
+
+                    tracingService.Trace("Case summary record updated with queue item reference: " + newQueueItem);
+
+                 
                 }
                 //If Case summary entity already has associated queue item
                 else if (currentRecord.GetAttributeValue<EntityReference>("nulbc_queueitem") != null && currentRecord.GetAttributeValue<EntityReference>("nulbc_queueitem").Id != Guid.Empty)
@@ -415,9 +416,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 }
 
                 //For testing purposes, hardcoding the queue id to the 'Unassigned' queue
-                entityToCreate[QueueItem.Queue] = new EntityReference("queue", queueId);
+                //entityToCreate[QueueItem.Queue] = new EntityReference("queue", queueId);
+                if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue") != null)
+                {
+                    entityToCreate[QueueItem.Queue] = new EntityReference("queue", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue").Id);
 
-                //entityToCreate[QueueItem.Queue] = new EntityReference("queue", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue").Id);
+                }
 
                 if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_statuscase") != null)
                 {
