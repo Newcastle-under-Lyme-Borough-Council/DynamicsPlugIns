@@ -15,11 +15,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     // Copies standardised fields from the form, into the case - updates each time the form is saved.
     // The case updatin triggers QueueItemHandler
     //
-    // Configuration is read from the Unsecure Configuration of the step that triggers this plugin (the Update step
-    // registered on each form table). It no longer depends on the PostCreate step, so that can be disabled or deleted.
+    // Configuration is read from the Unsecure Configuration of the step that triggers this plugin.
     //
     // When nulbc_statuscase is changed on the form, the customer status and status filter are also copied onto the
-    // form from the matching nulbc_statuscase row (before the form is synced to the case).
+    // form from the matching nulbc_statuscase row.
     //
     // Single-line and multi-line text columns can be synced with each other. Text longer than the case column's
     // maximum length is trimmed to fit.
@@ -47,7 +46,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_customercasestatus"
         };
 
-        // Standardised fields with the SAME logical name on the form table and the incident.
+        // Standardised fields with the same logical name on the form table and the incident.
         private static readonly string[] StandardFields =
         {
             "nulbc_firstname",
@@ -212,14 +211,14 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                     var subject = subjects.Entities[0];
 
-                    // PostCreate received the whole new record; here the full record is read so the helper has every column.
+                    // The full record is read so the helper has every column.
                     var fullRecord = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(true));
 
-                    // Create an Incident (case)
+                    // Create an Incident case
                     var incidentId = DataverseHelper.CreateCaseGeneric(service, fullRecord, serviceConfiguration, subject, ToPluginConfig(config), trace);
                     trace.Trace("Case created: " + incidentId);
 
-                    // Link it to the form record
+                    // Link it to the form record.
                     var entityToUpdate = new Entity(target.LogicalName)
                     {
                         Id = target.Id
@@ -331,8 +330,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        // When nulbc_statuscase is changed on the form, copies the matching customer status and
-        // status filter from the nulbc_statuscase row onto the form record.
+        // When nulbc_statuscase is changed on the form, copies the matching customer status status filter from the nulbc_statuscase row onto the form record.
         private static void SyncStatusCaseFields(
             IOrganizationService service,
             IPluginExecutionContext context,
@@ -361,7 +359,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             if (statusRef == null)
             {
-                // Lookup cleared -> clear the synced columns too.
+                // Clear the synced columns if the main lookup is cleared.
                 if (customerCol != null) update[customerCol] = null;
                 if (filterCol != null) update[filterCol] = null;
             }
@@ -389,7 +387,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             trace.Trace("Status fields synced from " + StatusCaseTable + ".");
         }
 
-        // Choice -> same-type choice is copied as is; choice -> text uses the label.
+        // Copy and sync the choices based on field name.
         private static object ConvertForColumn(Entity source, string sourceColumn, AttributeMetadata destination, ITracingService trace)
         {
             if (!source.Contains(sourceColumn) || source[sourceColumn] == null) return null;
@@ -472,7 +470,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return config;
         }
 
-        // The incident table is ss_incident; reads from the case lookup's target - so it stays correct if that ever changes.
+        // The incident table is ss_incident; reads from the case lookup's target; it stays correct if that ever changes.
         private static string GetIncidentTableName(IOrganizationService service, string formTable, ServiceRequestConfig config, ITracingService trace)
         {
             var attribute = (RetrieveAttributeResponse)service.Execute(new RetrieveAttributeRequest
