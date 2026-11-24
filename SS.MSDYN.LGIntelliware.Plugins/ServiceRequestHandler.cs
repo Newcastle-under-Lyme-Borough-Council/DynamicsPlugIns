@@ -19,6 +19,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     //
     // When nulbc_statuscase is changed on the form, the customer status and status filter are also copied onto the
     // form from the matching nulbc_statuscase row (before the form is synced to the case).
+    //
+    // Single-line and multi-line text columns can be synced with each other. Text longer than the case column's
+    // maximum length is trimmed to fit.
     public class ServiceRequestHandler : PluginBase
     {
         private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
@@ -251,6 +254,19 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     }
 
                     var formValue = record[p.Form];
+
+                    // Text copied between single-line and multi-line columns is trimmed to the incident column's maximum length.
+                    if (formValue is string text)
+                    {
+                        var max = GetMaxLength(incidentMeta[p.Incident]);
+                        if (max.HasValue && text.Length > max.Value)
+                        {
+                            trace.Trace("Trimmed '" + p.Form + "' from " + text.Length + " to " + max.Value + " characters for '" + p.Incident + "'.");
+                            text = text.Substring(0, max.Value);
+                        }
+
+                        formValue = text;
+                    }
 
                     // A lookup must point at a table the incident column accepts.
                     if (formValue is EntityReference er &&
@@ -581,7 +597,19 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             // Lookup-style columns can be copied between each other.
             bool IsLookup(AttributeTypeCode? t) => t == AttributeTypeCode.Lookup || t == AttributeTypeCode.Customer;
-            return IsLookup(a) && IsLookup(b);
+
+            // Single-line and multi-line text columns can be copied between each other.
+            bool IsText(AttributeTypeCode? t) => t == AttributeTypeCode.String || t == AttributeTypeCode.Memo;
+
+            return (IsLookup(a) && IsLookup(b)) || (IsText(a) && IsText(b));
+        }
+
+        // Maximum number of characters a text column accepts (null if not a text column).
+        private static int? GetMaxLength(AttributeMetadata attribute)
+        {
+            if (attribute is StringAttributeMetadata s) return s.MaxLength;
+            if (attribute is MemoAttributeMetadata m) return m.MaxLength;
+            return null;
         }
 
         // True if a lookup column accepts records from the given table.
