@@ -233,9 +233,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 };
 
 
-                if (incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid") != null)
+                if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_contact") != null)
                 {
-                    queueItemToUpdate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid").Id);
+                    queueItemToUpdate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_contact").Id);
                     tracingService.Trace("Testing contact");
                 }
 
@@ -340,9 +340,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             {
                 var entityToCreate = new Entity(QueueItem.TableName);
 
-                if (incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid") != null)
+                if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_contact") != null)
                 {
-                    entityToCreate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("ss_customerid").Id);
+                    entityToCreate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_contact").Id);
 
                 }
 
@@ -361,7 +361,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 entityToCreate[QueueItem.Address] = incidentAttributes.GetAttributeValue<string>("nulbc_address");
 
 
-                entityToCreate[QueueItem.StatusFilter] = new OptionSetValue(StatusFilter.RequiresAction.GetHashCode());
+                entityToCreate[QueueItem.StatusFilter] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_status").Value);
 
 
                 entityToCreate[QueueItem.FirstName] = incidentAttributes.GetAttributeValue<string>("nulbc_firstname");
@@ -449,7 +449,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 Case.TableName,
                 recordId,
                 new ColumnSet(
-                    "ss_customerid",
+                    "nulbc_contact",
                     "nulbc_address",
                     "nulbc_status",
                     "nulbc_casereference",
