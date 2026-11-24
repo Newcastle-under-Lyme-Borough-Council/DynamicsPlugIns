@@ -80,7 +80,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_customersearch",
             "nulbc_queue",
             "nulbc_datecompleted",
-            "nulbc_formname"
             // Leave out these values unless we need?
             // "nulbc_status", "nulbc_datecompleted",
             // "nulbc_queue", "nulbc_queueitem", "nulbc_casereference", "ss_casenumber", "nulbc_synceddate",
