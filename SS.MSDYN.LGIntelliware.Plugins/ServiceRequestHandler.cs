@@ -24,6 +24,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
     // maximum length is trimmed to fit.
     //
     // The form table's primary column (the case reference) is copied into nulbc_childreference on the case.
+    //
+    // NEW: The title of the linked subject (ss_subjectid) is copied into nulbc_formsubject on the form record.
+    // This runs PreOperation on Create and Update (ExecuteSubjectText), so it is saved with the record itself.
     public class ServiceRequestHandler : PluginBase
     {
         private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
@@ -46,6 +49,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         private const string StatusCaseLookupColumn = "nulbc_statuscase";
         private const string StatusCaseCustomerStatusColumn = "nulbc_customerstatus";
         private const string StatusFilterColumn = "nulbc_statusfilter";
+
+        // NEW: Subject lookup on the form, and the text column its title is copied into.
+        private const string FormSubjectLookupColumn = "ss_subjectid";
+        private const string FormSubjectTextColumn = "nulbc_formsubject";
 
         // Whichever of these exists on the form table gets the customer status.
         private static readonly string[] CustomerStatusColumns =
@@ -122,6 +129,92 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             // Update trigger only. Runs when a user saves a form record.
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
                 PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, string.Empty, Execute));
+
+            // NEW: Copies the subject's title into nulbc_formsubject. PreOperation, so it is saved with the record (no extra update).
+            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
+                PluginExecutionPipelineStage.PreOperation.GetHashCode(), PluginExecutionMessageName.CREATE, string.Empty, ExecuteSubjectText));
+
+            RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
+                PluginExecutionPipelineStage.PreOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, string.Empty, ExecuteSubjectText));
+        }
+
+        // NEW: PreOperation (Create and Update).
+        // Copies the title of the linked subject into nulbc_formsubject on the form record.
+        // On Update it only does anything when ss_subjectid is part of the save. If the subject is cleared, the text is cleared too.
+        protected void ExecuteSubjectText(LocalPluginContext localContext)
+        {
+            if (localContext == null)
+            {
+                throw new ArgumentNullException(nameof(localContext));
+            }
+
+            var context = localContext.PluginExecutionContext;
+            var service = localContext.OrganizationService;
+            var trace = localContext.TracingService;
+
+            trace.Trace("ServiceRequestHandler (subject text) triggered. Table: " + context.PrimaryEntityName + ", Message: " + context.MessageName + ", Depth: " + context.Depth);
+
+            try
+            {
+                if (!context.InputParameters.Contains(ContextInputParameters.TARGET) ||
+                    !(context.InputParameters[ContextInputParameters.TARGET] is Entity target))
+                {
+                    trace.Trace("Exited plugin");
+                    return;
+                }
+
+                // Only act when the subject is part of this save.
+                if (!target.Contains(FormSubjectLookupColumn))
+                {
+                    trace.Trace("'" + FormSubjectLookupColumn + "' not in this save.");
+                    trace.Trace("Exited plugin");
+                    return;
+                }
+
+                // The destination must exist on this table, be settable and be a text column.
+                var textMeta = GetAttribute(service, target.LogicalName, FormSubjectTextColumn);
+                if (textMeta == null ||
+                    (textMeta.AttributeType != AttributeTypeCode.String && textMeta.AttributeType != AttributeTypeCode.Memo))
+                {
+                    trace.Trace("'" + FormSubjectTextColumn + "' not set: missing or not a text column.");
+                    trace.Trace("Exited plugin");
+                    return;
+                }
+
+                string title = null;
+
+                var subjectRef = target.GetAttributeValue<EntityReference>(FormSubjectLookupColumn);
+                if (subjectRef != null && subjectRef.Id != Guid.Empty)
+                {
+                    var subject = service.Retrieve(Subject.TableName, subjectRef.Id, new ColumnSet(Subject.Title));
+                    title = subject.GetAttributeValue<string>(Subject.Title);
+
+                    // Trim to the column's maximum length so the save doesn't fail.
+                    var max = GetMaxLength(textMeta);
+                    if (title != null && max.HasValue && title.Length > max.Value)
+                    {
+                        trace.Trace("Trimmed subject text from " + title.Length + " to " + max.Value + " characters.");
+                        title = title.Substring(0, max.Value);
+                    }
+                }
+
+                // PreOperation: changing the Target is saved with the record, so no separate update is needed.
+                target[FormSubjectTextColumn] = title;
+                trace.Trace("'" + FormSubjectTextColumn + "' set to: " + (title ?? "(null)"));
+                trace.Trace("Exited plugin");
+            }
+            catch (FaultException<OrganizationServiceFault> ex)
+            {
+                throw new InvalidPluginExecutionException("Fault exception occurred executing ServiceRequestHandler (subject text): " + ex + ".");
+            }
+            catch (InvalidPluginExecutionException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidPluginExecutionException("An exception occurred executing ServiceRequestHandler (subject text): " + ex + ".");
+            }
         }
 
         protected void Execute(LocalPluginContext localContext)
@@ -606,6 +699,27 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             });
 
             return response.EntityMetadata.Attributes.ToDictionary(a => a.LogicalName, a => a, StringComparer.OrdinalIgnoreCase);
+        }
+
+        // NEW: Metadata for a single column, or null if the column doesn't exist or can't be set.
+        private static AttributeMetadata GetAttribute(IOrganizationService service, string tableName, string columnName)
+        {
+            try
+            {
+                var response = (RetrieveAttributeResponse)service.Execute(new RetrieveAttributeRequest
+                {
+                    EntityLogicalName = tableName,
+                    LogicalName = columnName,
+                    RetrieveAsIfPublished = false
+                });
+
+                var attribute = response.AttributeMetadata;
+                return attribute.IsValidForCreate == true || attribute.IsValidForUpdate == true ? attribute : null;
+            }
+            catch (FaultException<OrganizationServiceFault>)
+            {
+                return null;
+            }
         }
 
         // Keeps only pairs that exist on both tables, can be updated on the incident, and have matching types.
