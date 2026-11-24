@@ -48,7 +48,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_customercasestatus"
         };
 
-        // Standardised fields with the SAME logical name on the form table and the incident.
+        // Standardised fields with the same logical name on the form table and the incident.
         private static readonly string[] StandardFields =
         {
             "nulbc_firstname",
