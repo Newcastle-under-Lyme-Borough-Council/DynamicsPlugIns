@@ -65,7 +65,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_internalnotificationemail",
             "nulbc_internalnotificationurl",
             "ss_subjectid",
-            "nulbc_customersearch"
+            "nulbc_customersearch",
+            "nulbc_queue",
             // Leave out these values unless we need?
             // "nulbc_status", "nulbc_datecompleted",
             // "nulbc_queue", "nulbc_queueitem", "nulbc_casereference", "ss_casenumber", "nulbc_synceddate",
