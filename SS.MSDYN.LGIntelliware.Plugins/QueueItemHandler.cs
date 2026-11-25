@@ -128,6 +128,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
+                if (queue.Id == Guid.Empty )
+                {
+                    tracingService.Trace("Incident type has no GUID value ");
+                    return;
+                }
+
                 var queueItemRef = currentRecord.GetAttributeValue<EntityReference>("nulbc_queueitem");
 
                 tracingService.Trace(
