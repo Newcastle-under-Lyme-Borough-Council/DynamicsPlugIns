@@ -60,7 +60,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "ss_subjectid",
             "nulbc_customersearch",
             "nulbc_queue",
-            "ownerid",
             "nulbc_datecompleted",
         };
 
