@@ -99,6 +99,16 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 EntityReference queue = currentRecord.GetAttributeValue<EntityReference>("nulbc_queue");
 
+                try
+                {
+                    tracingService.Trace(queue + "");
+                    tracingService.Trace(queue.Id + "");
+                }
+                catch
+
+                {
+                }
+
                 //DateTime is a value type and cannot be null
                 DateTime? dateSubmitted = currentRecord.GetAttributeValue<DateTime?>("nulbc_datesubmitted").HasValue ? currentRecord.GetAttributeValue<DateTime?>("nulbc_datesubmitted") : null;
 
