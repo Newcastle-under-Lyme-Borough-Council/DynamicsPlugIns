@@ -47,6 +47,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_phonenumber",
             "nulbc_address",
             "nulbc_property",
+            "nulbc_datesubmitted",
             "nulbc_description",
             "nulbc_datasource",
             "nulbc_externalreference",
