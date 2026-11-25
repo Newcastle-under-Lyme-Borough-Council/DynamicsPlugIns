@@ -26,6 +26,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         private const string StatusFilterColumn = "nulbc_statusfilter";
         private const string StatusCaseFinalStatusColumn = "nulbc_finalstatus";
 
+        // The standardised service config lookup. Used whenever the form has it, even if other lookups point at the same table.
+        private const string PreferredServiceConfigColumn = "nulbc_serviceconfig";
+
         // Form columns that receive the customer status from the status case.
         private static readonly string[] CustomerStatusColumns =
         {
@@ -576,7 +579,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 .OrderBy(l => l.LogicalName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var serviceConfigColumn = FindLookupTo(lookups, ServiceConfiguration.TableName, false, trace);
+            var serviceConfigColumn = FindLookupTo(lookups, ServiceConfiguration.TableName, false, trace, PreferredServiceConfigColumn);
             var incidentColumn = FindLookupTo(lookups, Case.TableName, false, trace);
 
             if (serviceConfigColumn == null)
@@ -605,8 +608,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             };
         }
 
-        // Finds the lookup column that points at the given table (null if none, or if several and requireSingle is set).
-        private static string FindLookupTo(List<LookupAttributeMetadata> lookups, string targetTable, bool requireSingle, ITracingService trace)
+        // Finds the lookup column that points at the given table.
+        // If 'preferred' is one of the matches it always wins. Otherwise returns null if none match,
+        // or if several match and requireSingle is set; with several matches and no requireSingle, the first (alphabetical) is used.
+        private static string FindLookupTo(List<LookupAttributeMetadata> lookups, string targetTable, bool requireSingle, ITracingService trace, string preferred = null)
         {
             var matches = lookups
                 .Where(l => l.Targets != null && l.Targets.Contains(targetTable, StringComparer.OrdinalIgnoreCase))
@@ -616,6 +621,20 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             if (matches.Count == 0)
             {
                 return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(preferred))
+            {
+                var preferredMatch = matches.FirstOrDefault(m => string.Equals(m, preferred, StringComparison.OrdinalIgnoreCase));
+                if (preferredMatch != null)
+                {
+                    if (matches.Count > 1)
+                    {
+                        trace.Trace("Several lookups point at '" + targetTable + "': " + string.Join(", ", matches) + " - using preferred " + preferredMatch + ".");
+                    }
+
+                    return preferredMatch;
+                }
             }
 
             if (matches.Count > 1)
