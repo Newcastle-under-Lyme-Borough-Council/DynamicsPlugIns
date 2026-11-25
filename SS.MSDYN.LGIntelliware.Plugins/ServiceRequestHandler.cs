@@ -45,11 +45,15 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         private const string IncidentSubjectColumn = "ss_subjectid";
         private const string IncidentFormNameColumn = "nulbc_formname";
 
+        // Yes/No column on the incident that receives the status case row's final status.
+        private const string IncidentCaseStatusFinalColumn = "nulbc_casestatusfinal";
+
         // Status case table, and the columns on it that are copied onto the form.
         private const string StatusCaseTable = "nulbc_statuscase";
         private const string StatusCaseLookupColumn = "nulbc_statuscase";
         private const string StatusCaseCustomerStatusColumn = "nulbc_customerstatus";
         private const string StatusFilterColumn = "nulbc_statusfilter";
+        private const string StatusCaseFinalStatusColumn = "nulbc_finalstatus";
 
         // Whichever of these exists on the form table gets the customer status.
         private static readonly string[] CustomerStatusColumns =
@@ -186,6 +190,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 var formColumns = new[] { config.ServiceConfigurationColumnLogicalName, config.IncidentIdColumnLogicalName }
                     .Concat(usable.Select(p => p.Form))
                     .Concat(new[] { primaryNameColumn })
+                    .Concat(new[] { formMeta.ContainsKey(StatusCaseLookupColumn) ? StatusCaseLookupColumn : null })
                     .Where(c => !string.IsNullOrWhiteSpace(c))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray();
@@ -269,6 +274,16 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (incidentMeta.ContainsKey(IncidentFormNameColumn))
                 {
                     incidentColumns.Add(IncidentFormNameColumn);
+                }
+
+                if (incidentMeta.ContainsKey(StatusCaseLookupColumn))
+                {
+                    incidentColumns.Add(StatusCaseLookupColumn);
+                }
+
+                if (incidentMeta.ContainsKey(IncidentCaseStatusFinalColumn))
+                {
+                    incidentColumns.Add(IncidentCaseStatusFinalColumn);
                 }
 
                 var incident = service.Retrieve(caseRef.LogicalName, caseRef.Id,
@@ -396,6 +411,46 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     trace.Trace("'" + IncidentFormNameColumn + "' not set: the column is missing, not updatable or not text.");
                 }
 
+                // Copy the status case row's final status (yes/no) into the case status final column on the incident.
+                if (incidentMeta.TryGetValue(IncidentCaseStatusFinalColumn, out var finalMeta) &&
+                    finalMeta.IsValidForUpdate == true &&
+                    (finalMeta.AttributeType == AttributeTypeCode.Boolean || finalMeta.AttributeType == AttributeTypeCode.Picklist))
+                {
+                    // The status case the incident will have after this save: the form's value, otherwise what the incident already holds.
+                    var finalStatusRef = record.GetAttributeValue<EntityReference>(StatusCaseLookupColumn)
+                        ?? incident.GetAttributeValue<EntityReference>(StatusCaseLookupColumn);
+
+                    if (finalStatusRef != null && finalStatusRef.Id != Guid.Empty)
+                    {
+                        var statusCaseRow = service.Retrieve(finalStatusRef.LogicalName, finalStatusRef.Id, new ColumnSet(StatusCaseFinalStatusColumn));
+                        var finalValue = ConvertYesNo(
+                            statusCaseRow.Contains(StatusCaseFinalStatusColumn) ? statusCaseRow[StatusCaseFinalStatusColumn] : null,
+                            finalMeta);
+
+                        if (finalValue != null)
+                        {
+                            var currentFinal = incident.Contains(IncidentCaseStatusFinalColumn) ? incident[IncidentCaseStatusFinalColumn] : null;
+                            if (!ValuesEqual(finalValue, currentFinal))
+                            {
+                                update[IncidentCaseStatusFinalColumn] = finalValue;
+                                trace.Trace("Changed: " + StatusCaseFinalStatusColumn + " (status case) -> " + IncidentCaseStatusFinalColumn);
+                            }
+                        }
+                        else
+                        {
+                            trace.Trace("Status case '" + finalStatusRef.Id + "' has no usable '" + StatusCaseFinalStatusColumn + "' value - '" + IncidentCaseStatusFinalColumn + "' not set.");
+                        }
+                    }
+                    else
+                    {
+                        trace.Trace("No status case on the record - '" + IncidentCaseStatusFinalColumn + "' not set.");
+                    }
+                }
+                else
+                {
+                    trace.Trace("'" + IncidentCaseStatusFinalColumn + "' not set: the column is missing, not updatable or not yes/no.");
+                }
+
                 // Point the incident back at this form record.
                 if (incidentMeta.TryGetValue(IncidentServiceRequestColumn, out var srMeta) &&
                     srMeta.IsValidForUpdate == true &&
@@ -518,6 +573,35 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
 
             trace.Trace("Status sync: can't convert '" + sourceColumn + "' to " + destination.AttributeType + " column '" + destination.LogicalName + "'.");
+            return null;
+        }
+
+        // Yes/No (1/0) values can be copied between a Two Options (boolean) column and a Yes/No choice column.
+        // Returns null if the source has no usable value or the destination isn't a yes/no type.
+        private static object ConvertYesNo(object value, AttributeMetadata destination)
+        {
+            int? number = null;
+            if (value is bool flag)
+            {
+                number = flag ? 1 : 0;
+            }
+            else if (value is OptionSetValue option)
+            {
+                number = option.Value;
+            }
+
+            if (number == null) return null;
+
+            if (destination.AttributeType == AttributeTypeCode.Boolean)
+            {
+                return number.Value == 1;
+            }
+
+            if (destination.AttributeType == AttributeTypeCode.Picklist)
+            {
+                return new OptionSetValue(number.Value);
+            }
+
             return null;
         }
 
