@@ -35,7 +35,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         // Form columns that hold the contact, in order of preference (the first one found on the table is used).
         private static readonly string[] ContactColumnCandidates =
         {
-            "crb98_customersearch2",
             "nulbc_customersearch"
         };
 
@@ -48,8 +47,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_phonenumber",
             "nulbc_address",
             "nulbc_property",
-            "nulbc_description",
             "nulbc_datesubmitted",
+            "nulbc_description",
             "nulbc_datasource",
             "nulbc_externalreference",
             "nulbc_internalnotification",
@@ -58,6 +57,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "ss_subjectid",
             "nulbc_customersearch",
             "nulbc_queue",
+            "ownerid",
             "nulbc_datecompleted",
         };
 
