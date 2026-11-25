@@ -35,7 +35,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         // Form columns that hold the contact, in order of preference (the first one found on the table is used).
         private static readonly string[] ContactColumnCandidates =
         {
-            "crb98_customersearch2",
             "nulbc_customersearch"
         };
 
