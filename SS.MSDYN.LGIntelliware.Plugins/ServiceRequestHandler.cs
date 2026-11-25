@@ -39,6 +39,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         };
 
         // Columns with the same name on the form and the case, copied form -> case.
+
+        // Checked in this order, before the automatic search for a lookup to the service configuration table.
+        private static readonly string[] ServiceConfigColumnOverrides =
+        {
+            "linzi_serviceconfig2",
+            "linzi_serviceconfig3",
+        };
         private static readonly string[] StandardFields =
         {
             "nulbc_firstname",
@@ -576,14 +583,24 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 .OrderBy(l => l.LogicalName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var serviceConfigColumn = FindLookupTo(lookups, ServiceConfiguration.TableName, false, trace);
-            var incidentColumn = FindLookupTo(lookups, Case.TableName, false, trace);
+            var serviceConfigColumn = ServiceConfigColumnOverrides.FirstOrDefault(c =>
+                lookups.Any(l => string.Equals(l.LogicalName, c, StringComparison.OrdinalIgnoreCase)));
+
+            if (serviceConfigColumn != null)
+            {
+                trace.Trace("Service config column taken from the hardcoded list: " + serviceConfigColumn);
+            }
+            else
+            {
+                serviceConfigColumn = FindLookupTo(lookups, ServiceConfiguration.TableName, false, trace);
+            }
 
             if (serviceConfigColumn == null)
             {
                 throw new InvalidPluginExecutionException("No lookup to the service configuration table was found on '" + tableName + "'.");
             }
 
+            var incidentColumn = FindLookupTo(lookups, Case.TableName, false, trace);
             if (incidentColumn == null)
             {
                 throw new InvalidPluginExecutionException("No lookup to the case table was found on '" + tableName + "'.");
