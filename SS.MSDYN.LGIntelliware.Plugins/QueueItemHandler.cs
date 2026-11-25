@@ -112,7 +112,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
 
                 //Check if the Case summary entity has a queue reference
-                if (queue == null && queue.Id == Guid.Empty)
+                if (queue == null)
                 {
                     tracingService.Trace("Incident type has no assigned queue");
                     return;
