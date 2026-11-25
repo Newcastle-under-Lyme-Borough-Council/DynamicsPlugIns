@@ -43,6 +43,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         // Checked in this order, before the automatic search for a lookup to the service configuration table.
         private static readonly string[] ServiceConfigColumnOverrides =
         {
+            "nulbc_serviceconfiguration",
+            "nulbc_serviceconfig",
+            "linzi_serviceconfig",
             "linzi_serviceconfig2",
             "linzi_serviceconfig3",
         };
