@@ -48,7 +48,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_address",
             "nulbc_property",
             "nulbc_description",
-            "nulbc_datesubmitted",
             "nulbc_datasource",
             "nulbc_externalreference",
             "nulbc_internalnotification",
