@@ -7,48 +7,39 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
-using System.Text.Json;
 
 namespace SS.MSDYN.LGIntelliware.Plugins
 {
-    // If the form record has no case yet, create a new case and link it.
-    // Copies standardised fields from the form, into the case - updates each time the form is saved.
-    // The case updatin triggers QueueItemHandler
-    // Configuration source uses the step's own Unsecure Configuration if one is provided, otherwise the JSON on the-
-    // PostCreate step registered for the same table. (the step can be reigstered, just not enabled).
-    //
-    // When nulbc_statuscase is changed on the form, the customer status and status filter are also copied onto the
-    // form from the matching nulbc_statuscase row (before the form is synced to the case).
-    //
-    // Single-line and multi-line text columns can be synced with each other. Text longer than the case column's
-    // maximum length is trimmed to fit.
+    // Runs when a form record is saved: creates/links a case and keeps the case in line with the form.
     public class ServiceRequestHandler : PluginBase
     {
-        private const string PostCreateTypeName = "SS.MSDYN.LGIntelliware.Plugins.PostCreate";
-
-        // Shared variable set while this plugin makes an update to the form record itself (linking the new case, or syncing
-        // the status fields), so the update it causes doesn't run the plugin a second time.
         private const string LinkingFlag = "ServiceRequestHandler.LinkingCase";
-
-        // Column on the incident that holds the contact. The form's contact column comes from the config.
         private const string IncidentContactColumn = "ss_customerid";
-
-        // Lookup on the incident that points back at the form record. QueueItemHandler uses it as the queue item's Object, so it must be set before the queue item is created.
         private const string IncidentServiceRequestColumn = "ss_servicerequestid";
-
-        // Status case table, and the columns on it that are copied onto the form.
+        private const string IncidentChildReferenceColumn = "nulbc_childreference";
+        private const string IncidentSubjectColumn = "ss_subjectid";
+        private const string IncidentFormNameColumn = "nulbc_formname";
+        private const string IncidentCaseStatusFinalColumn = "nulbc_casestatusfinal";
         private const string StatusCaseTable = "nulbc_statuscase";
         private const string StatusCaseLookupColumn = "nulbc_statuscase";
         private const string StatusCaseCustomerStatusColumn = "nulbc_customerstatus";
         private const string StatusFilterColumn = "nulbc_statusfilter";
+        private const string StatusCaseFinalStatusColumn = "nulbc_finalstatus";
 
-        // Whichever of these exists on the form table gets the customer status.
+        // Form columns that receive the customer status from the status case.
         private static readonly string[] CustomerStatusColumns =
         {
             "nulbc_customercasestatus"
         };
 
-        // Standardised fields with the same logical name on the form table and the incident.
+        // Form columns that hold the contact, in order of preference (the first one found on the table is used).
+        private static readonly string[] ContactColumnCandidates =
+        {
+            "crb98_customersearch2",
+            "nulbc_customersearch"
+        };
+
+        // Columns with the same name on the form and the case, copied form -> case.
         private static readonly string[] StandardFields =
         {
             "nulbc_firstname",
@@ -58,7 +49,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_address",
             "nulbc_property",
             "nulbc_description",
-            "nulbc_datesubmitted",      // QueueItemHandler requires this field to be triggered
+            "nulbc_datesubmitted",
             "nulbc_datasource",
             "nulbc_externalreference",
             "nulbc_internalnotification",
@@ -67,57 +58,43 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "ss_subjectid",
             "nulbc_customersearch",
             "nulbc_queue",
-            // Leave out these values unless we need?
-            // "nulbc_status", "nulbc_datecompleted",
-            // "nulbc_queue", "nulbc_queueitem", "nulbc_casereference", "ss_casenumber", "nulbc_synceddate",
+            "nulbc_datecompleted",
         };
 
+        // Form column -> differently named case column.
         private static readonly KeyValuePair<string, string>[] MappedFields =
         {
-            // Customer status
             new KeyValuePair<string, string>("nulbc_customercasestatus", "nulbc_customerstatus"),
-
-            // Status case
             new KeyValuePair<string, string>("nulbc_statuscase", "nulbc_statuscase"),
-
             new KeyValuePair<string, string>("nulbc_customersearch", "nulbc_contact"),
-
             new KeyValuePair<string, string>("nulbc_uprn", "nulbc_property"),
         };
 
-        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
-
-        private readonly string _unsecureConfiguration;
-
-        // Form column & incident column pairs.
+        // A form column and the case column it is copied to.
         private class FieldPair
         {
             public string Form { get; set; }
             public string Incident { get; set; }
         }
 
-        public ServiceRequestHandler(string unsecureConfiguration)
-            : base(typeof(ServiceRequestHandler), unsecureConfiguration)
-        {
-            _unsecureConfiguration = unsecureConfiguration;
-            RegisterEvents();
-        }
-
+        // Plugin constructor (no configuration needed).
         public ServiceRequestHandler() : base(typeof(ServiceRequestHandler))
         {
             RegisterEvents();
         }
 
+        // Registers Execute as a PostOperation Update step.
         public void RegisterEvents()
         {
-            // Update trigger only. Runs when a user saves a form record.
             RegisteredEvents.Add(new Tuple<int, string, string, Action<LocalPluginContext>>(
                 PluginExecutionPipelineStage.PostOperation.GetHashCode(), PluginExecutionMessageName.UPDATE, string.Empty, Execute));
         }
 
+        // Main entry point (Update of a form record):
+        // 1. Work out the column settings from the form's metadata and sync the status fields onto the form.
+        // 2. Create and link a case if there isn't one yet.
+        // 3. Copy standard fields, reference, subject name and final status onto the case.
+        // 4. Update the case only if something changed.
         protected void Execute(LocalPluginContext localContext)
         {
             if (localContext == null)
@@ -137,7 +114,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 return;
             }
 
-            // If the update this plugin makes to the form record (linking a new case, syncing status fields) isn't from a user, skip it.
             if (IsLinkingUpdate(context))
             {
                 trace.Trace("Triggered by this plugin updating the form record.");
@@ -154,31 +130,29 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // Get the table/column settings for this form table.
-                var config = LoadConfig(service, target.LogicalName, trace);
-
-                // Work out which standardised fields can be copied.
-                var pairs = BuildFieldPairs(config);
                 var formMeta = GetAttributes(service, target.LogicalName);
 
-                // If the status case was changed, copy its customer status + status filter onto the form.
-                // Done before the form is read below, so the case is synced with the new values.
+                var primaryNameColumn = formMeta.Values.FirstOrDefault(a => a.IsPrimaryName == true)?.LogicalName;
+
+                var config = BuildConfig(target.LogicalName, formMeta, primaryNameColumn, trace);
+                var pairs = BuildFieldPairs(config);
+
                 SyncStatusCaseFields(service, context, target, formMeta, trace);
 
                 var incidentTable = GetIncidentTableName(service, target.LogicalName, config, trace);
                 var incidentMeta = GetAttributes(service, incidentTable);
                 var usable = FilterUsablePairs(pairs, formMeta, incidentMeta, trace);
 
-                // Read the form record.
                 var formColumns = new[] { config.ServiceConfigurationColumnLogicalName, config.IncidentIdColumnLogicalName }
                     .Concat(usable.Select(p => p.Form))
+                    .Concat(new[] { primaryNameColumn })
+                    .Concat(new[] { formMeta.ContainsKey(StatusCaseLookupColumn) ? StatusCaseLookupColumn : null })
                     .Where(c => !string.IsNullOrWhiteSpace(c))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
                 var record = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(formColumns));
 
-                // Only continue when the Service Config lookup has been filled in.
                 var serviceConfigRef = record.GetAttributeValue<EntityReference>(config.ServiceConfigurationColumnLogicalName);
                 if (serviceConfigRef == null || serviceConfigRef.Id == Guid.Empty)
                 {
@@ -187,7 +161,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     return;
                 }
 
-                // Does the case already exist for this form record?
                 var caseRef = record.GetAttributeValue<EntityReference>(config.IncidentIdColumnLogicalName);
                 if (caseRef == null || caseRef.Id == Guid.Empty)
                 {
@@ -214,14 +187,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                     var subject = subjects.Entities[0];
 
-                    // PostCreate received the whole new record; here the full record is read so the helper has every column.
                     var fullRecord = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(true));
 
-                    // Create an Incident (case)
                     var incidentId = DataverseHelper.CreateCaseGeneric(service, fullRecord, serviceConfiguration, subject, ToPluginConfig(config), trace);
                     trace.Trace("Case created: " + incidentId);
 
-                    // Link it to the form record
                     var entityToUpdate = new Entity(target.LogicalName)
                     {
                         Id = target.Id
@@ -235,22 +205,43 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     caseRef = new EntityReference(Case.TableName, incidentId);
                 }
 
-                // Bring the incident in line with the form.
                 var incidentColumns = usable.Select(p => p.Incident).ToList();
                 if (incidentMeta.ContainsKey(IncidentServiceRequestColumn))
                 {
                     incidentColumns.Add(IncidentServiceRequestColumn);
                 }
 
+                if (incidentMeta.ContainsKey(IncidentChildReferenceColumn))
+                {
+                    incidentColumns.Add(IncidentChildReferenceColumn);
+                }
+
+                if (incidentMeta.ContainsKey(IncidentSubjectColumn))
+                {
+                    incidentColumns.Add(IncidentSubjectColumn);
+                }
+
+                if (incidentMeta.ContainsKey(IncidentFormNameColumn))
+                {
+                    incidentColumns.Add(IncidentFormNameColumn);
+                }
+
+                if (incidentMeta.ContainsKey(StatusCaseLookupColumn))
+                {
+                    incidentColumns.Add(StatusCaseLookupColumn);
+                }
+
+                if (incidentMeta.ContainsKey(IncidentCaseStatusFinalColumn))
+                {
+                    incidentColumns.Add(IncidentCaseStatusFinalColumn);
+                }
+
                 var incident = service.Retrieve(caseRef.LogicalName, caseRef.Id,
                     new ColumnSet(incidentColumns.Distinct().ToArray()));
 
-                // Build an update containing only the standardised fields that have data and differ.
                 var update = new Entity(caseRef.LogicalName, caseRef.Id);
                 foreach (var p in usable)
                 {
-
-                    // Debug whether the address field is actually filled in
                     if (p.Incident == "nulbc_address")
                     {
                         var formLen = record.Contains(p.Form) && record[p.Form] is string fs ? fs.Length : -1;
@@ -260,12 +251,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                     if (!HasData(record, p.Form))
                     {
-                        continue;   // Never blank out an incident field
+                        continue;
                     }
 
                     var formValue = record[p.Form];
 
-                    // Text copied between single-line and multi-line columns is trimmed to the incident column's maximum length.
                     if (formValue is string text)
                     {
                         var max = GetMaxLength(incidentMeta[p.Incident]);
@@ -278,7 +268,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                         formValue = text;
                     }
 
-                    // A lookup must point at a table the incident column accepts.
                     if (formValue is EntityReference er &&
                         incidentMeta[p.Incident] is LookupAttributeMetadata lookup &&
                         lookup.Targets != null && lookup.Targets.Length > 0 &&
@@ -298,7 +287,111 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     trace.Trace("Changed: " + p.Form + " -> " + p.Incident);
                 }
 
-                // Point the incident back at this form record.
+                if (!string.IsNullOrWhiteSpace(primaryNameColumn) &&
+                    incidentMeta.TryGetValue(IncidentChildReferenceColumn, out var childMeta) &&
+                    childMeta.IsValidForUpdate == true &&
+                    (childMeta.AttributeType == AttributeTypeCode.String || childMeta.AttributeType == AttributeTypeCode.Memo))
+                {
+                    var reference = record.GetAttributeValue<string>(primaryNameColumn);
+                    if (!string.IsNullOrWhiteSpace(reference))
+                    {
+                        var childMax = GetMaxLength(childMeta);
+                        if (childMax.HasValue && reference.Length > childMax.Value)
+                        {
+                            reference = reference.Substring(0, childMax.Value);
+                        }
+
+                        var currentReference = incident.Contains(IncidentChildReferenceColumn) ? incident[IncidentChildReferenceColumn] as string : null;
+                        if (!string.Equals(currentReference, reference, StringComparison.Ordinal))
+                        {
+                            update[IncidentChildReferenceColumn] = reference;
+                            trace.Trace("Changed: " + primaryNameColumn + " -> " + IncidentChildReferenceColumn);
+                        }
+                    }
+                }
+                else
+                {
+                    trace.Trace("'" + IncidentChildReferenceColumn + "' not set: no primary column found, or the column is missing, not updatable or not text.");
+                }
+
+                if (incidentMeta.TryGetValue(IncidentFormNameColumn, out var formNameMeta) &&
+                    formNameMeta.IsValidForUpdate == true &&
+                    (formNameMeta.AttributeType == AttributeTypeCode.String || formNameMeta.AttributeType == AttributeTypeCode.Memo))
+                {
+                    var subjectRef = incident.GetAttributeValue<EntityReference>(IncidentSubjectColumn);
+                    if (subjectRef != null && subjectRef.Id != Guid.Empty)
+                    {
+                        var subjectRecord = service.Retrieve(subjectRef.LogicalName, subjectRef.Id, new ColumnSet(Subject.Title));
+                        var subjectName = subjectRecord.GetAttributeValue<string>(Subject.Title);
+
+                        if (!string.IsNullOrWhiteSpace(subjectName))
+                        {
+                            var formNameMax = GetMaxLength(formNameMeta);
+                            if (formNameMax.HasValue && subjectName.Length > formNameMax.Value)
+                            {
+                                subjectName = subjectName.Substring(0, formNameMax.Value);
+                            }
+
+                            var currentFormName = incident.Contains(IncidentFormNameColumn) ? incident[IncidentFormNameColumn] as string : null;
+                            if (!string.Equals(currentFormName, subjectName, StringComparison.Ordinal))
+                            {
+                                update[IncidentFormNameColumn] = subjectName;
+                                trace.Trace("Changed: " + IncidentSubjectColumn + " (name) -> " + IncidentFormNameColumn);
+                            }
+                        }
+                        else
+                        {
+                            trace.Trace("Subject '" + subjectRef.Id + "' has no title - '" + IncidentFormNameColumn + "' not set.");
+                        }
+                    }
+                    else
+                    {
+                        trace.Trace("Incident has no subject - '" + IncidentFormNameColumn + "' not set.");
+                    }
+                }
+                else
+                {
+                    trace.Trace("'" + IncidentFormNameColumn + "' not set: the column is missing, not updatable or not text.");
+                }
+
+                if (incidentMeta.TryGetValue(IncidentCaseStatusFinalColumn, out var finalMeta) &&
+                    finalMeta.IsValidForUpdate == true &&
+                    (finalMeta.AttributeType == AttributeTypeCode.Boolean || finalMeta.AttributeType == AttributeTypeCode.Picklist))
+                {
+                    var finalStatusRef = record.GetAttributeValue<EntityReference>(StatusCaseLookupColumn)
+                        ?? incident.GetAttributeValue<EntityReference>(StatusCaseLookupColumn);
+
+                    if (finalStatusRef != null && finalStatusRef.Id != Guid.Empty)
+                    {
+                        var statusCaseRow = service.Retrieve(finalStatusRef.LogicalName, finalStatusRef.Id, new ColumnSet(StatusCaseFinalStatusColumn));
+                        var finalValue = ConvertYesNo(
+                            statusCaseRow.Contains(StatusCaseFinalStatusColumn) ? statusCaseRow[StatusCaseFinalStatusColumn] : null,
+                            finalMeta);
+
+                        if (finalValue != null)
+                        {
+                            var currentFinal = incident.Contains(IncidentCaseStatusFinalColumn) ? incident[IncidentCaseStatusFinalColumn] : null;
+                            if (!ValuesEqual(finalValue, currentFinal))
+                            {
+                                update[IncidentCaseStatusFinalColumn] = finalValue;
+                                trace.Trace("Changed: " + StatusCaseFinalStatusColumn + " (status case) -> " + IncidentCaseStatusFinalColumn);
+                            }
+                        }
+                        else
+                        {
+                            trace.Trace("Status case '" + finalStatusRef.Id + "' has no usable '" + StatusCaseFinalStatusColumn + "' value - '" + IncidentCaseStatusFinalColumn + "' not set.");
+                        }
+                    }
+                    else
+                    {
+                        trace.Trace("No status case on the record - '" + IncidentCaseStatusFinalColumn + "' not set.");
+                    }
+                }
+                else
+                {
+                    trace.Trace("'" + IncidentCaseStatusFinalColumn + "' not set: the column is missing, not updatable or not yes/no.");
+                }
+
                 if (incidentMeta.TryGetValue(IncidentServiceRequestColumn, out var srMeta) &&
                     srMeta.IsValidForUpdate == true &&
                     AcceptsTable(srMeta, record.LogicalName))
@@ -315,7 +408,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     trace.Trace("'" + IncidentServiceRequestColumn + "' not set: missing, not updatable, or doesn't accept '" + record.LogicalName + "'.");
                 }
 
-                // Update the incident - Triggers QueueItemHandler.
                 if (update.Attributes.Count == 0)
                 {
                     trace.Trace("Incident already in line with the form - no update is needed.");
@@ -342,8 +434,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        // When nulbc_statuscase is changed on the form, copies the matching customer status and
-        // status filter from the nulbc_statuscase row onto the form record.
+        // When the status case changes on the form, copies its customer status and status filter onto the form.
         private static void SyncStatusCaseFields(
             IOrganizationService service,
             IPluginExecutionContext context,
@@ -351,7 +442,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             Dictionary<string, AttributeMetadata> formMeta,
             ITracingService trace)
         {
-            // Only runs when the lookup is part of this save.
             if (!target.Contains(StatusCaseLookupColumn)) return;
 
             var customerCol = CustomerStatusColumns.FirstOrDefault(c =>
@@ -372,7 +462,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             if (statusRef == null)
             {
-                // Lookup cleared -> clear the synced columns too.
                 if (customerCol != null) update[customerCol] = null;
                 if (filterCol != null) update[filterCol] = null;
             }
@@ -394,13 +483,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 }
             }
 
-            // The update below re-triggers this plugin; the flag makes that nested run exit early.
             context.SharedVariables[LinkingFlag] = true;
             service.Update(update);
             trace.Trace("Status fields synced from " + StatusCaseTable + ".");
         }
 
-        // Choice -> same-type choice is copied as is; choice -> text uses the label.
+        // Converts a status case value to the form column's type (choice as is, text uses the label).
         private static object ConvertForColumn(Entity source, string sourceColumn, AttributeMetadata destination, ITracingService trace)
         {
             if (!source.Contains(sourceColumn) || source[sourceColumn] == null) return null;
@@ -423,7 +511,35 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return null;
         }
 
-        // Links case to form record, so the update it causes doesn't run the plugin a second time.
+        // Converts a yes/no value between a Two Options column and a Yes/No choice (1/0).
+        private static object ConvertYesNo(object value, AttributeMetadata destination)
+        {
+            int? number = null;
+            if (value is bool flag)
+            {
+                number = flag ? 1 : 0;
+            }
+            else if (value is OptionSetValue option)
+            {
+                number = option.Value;
+            }
+
+            if (number == null) return null;
+
+            if (destination.AttributeType == AttributeTypeCode.Boolean)
+            {
+                return number.Value == 1;
+            }
+
+            if (destination.AttributeType == AttributeTypeCode.Picklist)
+            {
+                return new OptionSetValue(number.Value);
+            }
+
+            return null;
+        }
+
+        // True if this save was caused by the plugin's own update of the form record.
         private static bool IsLinkingUpdate(IPluginExecutionContext context)
         {
             var parent = context.ParentContext;
@@ -438,7 +554,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return false;
         }
 
-        // CreateCaseGeneric takes the PluginConfig type, so the config is copied across.
+        // Copies the settings into the type CreateCaseGeneric expects.
         private static PluginConfig ToPluginConfig(ServiceRequestConfig c)
         {
             return new PluginConfig
@@ -451,75 +567,67 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             };
         }
 
-        // Uses the step's own Unsecure Configuration.
-        private ServiceRequestConfig LoadConfig(IOrganizationService service, string tableName, ITracingService trace)
+        // Works out the column settings from the form table's metadata, so no step configuration is needed.
+        private static ServiceRequestConfig BuildConfig(string tableName, Dictionary<string, AttributeMetadata> formMeta, string primaryNameColumn, ITracingService trace)
         {
-            if (!string.IsNullOrWhiteSpace(_unsecureConfiguration))
-            {
-                var own = JsonSerializer.Deserialize<ServiceRequestConfig>(_unsecureConfiguration, JsonOptions);
-                if (own != null &&
-                    !string.IsNullOrWhiteSpace(own.ServiceConfigurationColumnLogicalName) &&
-                    !string.IsNullOrWhiteSpace(own.IncidentIdColumnLogicalName))
-                {
-                    trace.Trace("Config read from this step's unsecure configuration.");
-                    return own;
-                }
+            var lookups = formMeta.Values
+                .OfType<LookupAttributeMetadata>()
+                .Where(l => l.IsValidForRead == true)
+                .OrderBy(l => l.LogicalName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
-                throw new InvalidPluginExecutionException(
-                    "The unsecure configuration on this step is incomplete.");
+            var serviceConfigColumn = FindLookupTo(lookups, ServiceConfiguration.TableName, false, trace);
+            var incidentColumn = FindLookupTo(lookups, Case.TableName, false, trace);
+
+            if (serviceConfigColumn == null)
+            {
+                throw new InvalidPluginExecutionException("No lookup to the service configuration table was found on '" + tableName + "'.");
             }
 
-            return LoadConfigFromPostCreateStep(service, tableName, trace);
-        }
-
-        // Reads the Unsecure Configuration JSON from the PostCreate Create step registered for this table.
-        private static ServiceRequestConfig LoadConfigFromPostCreateStep(IOrganizationService service, string tableName, ITracingService trace)
-        {
-            var query = new QueryExpression("sdkmessageprocessingstep")
+            if (incidentColumn == null)
             {
-                ColumnSet = new ColumnSet("configuration", "name"),
-                TopCount = 1
+                throw new InvalidPluginExecutionException("No lookup to the case table was found on '" + tableName + "'.");
+            }
+
+            var contactColumn = ContactColumnCandidates.FirstOrDefault(c => formMeta.ContainsKey(c))
+                ?? FindLookupTo(lookups, "contact", true, trace);
+
+            trace.Trace("Config built from metadata for '" + tableName + "': serviceConfig=" + serviceConfigColumn +
+                ", case=" + incidentColumn + ", contact=" + (contactColumn ?? "(none)") + ", reference=" + (primaryNameColumn ?? "(none)"));
+
+            return new ServiceRequestConfig
+            {
+                TableName = tableName,
+                ServiceConfigurationColumnLogicalName = serviceConfigColumn,
+                IncidentIdColumnLogicalName = incidentColumn,
+                ContactColumnLogicalName = contactColumn,
+                ReferenceNumberColumnLogicalName = primaryNameColumn
             };
-
-            var pluginType = query.AddLink("plugintype", "plugintypeid", "plugintypeid");
-            pluginType.LinkCriteria.AddCondition("typename", ConditionOperator.Equal, PostCreateTypeName);
-
-            var message = query.AddLink("sdkmessage", "sdkmessageid", "sdkmessageid");
-            message.LinkCriteria.AddCondition("name", ConditionOperator.Equal, "Create");
-
-            var filter = query.AddLink("sdkmessagefilter", "sdkmessagefilterid", "sdkmessagefilterid");
-            filter.LinkCriteria.AddCondition("primaryobjecttypecode", ConditionOperator.Equal, tableName);
-
-            var results = service.RetrieveMultiple(query);
-            if (results.Entities.Count == 0)
-            {
-                throw new InvalidPluginExecutionException(
-                    "No configuration was found for '" + tableName + "' (no unsecure configuration on this step and no PostCreate step).");
-            }
-
-            var step = results.Entities[0];
-            trace.Trace("Config read from step: " + step.GetAttributeValue<string>("name"));
-
-            var json = step.GetAttributeValue<string>("configuration");
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                throw new InvalidPluginExecutionException(
-                    "The PostCreate step for '" + tableName + "' has no configuration.");
-            }
-
-            var config = JsonSerializer.Deserialize<ServiceRequestConfig>(json, JsonOptions);
-            if (config == null ||
-                string.IsNullOrWhiteSpace(config.ServiceConfigurationColumnLogicalName) ||
-                string.IsNullOrWhiteSpace(config.IncidentIdColumnLogicalName))
-            {
-                throw new InvalidPluginExecutionException(
-                    "The PostCreate step configuration for '" + tableName + "' is incomplete.");
-            }
-
-            return config;
         }
 
-        // The incident table is ss_incident; reads from the case lookup's target - so it stays correct if that ever changes.
+        // Finds the lookup column that points at the given table (null if none, or if several and requireSingle is set).
+        private static string FindLookupTo(List<LookupAttributeMetadata> lookups, string targetTable, bool requireSingle, ITracingService trace)
+        {
+            var matches = lookups
+                .Where(l => l.Targets != null && l.Targets.Contains(targetTable, StringComparer.OrdinalIgnoreCase))
+                .Select(l => l.LogicalName)
+                .ToList();
+
+            if (matches.Count == 0)
+            {
+                return null;
+            }
+
+            if (matches.Count > 1)
+            {
+                trace.Trace("Several lookups point at '" + targetTable + "': " + string.Join(", ", matches) + (requireSingle ? " - none used." : " - using " + matches[0] + "."));
+                return requireSingle ? null : matches[0];
+            }
+
+            return matches[0];
+        }
+
+        // Finds the case table from the form's case lookup (defaults to ss_incident).
         private static string GetIncidentTableName(IOrganizationService service, string formTable, ServiceRequestConfig config, ITracingService trace)
         {
             var attribute = (RetrieveAttributeResponse)service.Execute(new RetrieveAttributeRequest
@@ -535,14 +643,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return table;
         }
 
-        // The standardised fields are copied from the form to the incident: same-name fields, mapped fields, and the contact.
+        // Builds the full list of form -> case column pairs to copy.
         private static List<FieldPair> BuildFieldPairs(ServiceRequestConfig config)
         {
             var pairs = StandardFields
                 .Select(f => new FieldPair { Form = f, Incident = f })
                 .ToList();
 
-            // Fields named differently on the form and the incident.
             pairs.AddRange(MappedFields.Select(m => new FieldPair { Form = m.Key, Incident = m.Value }));
 
             if (!string.IsNullOrWhiteSpace(config.ContactColumnLogicalName))
@@ -553,6 +660,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return pairs;
         }
 
+        // Loads a table's column metadata, keyed by logical name.
         private static Dictionary<string, AttributeMetadata> GetAttributes(IOrganizationService service, string tableName)
         {
             var response = (RetrieveEntityResponse)service.Execute(new RetrieveEntityRequest
@@ -565,7 +673,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return response.EntityMetadata.Attributes.ToDictionary(a => a.LogicalName, a => a, StringComparer.OrdinalIgnoreCase);
         }
 
-        // Keeps only pairs that exist on both tables, can be updated on the incident, and have matching types.
+        // Keeps only pairs whose columns exist on both tables, are updatable and have compatible types.
         private static List<FieldPair> FilterUsablePairs(
             List<FieldPair> pairs,
             Dictionary<string, AttributeMetadata> formMeta,
@@ -601,20 +709,19 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return usable;
         }
 
+        // True if two column types can be copied between each other (same type, lookups, or text).
         private static bool TypesCompatible(AttributeTypeCode? a, AttributeTypeCode? b)
         {
             if (a == b) return true;
 
-            // Lookup-style columns can be copied between each other.
             bool IsLookup(AttributeTypeCode? t) => t == AttributeTypeCode.Lookup || t == AttributeTypeCode.Customer;
 
-            // Single-line and multi-line text columns can be copied between each other.
             bool IsText(AttributeTypeCode? t) => t == AttributeTypeCode.String || t == AttributeTypeCode.Memo;
 
             return (IsLookup(a) && IsLookup(b)) || (IsText(a) && IsText(b));
         }
 
-        // Maximum number of characters a text column accepts (null if not a text column).
+        // Maximum length of a text column (null if not text).
         private static int? GetMaxLength(AttributeMetadata attribute)
         {
             if (attribute is StringAttributeMetadata s) return s.MaxLength;
@@ -634,6 +741,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return lookup.Targets.Contains(tableName);
         }
 
+        // True if the column has a non-empty value.
         private static bool HasData(Entity record, string column)
         {
             if (!record.Contains(column) || record[column] == null) return false;
@@ -641,7 +749,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             return true;
         }
 
-        // Ensure values are correct
+        // Compares two column values (lookups, choices, money and plain values).
         private static bool ValuesEqual(object a, object b)
         {
             if (a == null && b == null) return true;
