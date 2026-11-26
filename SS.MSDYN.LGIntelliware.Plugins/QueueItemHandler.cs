@@ -33,12 +33,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         protected void Execute(LocalPluginContext localContext)
         {
 
-            localContext.TracingService.Trace("Executing QueueItemHandler");
-
             if (localContext == null)
             {
                 throw new ArgumentNullException(nameof(localContext));
             }
+
             var context = localContext.PluginExecutionContext;
             var service = localContext.OrganizationService;
             var tracingService = localContext.TracingService;
@@ -51,21 +50,17 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
             try
             {
-                // Check if context message name is 'Create' ...
+                // Check if context message name is 'Update' ...
                 if (!context.MessageName.Equals(PluginExecutionMessageName.UPDATE))
                 {
                     throw new InvalidPluginExecutionException("Plugin execution expects an Update message.");
                 }
-
-                localContext.TracingService.Trace("message name is Update");
 
                 // Check if context has 'Target' input parameter...
                 if (context.InputParameters.ContainsKey(ContextInputParameters.TARGET) && context.InputParameters[ContextInputParameters.TARGET] == null)
                 {
                     throw new InvalidPluginExecutionException("Target input parameter is missing or null");
                 }
-
-                localContext.TracingService.Trace("target is not null");
 
                 var entity = (Entity)context.InputParameters[ContextInputParameters.TARGET];
 
@@ -76,7 +71,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 {
                     throw new InvalidPluginExecutionException("Entity calling plugin is not Case summary entity.");
                 }
-
 
                 //Get record id of Case summary entity
                 var recordId = entity.Id;
@@ -130,11 +124,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 if (queue.Id == Guid.Empty )
                 {
-                    tracingService.Trace("Incident type has no GUID value ");
+                    tracingService.Trace("Incident type has no GUID value");
                     return;
                 }
 
-                var queueItemRef = currentRecord.GetAttributeValue<EntityReference>("nulbc_queueitem");
+                EntityReference queueItemRef = currentRecord.GetAttributeValue<EntityReference>("nulbc_queueitem");
 
                 tracingService.Trace(
                     queueItemRef != null
@@ -162,7 +156,6 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     var unassignedUser = DataverseHelper.RetrieveUnassignedUser(service);
 
                     var queueId = queue.Id;
-                    //var queueId = Guid.Parse("c7c29624-c0a6-f111-aaad-7c1e522f31c2");
 
                     if (queueId != null)
                     {
@@ -176,38 +169,29 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                             tracingService.Trace("Assigned Queue: " + queueRetrieval.GetAttributeValue<string>("name"));
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            throw new InvalidPluginExecutionException("Fault exception occured retrieving queue record.");
+                            throw new InvalidPluginExecutionException("Fault exception occured retrieving queue record. " + ex);
                         }
-
-                        //check if queue reference is present in queue table
-                        tracingService.Trace("Incident has a valid queue reference");
 
                         //retrieve the rest of the common attributes of the Case summary entity to create a queue item
                         Entity incidentAttributes = RetrieveCaseAttributes(service, recordId);
 
-                        var newQueueItem = CreateQueueItem(service, tracingService, recordId, unassignedUser, queueId, incidentAttributes);
+                        var newQueueItem = CreateQueueItem(service, tracingService, recordId, unassignedUser, incidentAttributes);
 
                         if (newQueueItem == null)
                         {
                             throw new InvalidPluginExecutionException("No new queue item reference");
                         }
+
                         tracingService.Trace("Queue item created successfully: " + newQueueItem);
 
-                        var EntityToUpdate = new Entity(Case.TableName)
-                        {
-                            Id = recordId
-                        };
-
-                        EntityToUpdate["nulbc_queueitem"] = new EntityReference(QueueItem.TableName, newQueueItem);
-
-                        service.Update(EntityToUpdate);
+                        UpdateCaseQueueItemReference(service, recordId, newQueueItem);
 
                         tracingService.Trace("Case summary record updated with queue item reference: " + newQueueItem);
-
                     }
                 }
+
                 //If Case summary entity already has associated queue item
                 else if (currentRecord.GetAttributeValue<EntityReference>("nulbc_queueitem") != null && currentRecord.GetAttributeValue<EntityReference>("nulbc_queueitem").Id != Guid.Empty)
                 {
@@ -237,6 +221,23 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
+
+
+        //Update Case summary Queue item attribute with newly create Queue item Id
+        private static void UpdateCaseQueueItemReference(IOrganizationService service, Guid recordId, Guid newQueueItem)
+        {
+            var EntityToUpdate = new Entity(Case.TableName)
+            {
+                Id = recordId
+            };
+
+            EntityToUpdate["nulbc_queueitem"] = new EntityReference(QueueItem.TableName, newQueueItem);
+
+            service.Update(EntityToUpdate);
+        }
+
+
+        //Update Queue Item entity with Case summary attribute values
         private static void UpdateQueueItem(IOrganizationService service, ITracingService tracingService, Entity entity, Guid queueItemId, Entity incidentAttributes)
         {
 
@@ -348,7 +349,9 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
-        private static Guid CreateQueueItem(IOrganizationService service, ITracingService tracingService, Guid recordId, Entity unassignedUser, Guid queueId, Entity incidentAttributes)
+
+        //Create Queue item entity using attribute values from Case summary enitity
+        private static Guid CreateQueueItem(IOrganizationService service, ITracingService tracingService, Guid recordId, Entity unassignedUser, Entity incidentAttributes)
         {
 
             DateTime? dateSubmitted = incidentAttributes.GetAttributeValue<DateTime?>("nulbc_datesubmitted").HasValue ? incidentAttributes.GetAttributeValue<DateTime?>("nulbc_datesubmitted") : null;
@@ -361,17 +364,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_contact") != null)
                 {
                     entityToCreate[QueueItem.Contact] = new EntityReference("contact", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_contact").Id);
-
                 }
 
                 if (incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid") != null)
                 {
-
                     string tableName = incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").LogicalName;
                     Guid childCaseId = incidentAttributes.GetAttributeValue<EntityReference>("ss_servicerequestid").Id;
 
-                    tracingService.Trace(tableName);
-                    tracingService.Trace("" + childCaseId);
                     entityToCreate[QueueItem.Object] = new EntityReference(tableName, childCaseId);
                 }
 
@@ -410,47 +409,36 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                 if (incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus") != null)
                 {
                     entityToCreate[QueueItem.CustomerStatus] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_customerstatus").Value);
-
                 }
 
                 if (incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource") != null)
                 {
                     entityToCreate[QueueItem.DataSource] = new OptionSetValue(incidentAttributes.GetAttributeValue<OptionSetValue>("nulbc_datasource").Value.GetHashCode());
-
-
                 }
 
                 if (incidentAttributes.GetAttributeValue<EntityReference>("ss_subjectid") != null)
                 {
                     entityToCreate[QueueItem.Subject] = new EntityReference("subject", incidentAttributes.GetAttributeValue<EntityReference>("ss_subjectid").Id);
-
                 }
 
                 if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_property") != null)
                 {
                     entityToCreate[QueueItem.Property] = new EntityReference("ss_property", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_property").Id);
-
                 }
 
-                //For testing purposes, hardcoding the queue id to the 'Unassigned' queue
-                //entityToCreate[QueueItem.Queue] = new EntityReference("queue", queueId);
                 if(incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue") != null)
                 {
-                    //entityToCreate[QueueItem.Queue] = new EntityReference("queue", queueId);
                     entityToCreate[QueueItem.Queue] = new EntityReference("queue", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_queue").Id);
                 }
 
-               
-
                 if (incidentAttributes.GetAttributeValue<EntityReference>("nulbc_statuscase") != null)
                 {
-                    tracingService.Trace("Testing status case");
                     entityToCreate[QueueItem.CaseStatus] = new EntityReference("nulbc_statuscase", incidentAttributes.GetAttributeValue<EntityReference>("nulbc_statuscase").Id);
                 }
 
                 entityToCreate[QueueItem.Owner] = new EntityReference("systemuser", unassignedUser.Id);
 
-                entityToCreate[QueueItem.Title] = incidentAttributes.GetAttributeValue<string>("ss_casenumber");
+                entityToCreate[QueueItem.Title] = incidentAttributes.GetAttributeValue<string>("nulbc_childreference");
 
                 entityToCreate[QueueItem.DateSubmitted] = dateSubmitted.Value;
 
@@ -465,9 +453,10 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             }
         }
 
+
+        //Retrieve standardised columns from Case Summary entity
         private static Entity RetrieveCaseAttributes(IOrganizationService service, Guid recordId)
         {
-            //retrieve the rest of the common attributes of the Case summary entity to create a queue item
             return service.Retrieve(
                 Case.TableName,
                 recordId,
@@ -496,7 +485,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     "nulbc_datesubmitted",
                     "nulbc_queueitem",
                     "nulbc_datecompleted",
-                    "ss_servicerequestid"
+                    "ss_servicerequestid",
+                    "nulbc_childreference"
                 )
             );
         }
