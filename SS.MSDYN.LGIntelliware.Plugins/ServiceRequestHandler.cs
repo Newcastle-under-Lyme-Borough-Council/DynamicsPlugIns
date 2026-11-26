@@ -48,6 +48,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "linzi_serviceconfig",
             "linzi_serviceconfig2",
             "linzi_serviceconfig3",
+            "sks_serviceconfig",
         };
         private static readonly string[] StandardFields =
         {
