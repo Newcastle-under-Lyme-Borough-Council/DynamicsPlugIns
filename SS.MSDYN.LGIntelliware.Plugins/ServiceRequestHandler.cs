@@ -38,9 +38,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "nulbc_customersearch"
         };
 
-        // Columns with the same name on the form and the case, copied form -> case.
-
-        // Checked in this order, before the automatic search for a lookup to the service configuration table.
+        // Known service configuration lookups. Every one found on the form table is a candidate;
+        // the first one that has a value on the record is used (list order only breaks ties).
         private static readonly string[] ServiceConfigColumnOverrides =
         {
             "nulbc_serviceconfiguration",
@@ -50,6 +49,8 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "linzi_serviceconfig3",
             "sks_serviceconfig",
         };
+
+        // Columns with the same name on the form and the case, copied form -> case.
         private static readonly string[] StandardFields =
         {
             "nulbc_firstname",
@@ -88,6 +89,13 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             public string Incident { get; set; }
         }
 
+        // Every lookup on the form table that could be the service configuration or the case link.
+        private class ColumnCandidates
+        {
+            public List<string> ServiceConfig { get; set; }
+            public List<string> Case { get; set; }
+        }
+
         // Plugin constructor (no configuration needed).
         public ServiceRequestHandler() : base(typeof(ServiceRequestHandler))
         {
@@ -102,10 +110,11 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         }
 
         // Main entry point (Update of a form record):
-        // 1. Work out the column settings from the form's metadata and sync the status fields onto the form.
-        // 2. Create and link a case if there isn't one yet.
-        // 3. Copy standard fields, reference, subject name and final status onto the case.
-        // 4. Update the case only if something changed.
+        // 1. Find the candidate service config / case lookups, read the record, and use the ones that are filled in.
+        // 2. Sync the status fields onto the form.
+        // 3. Create and link a case if there isn't one yet.
+        // 4. Copy standard fields, reference, subject name and final status onto the case.
+        // 5. Update the case only if something changed.
         protected void Execute(LocalPluginContext localContext)
         {
             if (localContext == null)
@@ -145,7 +154,14 @@ namespace SS.MSDYN.LGIntelliware.Plugins
 
                 var primaryNameColumn = formMeta.Values.FirstOrDefault(a => a.IsPrimaryName == true)?.LogicalName;
 
-                var config = BuildConfig(target.LogicalName, formMeta, primaryNameColumn, trace);
+                // Read every candidate lookup first, so the filled-in one can be chosen.
+                var candidates = FindColumnCandidates(target.LogicalName, formMeta, trace);
+                var candidateRecord = service.Retrieve(
+                    target.LogicalName,
+                    target.Id,
+                    new ColumnSet(candidates.ServiceConfig.Concat(candidates.Case).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()));
+
+                var config = BuildConfig(target.LogicalName, candidates, candidateRecord, formMeta, primaryNameColumn, trace);
                 var pairs = BuildFieldPairs(config);
 
                 SyncStatusCaseFields(service, context, target, formMeta, trace);
@@ -190,10 +206,24 @@ namespace SS.MSDYN.LGIntelliware.Plugins
                     }
 
                     var title = serviceConfiguration.GetAttributeValue<string>(ServiceConfiguration.Subject);
+                    trace.Trace("Config '" + serviceConfiguration.GetAttributeValue<string>(ServiceConfiguration.Name) +
+                                "' (" + serviceConfiguration.Id + ") subject text: [" + title + "], codes: " +
+                                string.Join(" ", (title ?? "").Select(c => ((int)c).ToString())));
+
                     var subjects = DataverseHelper.RetrieveSubject(service, Subject.TableName, title, new ColumnSet(Subject.Title));
                     if (subjects == null || subjects.Entities == null || subjects.Entities.Count == 0)
                     {
-                        throw new InvalidPluginExecutionException("There are no active subject found for the selected record.");
+                        var visible = service.RetrieveMultiple(new QueryExpression(Subject.TableName)
+                        {
+                            ColumnSet = new ColumnSet(Subject.Title),
+                            TopCount = 100
+                        });
+                        trace.Trace("Subjects visible to plugin (" + visible.Entities.Count + "): " +
+                                    string.Join(" | ", visible.Entities.Select(e => "[" + e.GetAttributeValue<string>(Subject.Title) + "]")));
+
+                        throw new InvalidPluginExecutionException(
+                            "No active subject found with the title '" + title + "' (from service configuration '" +
+                            serviceConfiguration.GetAttributeValue<string>(ServiceConfiguration.Name) + "').");
                     }
 
                     var subject = subjects.Entities[0];
@@ -578,61 +608,134 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             };
         }
 
-        // Works out the column settings from the form table's metadata, so no step configuration is needed.
-        private static ServiceRequestConfig BuildConfig(string tableName, Dictionary<string, AttributeMetadata> formMeta, string primaryNameColumn, ITracingService trace)
+        // Lists every lookup on the form table that could be the service configuration or the case link.
+        private static ColumnCandidates FindColumnCandidates(string tableName, Dictionary<string, AttributeMetadata> formMeta, ITracingService trace)
         {
-            var lookups = formMeta.Values
-                .OfType<LookupAttributeMetadata>()
-                .Where(l => l.IsValidForRead == true)
-                .OrderBy(l => l.LogicalName, StringComparer.OrdinalIgnoreCase)
+            var lookups = GetReadableLookups(formMeta);
+
+            // Known names first (in list order), then any other lookup that points at the service configuration table.
+            var serviceConfig = ServiceConfigColumnOverrides
+                .Where(c => lookups.Any(l => string.Equals(l.LogicalName, c, StringComparison.OrdinalIgnoreCase)))
+                .Concat(FindAllLookupsTo(lookups, ServiceConfiguration.TableName))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var serviceConfigColumn = ServiceConfigColumnOverrides.FirstOrDefault(c =>
-                lookups.Any(l => string.Equals(l.LogicalName, c, StringComparison.OrdinalIgnoreCase)));
+            var caseColumns = FindAllLookupsTo(lookups, Case.TableName);
 
-            if (serviceConfigColumn != null)
-            {
-                trace.Trace("Service config column taken from the hardcoded list: " + serviceConfigColumn);
-            }
-            else
-            {
-                serviceConfigColumn = FindLookupTo(lookups, ServiceConfiguration.TableName, false, trace);
-            }
-
-            if (serviceConfigColumn == null)
+            if (serviceConfig.Count == 0)
             {
                 throw new InvalidPluginExecutionException("No lookup to the service configuration table was found on '" + tableName + "'.");
             }
 
-            var incidentColumn = FindLookupTo(lookups, Case.TableName, false, trace);
-            if (incidentColumn == null)
+            if (caseColumns.Count == 0)
             {
                 throw new InvalidPluginExecutionException("No lookup to the case table was found on '" + tableName + "'.");
             }
+
+            trace.Trace("Service config candidates: " + string.Join(", ", serviceConfig) + ". Case candidates: " + string.Join(", ", caseColumns) + ".");
+
+            return new ColumnCandidates { ServiceConfig = serviceConfig, Case = caseColumns };
+        }
+
+        // Picks the filled-in service configuration and case lookups, then works out the rest of the settings.
+        private static ServiceRequestConfig BuildConfig(
+            string tableName,
+            ColumnCandidates candidates,
+            Entity candidateRecord,
+            Dictionary<string, AttributeMetadata> formMeta,
+            string primaryNameColumn,
+            ITracingService trace)
+        {
+            var serviceConfigColumn = PickPopulated(candidateRecord, candidates.ServiceConfig);
+            if (serviceConfigColumn != null)
+            {
+                trace.Trace("Service config column with a value: " + serviceConfigColumn);
+            }
+            else
+            {
+                serviceConfigColumn = candidates.ServiceConfig[0];
+                trace.Trace("No service config column has a value, defaulting to: " + serviceConfigColumn);
+            }
+
+            var caseColumn = PickPopulated(candidateRecord, candidates.Case);
+            if (caseColumn != null)
+            {
+                trace.Trace("Case column with a value: " + caseColumn);
+            }
+            else
+            {
+                // No case yet: use the case lookup with the same prefix as the service config column, so the pair always matches.
+                var prefix = GetPrefix(serviceConfigColumn);
+                caseColumn = (prefix == null
+                                 ? null
+                                 : candidates.Case.FirstOrDefault(c => c.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+                             ?? candidates.Case[0];
+                trace.Trace("No case column has a value, using: " + caseColumn);
+            }
+
+            var lookups = GetReadableLookups(formMeta);
 
             var contactColumn = ContactColumnCandidates.FirstOrDefault(c => formMeta.ContainsKey(c))
                 ?? FindLookupTo(lookups, "contact", true, trace);
 
             trace.Trace("Config built from metadata for '" + tableName + "': serviceConfig=" + serviceConfigColumn +
-                ", case=" + incidentColumn + ", contact=" + (contactColumn ?? "(none)") + ", reference=" + (primaryNameColumn ?? "(none)"));
+                ", case=" + caseColumn + ", contact=" + (contactColumn ?? "(none)") + ", reference=" + (primaryNameColumn ?? "(none)"));
 
             return new ServiceRequestConfig
             {
                 TableName = tableName,
                 ServiceConfigurationColumnLogicalName = serviceConfigColumn,
-                IncidentIdColumnLogicalName = incidentColumn,
+                IncidentIdColumnLogicalName = caseColumn,
                 ContactColumnLogicalName = contactColumn,
                 ReferenceNumberColumnLogicalName = primaryNameColumn
             };
         }
 
-        // Finds the lookup column that points at the given table (null if none, or if several and requireSingle is set).
-        private static string FindLookupTo(List<LookupAttributeMetadata> lookups, string targetTable, bool requireSingle, ITracingService trace)
+        // The form table's readable lookups, sorted by name.
+        private static List<LookupAttributeMetadata> GetReadableLookups(Dictionary<string, AttributeMetadata> formMeta)
         {
-            var matches = lookups
+            return formMeta.Values
+                .OfType<LookupAttributeMetadata>()
+                .Where(l => l.IsValidForRead == true)
+                .OrderBy(l => l.LogicalName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        // Returns the first column in the list that has a lookup value on the record (null if none).
+        private static string PickPopulated(Entity record, IEnumerable<string> candidates)
+        {
+            foreach (var c in candidates)
+            {
+                var r = record.GetAttributeValue<EntityReference>(c);
+                if (r != null && r.Id != Guid.Empty)
+                {
+                    return c;
+                }
+            }
+
+            return null;
+        }
+
+        // The prefix of a column name including the underscore (e.g. "linzi_"), or null if there isn't one.
+        private static string GetPrefix(string column)
+        {
+            var index = column?.IndexOf('_') ?? -1;
+            return index > 0 ? column.Substring(0, index + 1) : null;
+        }
+
+        // All lookup columns that point at the given table, sorted by name.
+        private static List<string> FindAllLookupsTo(List<LookupAttributeMetadata> lookups, string targetTable)
+        {
+            return lookups
                 .Where(l => l.Targets != null && l.Targets.Contains(targetTable, StringComparer.OrdinalIgnoreCase))
                 .Select(l => l.LogicalName)
                 .ToList();
+        }
+
+        // Finds the lookup column that points at the given table (null if none, or if several and requireSingle is set).
+        private static string FindLookupTo(List<LookupAttributeMetadata> lookups, string targetTable, bool requireSingle, ITracingService trace)
+        {
+            var matches = FindAllLookupsTo(lookups, targetTable);
 
             if (matches.Count == 0)
             {
