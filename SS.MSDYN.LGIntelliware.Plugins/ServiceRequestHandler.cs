@@ -77,11 +77,12 @@ namespace SS.MSDYN.LGIntelliware.Plugins
         // Form column -> differently named case column.
         private static readonly KeyValuePair<string, string>[] MappedFields =
         {
-            new KeyValuePair<string, string>("nulbc_customercasestatus", "nulbc_customerstatus"),
-            new KeyValuePair<string, string>("nulbc_statuscase", "nulbc_statuscase"),
-            new KeyValuePair<string, string>("nulbc_customersearch", "nulbc_contact"),
-            new KeyValuePair<string, string>("nulbc_uprn", "nulbc_property"),
-        };
+    new KeyValuePair<string, string>("nulbc_customercasestatus", "nulbc_customerstatus"),
+    new KeyValuePair<string, string>("nulbc_statuscase", "nulbc_statuscase"),
+    new KeyValuePair<string, string>("nulbc_customersearch", "nulbc_contact"),
+    new KeyValuePair<string, string>("nulbc_uprn", "nulbc_property"),
+    new KeyValuePair<string, string>("nulbc_statusfilter", "nulbc_status"),
+};
 
         // A form column and the case column it is copied to.
         private class FieldPair
