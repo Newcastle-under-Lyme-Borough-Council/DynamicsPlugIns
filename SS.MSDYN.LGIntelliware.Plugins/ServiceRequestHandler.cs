@@ -48,6 +48,7 @@ namespace SS.MSDYN.LGIntelliware.Plugins
             "linzi_serviceconfig2",
             "linzi_serviceconfig3",
             "sks_serviceconfig",
+            "jcc_serviceconfig",
         };
 
         // Columns with the same name on the form and the case, copied form -> case.
